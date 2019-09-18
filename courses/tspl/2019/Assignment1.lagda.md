@@ -40,16 +40,54 @@ open import plfa.part1.Relations using (_<_; z<s; s<s; zero; suc; even; odd)
 
 Write out `7` in longhand.
 
+```
+seven : ℕ
+seven = suc (suc (suc (suc (suc (suc (suc zero))))))
+```
 
 #### Exercise `+-example` (practice) {#plus-example}
 
 Compute `3 + 4`, writing out your reasoning as a chain of equations.
 
+```
+_ : 3 + 4 ≡ 7
+_ =
+  begin
+    3 + 4
+  ≡⟨⟩ --inductive case
+    suc (2 + 4)
+  ≡⟨⟩ --ind. case
+    suc (suc (1 + 4))
+  ≡⟨⟩ --ind. case
+    suc (suc (suc (0 + 4)))
+  ≡⟨⟩ --base case!
+    suc (suc (suc (4)))
+  ≡⟨⟩ --reducing
+    7
+  ∎
+```
 
 #### Exercise `*-example` (practice) {#times-example}
 
 Compute `3 * 4`, writing out your reasoning as a chain of equations.
 
+```
+_ : 3 * 4 ≡ 12
+_ =
+  begin
+    3 * 4
+  ≡⟨⟩
+    4 + (2 * 4)
+  ≡⟨⟩
+    4 + (4 + (1 * 4))
+  ≡⟨⟩
+    4 + (4 + (4 + (0 * 4)))
+  ≡⟨⟩
+    4 + (4 + (4 + 0))
+  ≡⟨⟩
+    12
+  ∎
+```
 
 #### Exercise `_^_` (recommended) {#power}
 
@@ -60,11 +98,67 @@ Define exponentiation, which is given by the following equations.
 
 Check that `3 ^ 4` is `81`.
 
+```
+_^_ : ℕ → ℕ → ℕ
+n ^ 0 = 1
+n ^ (suc m) = n * (n ^ m)
+```
+
+```
+_ : 3 ^ 4 ≡ 81
+_ =
+  begin
+    3 ^ 4
+  ≡⟨⟩
+    3 * (3 ^ 3)
+  ≡⟨⟩
+    3 * (3 * (3 ^ 2))
+  ≡⟨⟩
+    3 * (3 * (3 * (3 ^ 1)))
+  ≡⟨⟩
+    3 * (3 * (3 * (3 * (3 ^ 0))))
+  ≡⟨⟩
+    3 * (3 * (3 * (3 * 1)))
+  ≡⟨⟩
+    81
+  ∎
+```
 
 #### Exercise `∸-examples` (recommended) {#monus-examples}
 
 Compute `5 ∸ 3` and `3 ∸ 5`, writing out your reasoning as a chain of equations.
 
+```
+_ : 5 ∸ 3 ≡ 2
+_ =
+  begin
+    5 ∸ 3
+  ≡⟨⟩
+    4 ∸ 2
+  ≡⟨⟩
+    3 ∸ 1
+  ≡⟨⟩
+    2 ∸ 0
+  ≡⟨⟩
+    2
+  ∎
+```
+
+```
+_ : 3 ∸ 5 ≡ 0
+_ =
+  begin
+    3 ∸ 5
+  ≡⟨⟩
+    2 ∸ 4
+  ≡⟨⟩
+    1 ∸ 3
+  ≡⟨⟩
+    0 ∸ 2
+  ≡⟨⟩
+    0
+  ∎
+```
 
 #### Exercise `Bin` (stretch) {#Bin}
 
@@ -101,15 +195,85 @@ number.  For example, since `1100` encodes twelve, we should have
 Confirm that this gives the correct answer for the bitstrings
 encoding zero through four.
 
+```
+inc : Bin → Bin
+inc nil = x1 nil
+inc (x0 m) = x1 m
+inc (x1 m) = x0 (inc m)
+```
+
+```
+_ : inc (inc (inc (inc nil))) ≡ x0 x0 x1 nil
+_ =
+  begin
+    inc (inc (inc (inc nil)))
+  ≡⟨⟩
+    inc (inc (inc (x1 nil)))
+  ≡⟨⟩
+    inc (inc (x0 x1 nil))
+  ≡⟨⟩
+    inc (x1 x1 nil)
+  ≡⟨⟩
+    x0 x0 x1 nil
+  ∎
+```
+
 Using the above, define a pair of functions to convert
 between the two representations.
 
     to   : ℕ → Bin
     from : Bin → ℕ
 
+```
+to : ℕ → Bin
+to zero = x0 nil
+to (suc n) = inc (to n)
+
+from : Bin → ℕ
+from nil = 0
+from (x0 n) = 2 * (from n)
+from (x1 n) = 1 + 2 * (from n)
+```
+
 For the former, choose the bitstring to have no leading zeros if it
 represents a positive natural, and represent zero by `x0 nil`.
 Confirm that these both give the correct answer for zero through four.
+
+```
+_ : to 4 ≡ x0 x0 x1 nil
+_ =
+  begin
+    to 4
+  ≡⟨⟩
+    inc (to 3)
+  ≡⟨⟩
+    inc (inc (to 2))
+  ≡⟨⟩
+    inc (inc (inc (to 1)))
+  ≡⟨⟩
+    inc (inc (inc (inc (to 0))))
+  ≡⟨⟩
+    inc (inc (inc (inc (nil))))
+  ≡⟨⟩
+    x0 x0 x1 nil
+  ∎
+
+_ : from (x0 x0 x1 nil) ≡ 4
+_ =
+  begin
+    from (x0 x0 x1 nil)
+  ≡⟨⟩
+    2 * (from (x0 x1 nil))
+  ≡⟨⟩
+    2 * (2 * (from (x1 nil)))
+  ≡⟨⟩
+    2 * (2 * (1 + 2 * (from nil)))
+  ≡⟨⟩
+    2 * (2 * (1 + 2 * 0))
+  ≡⟨⟩
+    4
+  ∎
+```
 
 ## Induction
 
@@ -142,6 +306,19 @@ the following function from the standard library:
 
     sym : ∀ {m n : ℕ} → m ≡ n → n ≡ m
 
+```
++-swap : ∀ (m n p : ℕ) → m + (n + p) ≡ n + (m + p)
++-swap m n p =
+  begin
+    m + (n + p)
+  ≡⟨ sym (+-assoc m n p) ⟩
+    (m + n) + p
+  ≡⟨ cong (_+ p) (+-comm m n) ⟩
+    (n + m) + p
+  ≡⟨ +-assoc n m p ⟩
+    n + (m + p)
+  ∎
+```
 
 #### Exercise `*-distrib-+` (recommended) {#times-distrib-plus}
 
@@ -150,6 +327,32 @@ Show multiplication distributes over addition, that is,
     (m + n) * p ≡ m * p + n * p
 
 for all naturals `m`, `n`, and `p`.
+
+```
+*-distrib-+ : ∀ (m n p : ℕ) → (m + n) * p ≡ m * p + n * p
+*-distrib-+ zero n p =
+  begin
+    (zero + n) * p
+  ≡⟨⟩
+    n * p
+  ≡⟨⟩
+    zero * p + n * p
+  ∎
+*-distrib-+ (suc m) n p =
+  begin
+    (suc m + n) * p
+  ≡⟨⟩ --defn of +
+    (suc (m + n)) * p
+  ≡⟨⟩ --defn of *
+    p + ((m + n) * p)
+  ≡⟨ cong (p +_) (*-distrib-+ m n p)⟩
+    p + ((m * p) + (n * p))
+  ≡⟨ sym (+-assoc p (m * p) (n * p))⟩
+    (p + (m * p)) + n * p
+  ≡⟨⟩ --defn of *
+    (suc m * p) + n * p
+  ∎
+```
 
 #### Exercise `*-assoc` (recommended) {#times-assoc}
 
