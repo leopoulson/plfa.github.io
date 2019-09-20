@@ -362,6 +362,32 @@ Show multiplication is associative, that is,
 
 for all naturals `m`, `n`, and `p`.
 
+```
+*-assoc : ∀ (m n p : ℕ) → (m * n) * p ≡ m * (n * p)
+*-assoc zero n p = refl
+  -- begin
+  --   (zero * n) * p
+  -- ≡⟨⟩
+  --   zero * p
+  -- ≡⟨⟩
+  --   zero
+  -- ≡⟨⟩
+  --   zero * (n * p)
+  -- ∎
+*-assoc (suc m) n p =
+  begin
+    (suc m * n) * p
+  ≡⟨⟩
+    (n + (m * n)) * p
+  ≡⟨ *-distrib-+ n (m * n) p ⟩
+    (n * p) + ((m * n) * p)
+  ≡⟨ cong ((n * p) +_) (*-assoc m n p) ⟩
+    (n * p) + (m * (n * p))
+  ≡⟨⟩
+    (suc m) * (n * p)
+  ∎
+```
+
 #### Exercise `*-comm` (practice) {#times-comm}
 
 Show multiplication is commutative, that is,
@@ -371,6 +397,108 @@ Show multiplication is commutative, that is,
 for all naturals `m` and `n`.  As with commutativity of addition,
 you will need to formulate and prove suitable lemmas.
 
+
+*-cancelʳ : ∀ (m : ℕ) → m * zero ≡ zero
+*-cancelʳ zero = refl
+*-cancelʳ (suc m) =
+  begin
+    (suc m) * zero
+  ≡⟨⟩
+    zero + (m * zero)
+  ≡⟨ cong (zero +_) (*-cancelʳ m) ⟩
+    zero + zero
+  ≡⟨⟩
+    zero
+  ∎
+
+suc-move : ∀ (m n : ℕ) → suc m + n ≡ m + suc n
+suc-move m n =
+  begin
+    suc m + n
+  ≡⟨⟩
+
+*-comm : ∀ (m n : ℕ) → m * n ≡ n * m
+*-comm zero n =
+  begin
+    zero * n
+  ≡⟨⟩
+    zero
+  ≡⟨ sym (*-cancelʳ n)⟩
+    n * zero
+  ∎
+*-comm m zero =
+  begin
+    m * zero
+  ≡⟨ *-cancelʳ m ⟩
+    zero
+  ≡⟨⟩
+    zero * m
+  ∎
+*-comm (suc m) (suc n) =
+  begin
+    (suc m) * (suc n)
+  ≡⟨⟩
+    suc n + (m * suc n)
+  ≡⟨ cong ((suc n) +_) (*-comm m (suc n))⟩
+    suc n + (suc n * m)
+  ≡⟨⟩
+    suc n + (m + (n * m))
+  ≡⟨⟩
+    (suc m) + (n * suc m)
+  ≡⟨⟩
+    (suc n) * (suc m)
+  ∎
+
+-- *-identityˡ : ∀ (n : ℕ) → 1 * n ≡ n
+-- *-identityˡ n =
+--   begin
+--     suc zero * n
+--   ≡⟨⟩
+--     n + (zero * n)
+--   ≡⟨⟩
+--     n + zero
+--   ≡⟨ +-identityʳ n ⟩
+--     n
+--   ∎
+
+-- *-suc : ∀ (m n : ℕ) → m * (suc n) ≡ m + (m * n)
+-- *-suc zero n = refl
+-- *-suc (suc m) n = ?
+--   -- begin
+--   --   suc m * suc n
+--   -- ≡⟨⟩ --defn *
+--   --   (suc n) + (m * suc n)
+--   -- ≡⟨ cong (_+ (m * suc n)) (sym (*-identityˡ (suc n))) ⟩
+--   --   (1 * suc n) + (m * suc n)
+--   -- ≡⟨ sym (*-distrib-+ 1 m (suc n)) ⟩
+--   --   (1 + m) * suc n
+--   -- ≡⟨⟩
+--   --   suc m * suc n
+--   -- ≡⟨⟩
+--   --   suc m + (suc m * n)
+--   -- ∎
+
+-- *-comm : ∀ (m n : ℕ) → m * n ≡ n * m
+-- *-comm m zero =
+--   begin
+--     m * zero
+--   ≡⟨ *-cancelʳ m ⟩
+--     zero
+--   ≡⟨⟩ --defn *
+--     zero * m
+--   ∎
+-- *-comm m (suc n) = {!!}
+--   -- begin
+--   --   m * (suc n)
+--   -- ≡⟨⟩ -- something here
+--   --   m + (m * n)
+--   -- ≡⟨ cong (m +_) *-comm ⟩
+--   --   m + (n * m)
+--   -- ≡⟨⟩
+--   --   suc n * m
+--   -- ∎
+
+
 #### Exercise `0∸n≡0` (practice) {#zero-monus}
 
 Show
@@ -378,6 +506,22 @@ Show
     zero ∸ n ≡ zero
 
 for all naturals `n`. Did your proof require induction?
+
+```
+∸-identityˡ : ∀ (n : ℕ) → zero ∸ n ≡ zero
+∸-identityˡ zero =
+  begin
+    zero ∸ zero
+  ≡⟨⟩
+    zero
+  ∎
+∸-identityˡ (suc n) =
+  begin
+    zero ∸ (suc n)
+  ≡⟨⟩
+    zero
+  ∎
+```
 
 #### Exercise `∸-+-assoc` (practice) {#monus-plus-assoc}
 
@@ -407,6 +551,49 @@ over bitstrings.
 
 For each law: if it holds, prove; if not, give a counterexample.
 
+```
+-- inc-id : ∀ (x : Bin) → from (inc x) ≡ suc (from x)
+-- inc-id nil =
+--   begin
+--     from (inc nil)
+--   ≡⟨⟩
+--     from (x1 nil)
+--   ≡⟨⟩
+--     1
+--   ≡⟨⟩
+--     suc zero
+--   ≡⟨⟩
+--     suc (from nil)
+--   ∎
+-- inc-id (x0 n) =
+--   begin
+--     from (inc (x0 n))
+--   ≡⟨⟩
+--     from (x1 n)
+--   ≡⟨⟩
+--     1 + 2 * (from n)
+--   ≡⟨⟩
+--     suc (2 * (from n))
+--   ≡⟨⟩
+--     suc (from (x0 n))
+--   ∎
+-- inc-id (x1 n) =
+--   begin
+--     from (inc (x1 n))
+--   ≡⟨⟩
+--     from (x0 (inc n))
+--   ≡⟨⟩
+--     2 * (from (inc n))
+--   ≡⟨ cong (2 *_) (inc-id n)⟩
+--     2 * (suc (from n))
+--   ≡⟨⟩
+--     suc (suc (2 * (from n)))
+--   ≡⟨⟩
+--     suc (1 + (2 * (from n)))
+--   ≡⟨⟩
+--     suc (from (x1 n))
+--   ∎
+```
 
 ## Relations
 
@@ -433,6 +620,21 @@ Show that multiplication is monotonic with regard to inequality.
 
 Show that strict inequality is transitive.
 
+```
+<-trans : ∀ {m n p : ℕ}
+  → m < n
+  → n < p
+    -----
+  → m < p
+
+-- remember that the case
+-- <-trans z<s z<s
+-- is impossible, so we don't need to worry about it
+<-trans z<s (s<s n<p) = z<s
+<-trans (s<s m<n) (s<s n<p) = s<s (<-trans m<n n<p)
+
+```
+
 #### Exercise `trichotomy` (practice) {#trichotomy}
 
 Show that strict inequality satisfies a weak version of trichotomy, in
@@ -455,6 +657,18 @@ As with inequality, some additional definitions may be required.
 
 Show that `suc m ≤ n` implies `m < n`, and conversely.
 
+```
+≤-iff-<ˡ : ∀ (m n : ℕ) → suc m ≤ n → m < n
+≤-iff-<ˡ zero    n (s≤s z≤p) = z<s
+
+-- remmeber again to split cases more carefully
+≤-iff-<ˡ (suc m) (suc n) (s≤s m≤n) = s<s (≤-iff-<ˡ m n m≤n)
+
+≤-iff-<ʳ : ∀ (m n : ℕ) → m < n → suc m ≤ n
+≤-iff-<ʳ zero n z<s = s≤s z≤n
+≤-iff-<ʳ (suc m) (suc n) (s<s m<n) = s≤s (≤-iff-<ʳ m n m<n)
+```
+
 #### Exercise `<-trans-revisited` (practice) {#less-trans-revisited}
 
 Give an alternative proof that strict inequality is transitive,
@@ -464,6 +678,26 @@ the fact that inequality is transitive.
 #### Exercise `o+o≡e` (stretch) {#odd-plus-odd}
 
 Show that the sum of two odd numbers is even.
+
+```
+o+o≡e : ∀ {m n : ℕ}
+  → odd m
+  → odd n
+    -----
+  → even (m + n)
+
+e+o≡o : ∀ {m n : ℕ}
+  → even m
+  → odd n
+    -----
+  → odd (m + n)
+
+o+o≡e (suc em) on = suc (e+o≡o em on)
+
+e+o≡o zero on = on
+e+o≡o (suc om) on = suc (o+o≡e om on)
+
+```
 
 #### Exercise `Bin-predicates` (stretch) {#Bin-predicates}
 
