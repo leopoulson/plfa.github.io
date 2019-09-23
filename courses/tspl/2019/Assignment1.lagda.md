@@ -397,7 +397,7 @@ Show multiplication is commutative, that is,
 for all naturals `m` and `n`.  As with commutativity of addition,
 you will need to formulate and prove suitable lemmas.
 
-
+```
 *-cancelʳ : ∀ (m : ℕ) → m * zero ≡ zero
 *-cancelʳ zero = refl
 *-cancelʳ (suc m) =
@@ -416,6 +416,14 @@ suc-move m n =
   begin
     suc m + n
   ≡⟨⟩
+    suc (m + n)
+  ≡⟨ cong suc (+-comm m n) ⟩
+    suc (n + m)
+  ≡⟨⟩
+    suc n + m
+  ≡⟨ +-comm (suc n) m ⟩
+    m + suc n
+  ∎
 
 *-comm : ∀ (m n : ℕ) → m * n ≡ n * m
 *-comm zero n =
@@ -436,67 +444,31 @@ suc-move m n =
   ∎
 *-comm (suc m) (suc n) =
   begin
-    (suc m) * (suc n)
+    suc m * suc n
   ≡⟨⟩
     suc n + (m * suc n)
   ≡⟨ cong ((suc n) +_) (*-comm m (suc n))⟩
     suc n + (suc n * m)
   ≡⟨⟩
     suc n + (m + (n * m))
+  ≡⟨ sym (+-assoc (suc n) m (n * m)) ⟩
+    suc n + m + (n * m)
+  ≡⟨ cong (_+ (n * m)) (suc-move n m) ⟩
+    n + suc m + (n * m)
+  ≡⟨ cong (_+ (n * m)) (+-comm n (suc m)) ⟩
+    suc m + n + (n * m)
+  ≡⟨ cong ((suc m + n) +_) (*-comm n m)⟩
+    suc m + n + (m * n)
+  ≡⟨ +-assoc (suc m) n (m * n) ⟩
+    suc m + (n + (m * n))
   ≡⟨⟩
-    (suc m) + (n * suc m)
+    suc m + suc m * n
+  ≡⟨ cong ((suc m) +_) (*-comm (suc m) n) ⟩
+    suc m + n * suc m
   ≡⟨⟩
-    (suc n) * (suc m)
+    suc n * suc m
   ∎
-
--- *-identityˡ : ∀ (n : ℕ) → 1 * n ≡ n
--- *-identityˡ n =
---   begin
---     suc zero * n
---   ≡⟨⟩
---     n + (zero * n)
---   ≡⟨⟩
---     n + zero
---   ≡⟨ +-identityʳ n ⟩
---     n
---   ∎
-
--- *-suc : ∀ (m n : ℕ) → m * (suc n) ≡ m + (m * n)
--- *-suc zero n = refl
--- *-suc (suc m) n = ?
---   -- begin
---   --   suc m * suc n
---   -- ≡⟨⟩ --defn *
---   --   (suc n) + (m * suc n)
---   -- ≡⟨ cong (_+ (m * suc n)) (sym (*-identityˡ (suc n))) ⟩
---   --   (1 * suc n) + (m * suc n)
---   -- ≡⟨ sym (*-distrib-+ 1 m (suc n)) ⟩
---   --   (1 + m) * suc n
---   -- ≡⟨⟩
---   --   suc m * suc n
---   -- ≡⟨⟩
---   --   suc m + (suc m * n)
---   -- ∎
-
--- *-comm : ∀ (m n : ℕ) → m * n ≡ n * m
--- *-comm m zero =
---   begin
---     m * zero
---   ≡⟨ *-cancelʳ m ⟩
---     zero
---   ≡⟨⟩ --defn *
---     zero * m
---   ∎
--- *-comm m (suc n) = {!!}
---   -- begin
---   --   m * (suc n)
---   -- ≡⟨⟩ -- something here
---   --   m + (m * n)
---   -- ≡⟨ cong (m +_) *-comm ⟩
---   --   m + (n * m)
---   -- ≡⟨⟩
---   --   suc n * m
---   -- ∎
+```
 
 
 #### Exercise `0∸n≡0` (practice) {#zero-monus}
