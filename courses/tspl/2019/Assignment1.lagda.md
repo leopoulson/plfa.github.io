@@ -9,6 +9,8 @@ module Assignment1 where
 ```
 
 ## YOUR NAME AND EMAIL GOES HERE
+Leo Poulson
+s1983328@ed.ac.uk
 
 ## Introduction
 
@@ -523,49 +525,47 @@ over bitstrings.
 
 For each law: if it holds, prove; if not, give a counterexample.
 
-```
--- inc-id : ∀ (x : Bin) → from (inc x) ≡ suc (from x)
--- inc-id nil =
---   begin
---     from (inc nil)
---   ≡⟨⟩
---     from (x1 nil)
---   ≡⟨⟩
---     1
---   ≡⟨⟩
---     suc zero
---   ≡⟨⟩
---     suc (from nil)
---   ∎
--- inc-id (x0 n) =
---   begin
---     from (inc (x0 n))
---   ≡⟨⟩
---     from (x1 n)
---   ≡⟨⟩
---     1 + 2 * (from n)
---   ≡⟨⟩
---     suc (2 * (from n))
---   ≡⟨⟩
---     suc (from (x0 n))
---   ∎
--- inc-id (x1 n) =
---   begin
---     from (inc (x1 n))
---   ≡⟨⟩
---     from (x0 (inc n))
---   ≡⟨⟩
---     2 * (from (inc n))
---   ≡⟨ cong (2 *_) (inc-id n)⟩
---     2 * (suc (from n))
---   ≡⟨⟩
---     suc (suc (2 * (from n)))
---   ≡⟨⟩
---     suc (1 + (2 * (from n)))
---   ≡⟨⟩
---     suc (from (x1 n))
---   ∎
-```
+inc-id : ∀ (x : Bin) → from (inc x) ≡ suc (from x)
+inc-id nil =
+  begin
+    from (inc nil)
+  ≡⟨⟩
+    from (x1 nil)
+  ≡⟨⟩
+    1
+  ≡⟨⟩
+    suc zero
+  ≡⟨⟩
+    suc (from nil)
+  ∎
+inc-id (x0 n) =
+  begin
+    from (inc (x0 n))
+  ≡⟨⟩
+    from (x1 n)
+  ≡⟨⟩
+    1 + 2 * (from n)
+  ≡⟨⟩
+    suc (2 * (from n))
+  ≡⟨⟩
+    suc (from (x0 n))
+  ∎
+inc-id (x1 n) =
+  begin
+    from (inc (x1 n))
+  ≡⟨⟩
+    from (x0 (inc n))
+  ≡⟨⟩
+    2 * (from (inc n))
+  ≡⟨ cong (2 *_) (inc-id n)⟩
+    2 * (suc (from n))
+  ≡⟨⟩
+    suc (suc (2 * (from n)))
+  ≡⟨⟩
+    suc (1 + (2 * (from n)))
+  ≡⟨⟩
+    suc (from (x1 n))
+  ∎
 
 ## Relations
 
@@ -586,6 +586,28 @@ argument is `s≤s`.  Why is it ok to omit them?
 #### Exercise `*-mono-≤` (stretch)
 
 Show that multiplication is monotonic with regard to inequality.
+
+```
+*-monoʳ-≤ : ∀ (n p q : ℕ)
+  → p ≤ q
+    -------------
+  → n * p ≤ n * q
+*-monoʳ-≤ zero p q p≤q = z≤n
+*-monoʳ-≤ (suc n) p q p≤q = +-mono-≤ p≤q (*-monoʳ-≤ n p q p≤q)
+
+*-monoˡ-≤ : ∀ (m n p : ℕ)
+  → m ≤ n
+    -------------
+  → m * p ≤ n * p
+*-monoˡ-≤ m n p m≤n  rewrite *-comm m p | *-comm n p = *-monoʳ-≤ p m n m≤n
+
+*-mono-≤ : ∀ (m n p q : ℕ)
+  → m ≤ n
+  → p ≤ q
+    -------------
+  → m * p ≤ n * q
+*-mono-≤ m n p q m≤n p≤q = ≤-trans (*-monoˡ-≤ m n p m≤n) (*-monoʳ-≤ n p q p≤q)
+```
 
 
 #### Exercise `<-trans` (recommended) {#less-trans}
@@ -686,12 +708,41 @@ Define a predicate
 
     Can : Bin → Set
 
+
+
 over all bitstrings that holds if the bitstring is canonical, meaning
 it has no leading zeros; the first representation of eleven above is
 canonical, and the second is not.  To define it, you will need an
 auxiliary predicate
 
     One : Bin → Set
+
+```
+data One : Bin → Set where
+  end :
+    ------------
+    One (x1 nil)
+
+  zero : ∀ {m : Bin}
+    → One m
+      ---------
+    → One (x0 m)
+
+  one : ∀ {m : Bin}
+    → One m
+      ---------
+    → One (x1 m)
+
+data Can : Bin → Set where
+  zero :
+    ------------
+    Can (x0 nil)
+
+  one : ∀ {m : Bin}
+   → One m
+     -----
+   → Can m
+```
 
 that holds only if the bistring has a leading one.  A bitstring is
 canonical if it has a leading one (representing a positive number) or
@@ -703,11 +754,40 @@ Show that increment preserves canonical bitstrings.
     ------------
     Can (inc x)
 
+```
+inc-pres-can : ∀ {x : Bin}
+  → Can x
+    ---------
+  → Can (inc x)
+
+inc-pres-one : ∀ {x : Bin}
+  → One x
+    ---------
+  → One (inc x)
+
+inc-pres-can zero = one end
+inc-pres-can (one x) = one (inc-pres-one x)
+
+inc-pres-one end = zero end
+inc-pres-one (zero ox) = one ox
+inc-pres-one (one ox) = zero (inc-pres-one ox)
+```
+
 Show that converting a natural to a bitstring always yields a
 canonical bitstring.
 
     ----------
     Can (to n)
+
+```
+can-to : ∀ (n : ℕ)
+    ----------
+  → Can (to n)
+
+can-to zero = zero
+can-to (suc n) = inc-pres-can (can-to n)
+
+```
 
 Show that converting a canonical bitstring to a natural
 and back is the identity.
