@@ -1,11 +1,11 @@
 ---
-title     : "Assignment1: TSPL Assignment 1"
+title     : "Assignment2: TSPL Assignment 2"
 layout    : page
-permalink : /TSPL/2019/Assignment1/
+permalink : /TSPL/2019/Assignment2/
 ---
 
 ```
-module Assignment1 where
+module Assignment2 where
 ```
 
 ## YOUR NAME AND EMAIL GOES HERE
@@ -59,7 +59,7 @@ open import Relation.Nullary.Sum using (_⊎-dec_)
 open import Relation.Nullary.Negation using (contraposition)
 open import Data.Product using (Σ; _,_; ∃; Σ-syntax; ∃-syntax)
 open import plfa.part1.Relations using (_<_; z<s; s<s)
-open import plfa.part1.Isomorphism using (_≃_; ≃-sym; ≃-trans; _≲_; extensionality)
+open import plfa.part1.Isomorphism using (_≃_; ≃-sym; ≃-trans; _≲_; extensionality; _∘_)
 open plfa.part1.Isomorphism.≃-Reasoning
 ```
 
@@ -94,14 +94,23 @@ regard to inequality.  Rewrite all of `+-monoˡ-≤`, `+-monoʳ-≤`, and `+-mon
 
 Show that every isomorphism implies an embedding.
 ```
-postulate
-  ≃-implies-≲ : ∀ {A B : Set}
-    → A ≃ B
-      -----
-    → A ≲ B
+-- postulate
+--   ≃-implies-≲ : ∀ {A B : Set}
+--     → A ≃ B
+--       -----
+--     → A ≲ B
 ```
 
 ```
+≃-implies-≲ : ∀ {A B : Set}
+  → A ≃ B
+    -----
+  → A ≲ B
+≃-implies-≲ a≃b =
+  record
+    { to      = _≃_.to a≃b
+    ; from    = _≃_.from a≃b
+    ; from∘to = _≃_.from∘to a≃b }
 -- Your code goes here
 ```
 
@@ -117,7 +126,36 @@ record _⇔_ (A B : Set) : Set where
 Show that equivalence is reflexive, symmetric, and transitive.
 
 ```
--- Your code goes here
+⇔-refl : ∀ {A : Set}
+    ---
+  → A ⇔ A
+⇔-refl =
+  record
+    { to   = λ {x → x}
+    ; from = λ {y → y}
+    }
+
+⇔-symm : ∀ {A B : Set}
+  → A ⇔ B
+    -----
+  → B ⇔ A
+⇔-symm A⇔B =
+  record
+    { to   = _⇔_.from A⇔B
+    ; from = _⇔_.to A⇔B
+    }
+
+⇔-trans : ∀ {A B C : Set}
+  → A ⇔ B
+  → B ⇔ C
+    -----
+  → A ⇔ C
+⇔-trans A⇔B B⇔C =
+  record
+    { to   = _⇔_.to   B⇔C ∘ _⇔_.to A⇔B
+    ; from = _⇔_.from A⇔B ∘ _⇔_.from B⇔C
+    }
+
 ```
 
 #### Exercise `Bin-embedding` (stretch) {#Bin-embedding}
@@ -150,6 +188,14 @@ Show that `A ⇔ B` as defined [earlier]({{ site.baseurl }}/Isomorphism/#iff)
 is isomorphic to `(A → B) × (B → A)`.
 
 ```
+⇔≃× : ∀ {A B : Set} → A ⇔ B ≃ (A → B) × (B → A)
+⇔≃× =
+  record
+    { to      = λ x → ⟨ to x , from x ⟩
+    ; from    = λ z → record { to = proj₁ z ; from = proj₂ z }
+    ; from∘to = λ x → refl
+    ; to∘from = λ y → refl
+    } where open _⇔_
 -- Your code goes here
 ```
 
@@ -158,7 +204,18 @@ is isomorphic to `(A → B) × (B → A)`.
 Show sum is commutative up to isomorphism.
 
 ```
--- Your code goes here
+⊎-swap : ∀ {A B : Set} → A ⊎ B → B ⊎ A
+⊎-swap a⊎b = case-⊎ inj₂ inj₁ a⊎b
+
+⊎-comm : ∀ {A B : Set} → A ⊎ B ≃ B ⊎ A
+⊎-comm =
+  record
+    { to      = ⊎-swap
+    ; from    = ⊎-swap
+    ; from∘to = λ { (inj₁ x) → refl ; (inj₂ x) → refl }
+    ; to∘from = λ { (inj₁ x) → refl ; (inj₂ x) → refl }
+    }
+
 ```
 
 #### Exercise `⊎-assoc` (practice)

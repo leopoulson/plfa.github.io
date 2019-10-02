@@ -871,7 +871,6 @@ and back is the identity.
     ---------------
     to (from x) ≡ x
 
-```
 can-id : ∀ {x : Bin}
   → Can x
     ---------------
@@ -896,7 +895,6 @@ one-id {x0 x} (zero ox) = {!!}
   --   x0 x
   -- ∎
 one-id (one ox) = {!!}
-```
 
 
 (Hint: For each of these, you may first need to prove related
