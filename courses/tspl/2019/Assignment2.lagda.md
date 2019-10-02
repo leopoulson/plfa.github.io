@@ -208,14 +208,13 @@ Show sum is commutative up to isomorphism.
 ⊎-swap a⊎b = case-⊎ inj₂ inj₁ a⊎b
 
 ⊎-comm : ∀ {A B : Set} → A ⊎ B ≃ B ⊎ A
-⊎-comm =
-  record
-    { to      = ⊎-swap
-    ; from    = ⊎-swap
-    ; from∘to = λ { (inj₁ x) → refl ; (inj₂ x) → refl }
-    ; to∘from = λ { (inj₁ x) → refl ; (inj₂ x) → refl }
-    }
-
+-- ⊎-comm =
+--   record
+--     { to      = ⊎-swap
+--     ; from    = ⊎-swap
+--     ; from∘to = λ { (inj₁ x) → refl ; (inj₂ x) → refl }
+--     ; to∘from = λ { (inj₁ x) → refl ; (inj₂ x) → refl }
+--     }
 ```
 
 #### Exercise `⊎-assoc` (practice)

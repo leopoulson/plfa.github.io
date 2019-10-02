@@ -618,7 +618,6 @@ inc-id (x1 n) =
   ∎
 ```
 
-```
 to-from : ∀ (n : Bin) → to (from n) ≡ n
 to-from nil = {!!}
   -- we have a problem here; we need
@@ -633,7 +632,6 @@ to-from (x0 n) = {!!}
 --     n
   -- ∎
 to-from (x1 n) = {!!}
-```
 
 
 
