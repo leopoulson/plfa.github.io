@@ -237,6 +237,20 @@ from (x0 n) = 2 * (from n)
 from (x1 n) = 1 + 2 * (from n)
 ```
 
+```
+-- 2-lemma : ∀ (m : Bin) → x0 m ≡ to (from m + from m)
+-- 2-lemma m =
+--   begin
+--     x0 m
+--   ≡⟨⟩
+--     to (inc (inc m'))
+--   ≡⟨⟩
+--     to (from m + from m)
+-- -- 2-lemma nil = refl
+-- -- 2-lemma (x0 m) = {!!}
+-- -- 2-lemma (x1 m) = {!!}
+```
+
 For the former, choose the bitstring to have no leading zeros if it
 represents a positive natural, and represent zero by `x0 nil`.
 Confirm that these both give the correct answer for zero through four.
@@ -525,6 +539,26 @@ over bitstrings.
 
 For each law: if it holds, prove; if not, give a counterexample.
 
+```
+two-suc : ∀ (x : ℕ) → 2 * (suc x) ≡ suc (suc (2 * x))
+two-suc x =
+  begin
+    2 * (suc x)
+  ≡⟨⟩
+    2 * (1 + x)
+  ≡⟨ *-comm 2 (1 + x) ⟩
+    (1 + x) * 2
+  ≡⟨ sym (*-distrib-+ 1 x 2) ⟩
+    1 * 2 + x * 2
+  ≡⟨⟩
+    2 + x * 2
+  ≡⟨ cong (2 +_) (*-comm x 2) ⟩
+    2 + 2 * x
+  ≡⟨⟩
+    suc (suc (2 * x))
+  ∎
+
+
 inc-id : ∀ (x : Bin) → from (inc x) ≡ suc (from x)
 inc-id nil =
   begin
@@ -559,13 +593,33 @@ inc-id (x1 n) =
     2 * (from (inc n))
   ≡⟨ cong (2 *_) (inc-id n)⟩
     2 * (suc (from n))
-  ≡⟨⟩
+  ≡⟨ two-suc (from n) ⟩
     suc (suc (2 * (from n)))
   ≡⟨⟩
     suc (1 + (2 * (from n)))
   ≡⟨⟩
     suc (from (x1 n))
   ∎
+```
+
+```
+to-from : ∀ (n : Bin) → to (from n) ≡ n
+to-from nil = {!!}
+  -- we have a problem here; we need
+  -- to show that nil == (x0 nil)
+  -- which isn't true
+to-from (x0 n) = {!!}
+--   begin
+--     to (from (x0 n))
+--   ≡⟨⟩
+--     to (from )
+--   ≡⟨⟩
+--     n
+  -- ∎
+to-from (x1 n) = {!!}
+```
+
+
 
 ## Relations
 
@@ -652,13 +706,18 @@ As with inequality, some additional definitions may be required.
 Show that `suc m ≤ n` implies `m < n`, and conversely.
 
 ```
-≤-iff-<ˡ : ∀ (m n : ℕ) → suc m ≤ n → m < n
-≤-iff-<ˡ zero    n (s≤s z≤p) = z<s
-
+≤-iff-<ˡ : ∀ (m n : ℕ)
+  → suc m ≤ n
+    ---------
+  → m < n
+≤-iff-<ˡ zero    n (s≤s z≤n) = z<s
 -- remmeber again to split cases more carefully
 ≤-iff-<ˡ (suc m) (suc n) (s≤s m≤n) = s<s (≤-iff-<ˡ m n m≤n)
 
-≤-iff-<ʳ : ∀ (m n : ℕ) → m < n → suc m ≤ n
+≤-iff-<ʳ : ∀ (m n : ℕ)
+  → m < n
+    -------
+  → suc m ≤ n
 ≤-iff-<ʳ zero n z<s = s≤s z≤n
 ≤-iff-<ʳ (suc m) (suc n) (s<s m<n) = s≤s (≤-iff-<ʳ m n m<n)
 ```
@@ -795,6 +854,34 @@ and back is the identity.
     Can x
     ---------------
     to (from x) ≡ x
+
+```
+can-id : ∀ {x : Bin}
+  → Can x
+    ---------------
+  → to (from x) ≡ x
+
+can-id zero = refl
+can-id (one x) = {!!}
+
+one-id : ∀ {x : Bin}
+  → One x
+    ---------------
+  → to (from x) ≡ x
+
+-- one-id ox = {!!}
+one-id end = refl
+one-id {x0 x} (zero ox) = {!!}
+  -- begin
+  --   to (from (x0 x))
+  -- ≡⟨⟩
+  --   to (2 * from x)
+  -- ≡⟨⟩
+  --   x0 x
+  -- ∎
+one-id (one ox) = {!!}
+```
+
 
 (Hint: For each of these, you may first need to prove related
 properties of `One`.)
