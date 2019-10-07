@@ -51,6 +51,7 @@ open import Data.Unit using (⊤; tt)
 open import Data.Sum using (_⊎_; inj₁; inj₂) renaming ([_,_] to case-⊎)
 open import Data.Empty using (⊥; ⊥-elim)
 open import Data.Bool.Base using (Bool; true; false; T; _∧_; _∨_; not)
+open import Function using (_∘_)
 open import Relation.Nullary using (¬_; Dec; yes; no)
 open import Relation.Nullary.Decidable using (⌊_⌋; toWitness; fromWitness)
 open import Relation.Nullary.Negation using (¬?)
@@ -59,7 +60,8 @@ open import Relation.Nullary.Sum using (_⊎-dec_)
 open import Relation.Nullary.Negation using (contraposition)
 open import Data.Product using (Σ; _,_; ∃; Σ-syntax; ∃-syntax)
 open import plfa.part1.Relations using (_<_; z<s; s<s)
-open import plfa.part1.Isomorphism using (_≃_; ≃-sym; ≃-trans; _≲_; extensionality; _∘_)
+open import plfa.part1.Isomorphism using (_≃_; ≃-sym; ≃-trans; _≲_; extensionality; ∀-extensionality)
+open import plfa.part1.Negation using (assimilation)
 open plfa.part1.Isomorphism.≃-Reasoning
 ```
 
@@ -196,7 +198,6 @@ is isomorphic to `(A → B) × (B → A)`.
     ; from∘to = λ x → refl
     ; to∘from = λ y → refl
     } where open _⇔_
--- Your code goes here
 ```
 
 #### Exercise `⊎-comm` (recommended)
@@ -208,29 +209,59 @@ Show sum is commutative up to isomorphism.
 ⊎-swap a⊎b = case-⊎ inj₂ inj₁ a⊎b
 
 ⊎-comm : ∀ {A B : Set} → A ⊎ B ≃ B ⊎ A
--- ⊎-comm =
---   record
---     { to      = ⊎-swap
---     ; from    = ⊎-swap
---     ; from∘to = λ { (inj₁ x) → refl ; (inj₂ x) → refl }
---     ; to∘from = λ { (inj₁ x) → refl ; (inj₂ x) → refl }
---     }
+⊎-comm =
+  record
+    { to      = ⊎-swap
+    ; from    = ⊎-swap
+    ; from∘to = λ { (inj₁ x) → refl ; (inj₂ x) → refl }
+    ; to∘from = λ { (inj₁ x) → refl ; (inj₂ x) → refl }
+    }
 ```
 
 #### Exercise `⊎-assoc` (practice)
 
 Show sum is associative up to isomorphism.
 
+
 ```
--- Your code goes here
+
+⊎-l-assoc : ∀ {A B C : Set} → (A ⊎ B) → A ⊎ (B ⊎ C)
+⊎-l-assoc (inj₁ x) = (inj₁ x)
+⊎-l-assoc (inj₂ x) = inj₂ (inj₁ x)
+
+⊎-r-assoc : ∀ {A B C : Set} → B ⊎ C → (A ⊎ B) ⊎ C
+⊎-r-assoc (inj₁ x) = inj₁ (inj₂ x)
+⊎-r-assoc (inj₂ x) = inj₂ x
+
 ```
+⊎-assoc : ∀ {A B C : Set} → (A ⊎ B) ⊎ C ≃ A ⊎ (B ⊎ C)
+⊎-assoc =
+  record
+    { to   = λ { (inj₁ x) → ⊎-l-assoc x
+               ; (inj₂ x) → inj₂ (inj₂ x) }
+    ; from = λ { (inj₁ x) → inj₁ (inj₁ x)
+               ; (inj₂ x) → ⊎-r-assoc x }
+    ; from∘to = λ { (inj₁ x) → {!!}
+                  ; (inj₂ x) → refl }
+    ; to∘from = λ { (inj₁ x) → refl
+                  ; (inj₂ x) → {!!} }
+    }
+
+
 
 #### Exercise `⊥-identityˡ` (recommended)
 
 Show empty is the left identity of sums up to isomorphism.
 
 ```
--- Your code goes here
+⊥-identityˡ : ∀ {A : Set} → ⊥ ⊎ A ≃ A
+⊥-identityˡ =
+  record
+    { to = λ { (inj₂ x) → x } -- no constructors for ⊥
+    ; from = inj₂
+    ; from∘to = λ { (inj₂ x) → refl }
+    ; to∘from = λ y → refl
+    }
 ```
 
 #### Exercise `⊥-identityʳ` (practice)
@@ -238,36 +269,55 @@ Show empty is the left identity of sums up to isomorphism.
 Show empty is the right identity of sums up to isomorphism.
 
 ```
--- Your code goes here
+⊥-identityʳ : ∀ {A : Set} → A ⊎ ⊥ ≃ A
+⊥-identityʳ =
+  record
+    { to = λ { (inj₁ x) → x }
+    ; from = λ y → inj₁ y
+    ; from∘to = λ { (inj₁ x) → refl }
+    ; to∘from = λ y → refl
+    }
 ```
 
 #### Exercise `⊎-weak-×` (recommended)
 
 Show that the following property holds:
-```
+
 postulate
   ⊎-weak-× : ∀ {A B C : Set} → (A ⊎ B) × C → A ⊎ (B × C)
-```
+
 This is called a _weak distributive law_. Give the corresponding
 distributive law, and explain how it relates to the weak version.
 
 ```
--- Your code goes here
+⊎-weak-× : ∀ {A B C : Set} → (A ⊎ B) × C → A ⊎ (B × C)
+⊎-weak-× ⟨ inj₁ x , snd ⟩ = inj₁ x
+⊎-weak-× ⟨ inj₂ y , snd ⟩ = inj₂ ⟨ y , snd ⟩
 ```
 
+The corresponding distributive law is as follows
+
+⊎-distrib-× : ∀ {A B C : Set} → (A ⊎ B) × C ≃ A ⊎ (B × C)
+
+Its relation to ⊎-weak-× is that in the record definition for ⊎-distrib-×,
+⊎-weak-× would inhabit the `to` constructor.
 
 #### Exercise `⊎×-implies-×⊎` (practice)
 
 Show that a disjunct of conjuncts implies a conjunct of disjuncts:
-```
+
 postulate
   ⊎×-implies-×⊎ : ∀ {A B C D : Set} → (A × B) ⊎ (C × D) → (A ⊎ C) × (B ⊎ D)
-```
+
 Does the converse hold? If so, prove; if not, give a counterexample.
 
 ```
--- Your code goes here
+⊎×-implies-×⊎ : ∀ {A B C D : Set} → (A × B) ⊎ (C × D) → (A ⊎ C) × (B ⊎ D)
+⊎×-implies-×⊎ (inj₁ ⟨ fst , snd ⟩) = ⟨ inj₁ fst , inj₁ snd ⟩
+⊎×-implies-×⊎ (inj₂ ⟨ fst , snd ⟩) = ⟨ inj₂ fst , inj₂ snd ⟩
 ```
+
+TODO Finish this
 
 ## Negation
 
@@ -278,7 +328,8 @@ Using negation, show that
 is irreflexive, that is, `n < n` holds for no `n`.
 
 ```
--- Your code goes here
+<-irreflexive : ∀ {n : ℕ} → ¬( n < n )
+<-irreflexive (s<s n<n) = <-irreflexive n<n
 ```
 
 
@@ -309,9 +360,19 @@ version of De Morgan's Law.
 This result is an easy consequence of something we've proved previously.
 
 ```
--- Your code goes here
-```
+→-distrib-⊎ : ∀ {A B C : Set} → (A ⊎ B → C) ≃ ((A → C) × (B → C))
+→-distrib-⊎ =
+  record
+    { to      = λ{ f → ⟨ f ∘ inj₁ , f ∘ inj₂ ⟩ }
+    ; from    = λ{ ⟨ g , h ⟩ → λ{ (inj₁ x) → g x ; (inj₂ y) → h y } }
+    ; from∘to = λ{ f → extensionality λ{ (inj₁ x) → refl ; (inj₂ y) → refl } }
+    ; to∘from = λ{ ⟨ g , h ⟩ → refl }
+    }
 
+
+⊎-dual-× : ∀ {A B : Set} → (A ⊎ B → ⊥) ≃ ((A → ⊥) × (B → ⊥))
+⊎-dual-× {A} {B} = →-distrib-⊎ {A} {B} {C = ⊥}
+```
 
 Do we also have the following?
 
@@ -333,7 +394,19 @@ Consider the following principles:
 Show that each of these implies all the others.
 
 ```
+record AllClassical (A B : Set) : Set₁ where
+  field
+    em : ∀ {A : Set} → A ⊎ ¬ A
+    dne : ∀ {A : Set} → ¬ ¬ A → A
+    peirce : ∀ {A B : Set} → ((A → B) → A) → A
+    impasdis : ∀ {A B : Set} → (A → B) → ¬ A ⊎ B
+    demorgan : ∀ {A B : Set} → ¬ (¬ A × ¬ B) → A ⊎ B
 -- Your code goes here
+
+-- dne-implies : ∀ {A B : Set} → (¬ ¬ A → A) → AllClassical A B
+-- dne-implies dne = record
+                    -- { em = {!!} ; dne = {!!} ; peirce = {!!} ; impasdis = {!!} ; demorgan = {!!} }
+
 ```
 
 
@@ -358,21 +431,39 @@ of two stable formulas is stable.
 
 Show that universals distribute over conjunction:
 ```
-postulate
-  ∀-distrib-× : ∀ {A : Set} {B C : A → Set} →
-    (∀ (x : A) → B x × C x) ≃ (∀ (x : A) → B x) × (∀ (x : A) → C x)
+∀-distrib-× : ∀ {A : Set} {B C : A → Set} →
+  (∀ (x : A) → B x × C x) ≃ (∀ (x : A) → B x) × (∀ (x : A) → C x)
+∀-distrib-× =
+  record
+    { to = λ { f → ⟨ (λ x → proj₁ (f x) ) , (λ x → proj₂ (f x)) ⟩ }
+    ; from = λ { ⟨ fl , fr ⟩ → λ x → ⟨ fl x , fr x ⟩ }
+    ; from∘to = λ f → refl
+    ; to∘from = λ { ⟨ fl , fr ⟩ → refl }
+    }
 ```
+
 Compare this with the result (`→-distrib-×`) in
 Chapter [Connectives]({{ site.baseurl }}/Connectives/).
 
+→-distrib-× : ∀ {A B C : Set} → (A → B × C) ≃ (A → B) × (A → C)
+→-distrib-× =
+  record
+    { to      = λ{ f → ⟨ proj₁ ∘ f , proj₂ ∘ f ⟩ }
+    ; from    = λ{ ⟨ g , h ⟩ → λ x → ⟨ g x , h x ⟩ }
+    ; from∘to = λ{ f → extensionality λ{ x → η-× (f x) } }
+    ; to∘from = λ{ ⟨ g , h ⟩ → refl }
+    }
+
+It's the same proof!
 
 #### Exercise `⊎∀-implies-∀⊎` (practice)
 
 Show that a disjunction of universals implies a universal of disjunctions:
 ```
-postulate
-  ⊎∀-implies-∀⊎ : ∀ {A : Set} {B C : A → Set} →
-    (∀ (x : A) → B x) ⊎ (∀ (x : A) → C x)  →  ∀ (x : A) → B x ⊎ C x
+⊎∀-implies-∀⊎ : ∀ {A : Set} {B C : A → Set} →
+  (∀ (x : A) → B x) ⊎ (∀ (x : A) → C x)  →  ∀ (x : A) → B x ⊎ C x
+⊎∀-implies-∀⊎ (inj₁ fb) = λ x → (inj₁ (fb x))
+⊎∀-implies-∀⊎ (inj₂ fc) = λ x → (inj₂ (fc x))
 ```
 Does the converse hold? If so, prove; if not, explain why.
 
@@ -389,14 +480,37 @@ data Tri : Set where
 Let `B` be a type indexed by `Tri`, that is `B : Tri → Set`.
 Show that `∀ (x : Tri) → B x` is isomorphic to `B aa × B bb × B cc`.
 
+```
+∀-× : ∀ {B : Tri → Set} →
+  (∀ (x : Tri) → B x) ≃ B aa × B bb × B cc
+∀-× =
+  record
+    { to = λ z → ⟨ z aa , ⟨ z bb , z cc ⟩ ⟩
+    ; from = λ { ⟨ baa , ⟨ bbb , bcc ⟩ ⟩ →
+                   λ { aa → baa ; bb → bbb ; cc → bcc } }
+    ; from∘to = λ {z → ∀-extensionality (
+                   λ { aa → refl ; bb → refl ; cc → refl } ) }
+    ; to∘from = λ { ⟨ baa , ⟨ bbb , bcc ⟩ ⟩ → refl }
+    }
+```
 
 #### Exercise `∃-distrib-⊎` (recommended)
 
 Show that existentials distribute over disjunction:
 ```
-postulate
-  ∃-distrib-⊎ : ∀ {A : Set} {B C : A → Set} →
-    ∃[ x ] (B x ⊎ C x) ≃ (∃[ x ] B x) ⊎ (∃[ x ] C x)
+∃-distrib-⊎ : ∀ {A : Set} {B C : A → Set} →
+  ∃[ x ] (B x ⊎ C x) ≃ (∃[ x ] B x) ⊎ (∃[ x ] C x)
+∃-distrib-⊎ =
+  record
+    { to   = λ { ⟨ x , (inj₁ b) ⟩ → inj₁ ⟨ x , b ⟩ ;
+                 ⟨ x , (inj₂ c) ⟩ → inj₂ ⟨ x , c ⟩}
+    ; from = λ { (inj₁ ⟨ x , b ⟩) → ⟨ x , inj₁ b ⟩ ;
+                 (inj₂ ⟨ x , c ⟩) → ⟨ x , inj₂ c ⟩ }
+    ; from∘to =  λ { ⟨ x , (inj₁ b) ⟩ → refl ;
+                     ⟨ x , (inj₂ c) ⟩ → refl }
+    ; to∘from = λ { (inj₁ ⟨ x , b ⟩) → refl ;
+                    (inj₂ ⟨ x , c ⟩) → refl }
+    }
 ```
 
 
@@ -404,18 +518,43 @@ postulate
 
 Show that an existential of conjunctions implies a conjunction of existentials:
 ```
-postulate
-  ∃×-implies-×∃ : ∀ {A : Set} {B C : A → Set} →
-    ∃[ x ] (B x × C x) → (∃[ x ] B x) × (∃[ x ] C x)
+∃×-implies-×∃ : ∀ {A : Set} {B C : A → Set} →
+  ∃[ x ] (B x × C x) → (∃[ x ] B x) × (∃[ x ] C x)
+∃×-implies-×∃ ⟨ x , ⟨ bx , cx ⟩ ⟩ = ⟨ ⟨ x , bx ⟩ , ⟨ x , cx ⟩ ⟩
 ```
 Does the converse hold? If so, prove; if not, explain why.
 
+×∃-implies-∃× : ∀ {A : Set} {B C : A → Set} →
+  (∃[ x ] B x) × (∃[ x ] C x) → ∃[ x ] (B x × C x)
+
+This does not hold; the two xs may be different xs, so we have no proof that
+there exists one x such that B and C hold for it.
 
 #### Exercise `∃-⊎` (practice)
 
 Let `Tri` and `B` be as in Exercise `∀-×`.
 Show that `∃[ x ] B x` is isomorphic to `B aa ⊎ B bb ⊎ B cc`.
 
+```
+∃-⊎ : ∀ {B : Tri → Set} →
+  (∃[ x ] B x) ≃ B aa ⊎ B bb ⊎ B cc
+∃-⊎ =
+  record
+    { to = λ { ⟨ aa , bx ⟩ → inj₁ bx ;
+               ⟨ bb , bx ⟩ → inj₂ (inj₁ bx) ;
+               ⟨ cc , bx ⟩ → inj₂ (inj₂ bx) }
+    ; from = λ { (inj₁ x) → ⟨ aa , x ⟩ ;
+                 (inj₂ (inj₁ y)) → ⟨ bb , y ⟩ ;
+                 (inj₂ (inj₂ z)) → ⟨ cc , z ⟩ }
+    ; from∘to = λ { ⟨ aa , snd ⟩ → refl ;
+                    ⟨ bb , snd ⟩ → refl ;
+                    ⟨ cc , snd ⟩ → refl  }
+    ; to∘from = λ { (inj₁ x) → refl ;
+                    (inj₂ (inj₁ y)) → refl ;
+                    (inj₂ (inj₂ z)) → refl }
+    }
+
+```
 
 #### Exercise `∃-even-odd` (practice)
 
@@ -440,13 +579,15 @@ Show that `y ≤ z` holds if and only if there exists a `x` such that
 #### Exercise `∃¬-implies-¬∀` (recommended)
 
 Show that existential of a negation implies negation of a universal:
+
 ```
-postulate
-  ∃¬-implies-¬∀ : ∀ {A : Set} {B : A → Set}
-    → ∃[ x ] (¬ B x)
-      --------------
-    → ¬ (∀ x → B x)
+∃¬-implies-¬∀ : ∀ {A : Set} {B : A → Set}
+  → ∃[ x ] (¬ B x)
+    --------------
+  → ¬ (∀ x → B x)
+∃¬-implies-¬∀ ⟨ x , nb ⟩ = λ z → nb (z x)
 ```
+
 Does the converse hold? If so, prove; if not, explain why.
 
 
