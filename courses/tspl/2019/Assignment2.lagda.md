@@ -381,6 +381,23 @@ Do we also have the following?
 If so, prove; if not, can you give a relation weaker than
 isomorphism that relates the two sides?
 
+We do not have that
+
+  ¬ (A × B) → (¬ A) ⊎ (¬ B)
+
+If we are given a function from (A × B) to ⊥, we have no way of knowing which of
+A or B does not hold. So, we cannot give a function from A to ⊥ - because it may
+be the case that A holds whilst B does not (respectively we cannot give a
+function from B to ⊥).
+
+However we do have the implication in the other direction;
+
+```
+⊎-dual-imp-× : ∀ {A B : Set} → (¬ A) ⊎ (¬ B) → ¬ (A × B)
+⊎-dual-imp-× (inj₁ x) = λ z → x (proj₁ z)
+⊎-dual-imp-× (inj₂ y) = λ z → y (proj₂ z)
+```
+
 #### Exercise `Classical` (stretch)
 
 Consider the following principles:
@@ -393,22 +410,50 @@ Consider the following principles:
 
 Show that each of these implies all the others.
 
-```
 record AllClassical (A B : Set) : Set₁ where
   field
-    em : ∀ {A : Set} → A ⊎ ¬ A
-    dne : ∀ {A : Set} → ¬ ¬ A → A
-    peirce : ∀ {A B : Set} → ((A → B) → A) → A
-    impasdis : ∀ {A B : Set} → (A → B) → ¬ A ⊎ B
-    demorgan : ∀ {A B : Set} → ¬ (¬ A × ¬ B) → A ⊎ B
+    em : A ⊎ ¬ A
+    dne : ¬ ¬ A → A
+    peirce : ((A → B) → A) → A
+    impasdis : (A → B) → ¬ A ⊎ B
+    demorgan : ¬ (¬ A × ¬ B) → A ⊎ B
 -- Your code goes here
 
--- dne-implies : ∀ {A B : Set} → (¬ ¬ A → A) → AllClassical A B
--- dne-implies dne = record
-                    -- { em = {!!} ; dne = {!!} ; peirce = {!!} ; impasdis = {!!} ; demorgan = {!!} }
+em-implies : ∀ {A B : Set} → (A ⊎ ¬ A) → AllClassical A B
+em-implies (inj₁ a) =
+  record
+    { em = (inj₁ a)
+    ; dne = λ _ → a
+    ; peirce = λ _ → a
+    ; impasdis = λ z → inj₂ (z a)
+    ; demorgan = λ _ → inj₁ a }
+em-implies (inj₂ ¬a) =
+  record
+    { em = (inj₂ ¬a)
+    ; dne = λ ¬¬a → ⊥-elim (¬¬a ¬a)
+    ; peirce = λ x → {!!}
+    ; impasdis = λ _ → inj₁ ¬a
+    ; demorgan = λ x → {!!}
+    }
+
+dne-implies : ∀ {A B : Set} → (¬ ¬ A → A) → AllClassical A B
+dne-implies dne =
+  record
+    { em = inj₂ {!!}
+    ; dne = dne
+    ; peirce = {!!}
+    ; impasdis = {!!}
+    ; demorgan = {!!}
+    }
 
 ```
+em-imp-dne : ∀ {A : Set} → (A ⊎ ¬ A) → (¬ ¬ A → A)
+em-imp-dne (inj₁ a) = λ _ → a
+em-imp-dne (inj₂ ¬a) = λ ¬¬a → ⊥-elim (¬¬a ¬a)
 
+dne-imp-peirce : ∀ {A B : Set} → (¬ ¬ A → A) → (((A → B) → A) → A)
+dne-imp-peirce r = {!!}
+```
 
 #### Exercise `Stable` (stretch)
 
@@ -421,8 +466,14 @@ Show that any negated formula is stable, and that the conjunction
 of two stable formulas is stable.
 
 ```
--- Your code goes here
+neg-stable : ∀ {A : Set} → Stable (¬ A)
+neg-stable = λ z z₁ → z (λ z₂ → z₂ z₁)
+
+conj-stable : ∀ {A B : Set} → Stable A → Stable B → Stable (A × B)
+conj-stable a b = λ ¬¬ab → ⟨ (a (λ ¬a → ¬¬ab (λ ab → ¬a (proj₁ ab)) )),
+                             (b (λ ¬b → ¬¬ab (λ ab → ¬b (proj₂ ab)))) ⟩
 ```
+
 
 ## Quantifiers
 
@@ -430,6 +481,7 @@ of two stable formulas is stable.
 #### Exercise `∀-distrib-×` (recommended)
 
 Show that universals distribute over conjunction:
+
 ```
 ∀-distrib-× : ∀ {A : Set} {B C : A → Set} →
   (∀ (x : A) → B x × C x) ≃ (∀ (x : A) → B x) × (∀ (x : A) → C x)
@@ -628,25 +680,43 @@ Using the above, establish that there is an isomorphism between `ℕ` and
 #### Exercise `_<?_` (recommended)
 
 Analogous to the function above, define a function to decide strict inequality:
-```
-postulate
-  _<?_ : ∀ (m n : ℕ) → Dec (m < n)
-```
 
 ```
--- Your code goes here
+¬n<z : ∀ {n : ℕ} → ¬ (n < zero)
+¬n<z ()
+
+¬s<s : ∀ {m n : ℕ} → ¬ (m < n) → ¬ (suc m < suc n)
+¬s<s ¬m<n (s<s m<n) = ¬m<n m<n
+
+_<?_ : ∀ (m n : ℕ) → Dec (m < n)
+m <? zero = no ¬n<z
+zero <? suc n = yes z<s
+suc m <? suc n with m <? n
+...               | yes m<n = yes (s<s m<n)
+...               | no ¬m<n = no (¬s<s ¬m<n)
 ```
 
 #### Exercise `_≡ℕ?_` (practice)
 
 Define a function to decide whether two naturals are equal:
-```
-postulate
-  _≡ℕ?_ : ∀ (m n : ℕ) → Dec (m ≡ n)
-```
 
 ```
--- Your code goes here
+¬z≡s : ∀ {n : ℕ} → ¬ (zero ≡ suc n)
+¬z≡s ()
+
+¬s≡z : ∀ {n : ℕ} → ¬ (suc n ≡ zero)
+¬s≡z ()
+
+¬s≡s : ∀ {m n : ℕ} → ¬ (m ≡ n) → ¬ (suc m ≡ suc n)
+¬s≡s ¬m≡n refl = ¬m≡n refl
+
+_≡ℕ?_ : ∀ (m n : ℕ) → Dec (m ≡ n)
+zero ≡ℕ? zero = yes refl
+zero ≡ℕ? suc n = no ¬z≡s
+suc m ≡ℕ? zero = no ¬s≡z
+suc m ≡ℕ? suc n with m ≡ℕ? n
+...                | yes m≡n = yes (cong suc m≡n)
+...                | no ¬m≡n = no (¬s≡s ¬m≡n)
 ```
 
 
@@ -665,14 +735,28 @@ postulate
 Give analogues of the `_⇔_` operation from
 Chapter [Isomorphism]({{ site.baseurl }}/Isomorphism/#iff),
 operation on booleans and decidables, and also show the corresponding erasure:
-```
-postulate
-  _iff_ : Bool → Bool → Bool
-  _⇔-dec_ : ∀ {A B : Set} → Dec A → Dec B → Dec (A ⇔ B)
-  iff-⇔ : ∀ {A B : Set} (x : Dec A) (y : Dec B) → ⌊ x ⌋ iff ⌊ y ⌋ ≡ ⌊ x ⇔-dec y ⌋
-```
 
 ```
--- Your code goes here
-```
+_iff_ : Bool → Bool → Bool
+true  iff true  = true
+false iff false = true
+true  iff false = false
+false iff true  = false
 
+-- I know the above can be done with _s, but the syntax highlighting was being
+-- annoying, so elaborating shuts it up
+
+_⇔-dec_ : ∀ {A B : Set} → Dec A → Dec B → Dec (A ⇔ B)
+yes p ⇔-dec yes q = yes (record { to = λ _ → q ; from = λ _ → p })
+no ¬p ⇔-dec no ¬q = yes (record { to = λ x → ⊥-elim (¬p x);
+                                from = λ x → ⊥-elim (¬q x) })
+yes p ⇔-dec no ¬q = no λ x → ¬q (_⇔_.to x p)
+no ¬p ⇔-dec yes q = no λ z → ¬p (_⇔_.from z q)
+
+
+iff-⇔ : ∀ {A B : Set} (x : Dec A) (y : Dec B) → ⌊ x ⌋ iff ⌊ y ⌋ ≡ ⌊ x ⇔-dec y ⌋
+iff-⇔ (yes p) (yes p₁) = refl
+iff-⇔ (yes p) (no ¬p) = refl
+iff-⇔ (no ¬p) (yes p) = refl
+iff-⇔ (no ¬p) (no ¬p₁) = refl
+```
