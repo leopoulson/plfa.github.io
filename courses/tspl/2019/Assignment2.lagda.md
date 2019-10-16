@@ -320,7 +320,6 @@ Does the converse hold? If so, prove; if not, give a counterexample.
 ⊎×-implies-×⊎ (inj₂ ⟨ fst , snd ⟩) = ⟨ inj₂ fst , inj₂ snd ⟩
 ```
 
-TODO Finish this
 
 ## Negation
 
@@ -532,6 +531,7 @@ data Tri : Set where
   bb : Tri
   cc : Tri
 ```
+
 Let `B` be a type indexed by `Tri`, that is `B : Tri → Set`.
 Show that `∀ (x : Tri) → B x` is isomorphic to `B aa × B bb × B cc`.
 

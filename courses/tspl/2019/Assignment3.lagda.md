@@ -49,17 +49,19 @@ open import Data.Nat.Properties using
   (+-assoc; +-identityˡ; +-identityʳ; *-assoc; *-identityˡ; *-identityʳ)
 open import Relation.Nullary using (¬_; Dec; yes; no)
 open import Data.Product using (_×_; ∃; ∃-syntax) renaming (_,_ to ⟨_,_⟩)
+open import Data.Sum using (_⊎_; inj₁; inj₂)
 open import Data.Empty using (⊥; ⊥-elim)
 open import Function using (_∘_)
 open import Algebra.Structures using (IsMonoid)
 open import Level using (Level)
 open import Relation.Unary using (Decidable)
 open import plfa.part1.Relations using (_<_; z<s; s<s)
-open import plfa.part1.Isomorphism using (_≃_; ≃-sym; ≃-trans; _≲_; extensionality)
+open import plfa.part1.Isomorphism using (_≃_; ≃-sym; ≃-trans; _≲_; extensionality; _⇔_)
 open plfa.part1.Isomorphism.≃-Reasoning
 open import plfa.part1.Lists using (List; []; _∷_; [_]; [_,_]; [_,_,_]; [_,_,_,_];
-  _++_; reverse; map; foldr; sum; All; Any; here; there; _∈_)
-open import plfa.part2.Lambda hiding (ƛ′_⇒_; case′_[zero⇒_|suc_⇒_]; μ′_⇒_; plus′)
+  _++_; reverse; map; foldr; sum; All; Any; here; there; _∈_;
+  ++-identityʳ; ++-assoc)
+open import plfa.part2.Lambda hiding (ƛ′_⇒_; case′_[zero⇒_|suc_⇒_]; μ′_⇒_; plus′; begin_; _∎)
 open import plfa.part2.Properties hiding (value?; unstuck; preserves; wttdgs)
 ```
 
@@ -73,6 +75,34 @@ reverse of the second appended to the reverse of the first:
 
     reverse (xs ++ ys) ≡ reverse ys ++ reverse xs
 
+```
+reverse-++-distrib : ∀ {A : Set} (xs ys : List A)
+  → reverse (xs ++ ys) ≡ reverse ys ++ reverse xs
+reverse-++-distrib [] ys =
+  begin
+    reverse ([] ++ ys)
+  ≡⟨⟩
+    reverse ys
+  ≡⟨ sym (++-identityʳ (reverse ys)) ⟩
+    reverse ys ++ []
+  ≡⟨⟩
+    reverse ys ++ reverse []
+  ∎
+reverse-++-distrib (x ∷ xs) ys =
+  begin
+    reverse (( x ∷ xs ) ++ ys)
+  ≡⟨⟩
+    reverse (x ∷ (xs ++ ys))
+  ≡⟨⟩
+    reverse (xs ++ ys) ++ [ x ]
+  ≡⟨ cong (_++ [ x ]) (reverse-++-distrib xs ys) ⟩
+    (reverse ys ++ reverse xs) ++ [ x ]
+  ≡⟨ ++-assoc (reverse ys) (reverse xs) [ x ] ⟩
+    reverse ys ++ (reverse xs ++ [ x ])
+  ≡⟨⟩
+    reverse ys ++ reverse (x ∷ xs)
+  ∎
+```
 
 #### Exercise `reverse-involutive` (recommended)
 
@@ -80,6 +110,24 @@ A function is an _involution_ if when applied twice it acts
 as the identity function.  Show that reverse is an involution:
 
     reverse (reverse xs) ≡ xs
+
+```
+reverse-involutive : ∀ {A : Set} (xs : List A)
+  → reverse (reverse xs) ≡ xs
+reverse-involutive [] = refl
+reverse-involutive (x ∷ xs) =
+  begin
+    reverse (reverse (x ∷ xs))
+  ≡⟨⟩
+    reverse (reverse xs ++ [ x ])
+  ≡⟨ reverse-++-distrib (reverse xs) [ x ] ⟩
+    [ x ] ++ reverse (reverse xs)
+  ≡⟨ cong ([ x ] ++_) (reverse-involutive xs) ⟩
+    [ x ] ++ xs
+  ≡⟨⟩
+    x ∷ xs
+  ∎
+```
 
 
 #### Exercise `map-compose` (practice)
@@ -121,16 +169,27 @@ For example:
     product [ 1 , 2 , 3 , 4 ] ≡ 24
 
 ```
--- Your code goes here
+product : List ℕ → ℕ
+product = foldr _*_ 1
 ```
 
 #### Exercise `foldr-++` (recommended)
 
 Show that fold and append are related as follows:
 ```
-postulate
-  foldr-++ : ∀ {A B : Set} (_⊗_ : A → B → B) (e : B) (xs ys : List A) →
-    foldr _⊗_ e (xs ++ ys) ≡ foldr _⊗_ (foldr _⊗_ e ys) xs
+foldr-++ : ∀ {A B : Set} (_⊗_ : A → B → B) (e : B) (xs ys : List A) →
+  foldr _⊗_ e (xs ++ ys) ≡ foldr _⊗_ (foldr _⊗_ e ys) xs
+foldr-++ _⊗_ e [] ys = refl
+foldr-++ _⊗_ e (x ∷ xs) ys =
+  begin
+    foldr _⊗_ e ((x ∷ xs) ++ ys)
+  ≡⟨⟩
+    x ⊗ (foldr _⊗_ e (xs ++ ys))
+  ≡⟨ cong (x ⊗_) (foldr-++ _⊗_ e xs ys)⟩
+    x ⊗ (foldr _⊗_ (foldr _⊗_ e ys) xs)
+  ≡⟨⟩
+    foldr _⊗_ (foldr _⊗_ e ys) (x ∷ xs)
+  ∎
 ```
 
 
@@ -217,7 +276,37 @@ replacement for `_×_`.  As a consequence, demonstrate an equivalence relating
 `_∈_` and `_++_`.
 
 ```
--- Your code goes here
+xs-→-xsys : ∀ {A : Set} {P : A → Set} (xs ys : List A)
+  → Any P xs → Any P (xs ++ ys)
+xs-→-xsys (x ∷ xs) ys (here x') = here x'
+xs-→-xsys (x ∷ xs) ys (there Pxs) = there (xs-→-xsys xs ys Pxs)
+
+ys-→-xsys : ∀ {A : Set} {P : A → Set} (xs ys : List A)
+  → Any P ys → Any P (xs ++ ys)
+ys-→-xsys [] ys any = any
+ys-→-xsys (x ∷ xs) ys any = there (ys-→-xsys xs ys any)
+
+Any-++-⇔ : ∀ {A : Set} {P : A → Set} (xs ys : List A)
+  → Any P (xs ++ ys) ⇔ (Any P xs ⊎ Any P ys)
+Any-++-⇔ xs ys =
+  record
+    { to = to xs ys
+    ; from = from xs ys
+    }
+  where
+
+  to : ∀ {A : Set} {P : A → Set} (xs ys : List A)
+    → Any P (xs ++ ys) → (Any P xs ⊎ Any P ys)
+  to [] ys Pys = inj₂ Pys
+  to (x ∷ xs) ys (here x₁) = inj₁ (here x₁)
+  to (x ∷ xs) ys (there Pxsys) with to xs ys Pxsys
+  ...                             | inj₁ Pxs = inj₁ (there Pxs)
+  ...                             | inj₂ Pys = inj₂ Pys
+
+  from : ∀ {A : Set} {P : A → Set} (xs ys : List A)
+    → (Any P xs ⊎ Any P ys) → Any P (xs ++ ys)
+  from xs ys (inj₁ Pxs) = xs-→-xsys xs ys Pxs
+  from xs ys (inj₂ Pys) = ys-→-xsys xs ys Pys
 ```
 
 #### Exercise `All-++-≃` (stretch)
@@ -233,6 +322,18 @@ Show that the equivalence `All-++-⇔` can be extended to an isomorphism.
 Show that `Any` and `All` satisfy a version of De Morgan's Law:
 
     (¬_ ∘ Any P) xs ≃ All (¬_ ∘ P) xs
+
+```
+¬Any≃All¬ : ∀ {A : Set} {P : A → Set} {xs : List A}
+  → (¬_ ∘ Any P) xs ≃ All (¬_ ∘ P) xs
+¬Any≃All¬ =
+  record
+    { to = {!!}
+    ; from = {!!}
+    ; from∘to = {!!}
+    ; to∘from = {!!}
+    }
+```
 
 (Can you see why it is important that here `_∘_` is generalised
 to arbitrary levels, as described in the section on
@@ -297,7 +398,11 @@ two natural numbers.  Your definition may use `plus` as
 defined earlier.
 
 ```
--- Your code goes here
+mul : Term
+mul = μ "*" ⇒ ƛ "m" ⇒ ƛ "n" ⇒
+        case ` "m"
+          [zero⇒ ` "n"
+          |suc "m" ⇒ plus · ` "n" · (` "*" · ` "m" · ` "n" ) ]
 ```
 
 
@@ -309,7 +414,9 @@ definition may use `plusᶜ` as defined earlier (or may not
 — there are nice definitions both ways).
 
 ```
--- Your code goes here
+mulᶜ : Term
+mulᶜ = ƛ "m" ⇒ ƛ "n" ⇒ ƛ "s" ⇒ ƛ "z" ⇒
+       ` "m" · (plusᶜ · ` "n") · (` "n" · ` "s" · ` "z")
 ```
 
 
