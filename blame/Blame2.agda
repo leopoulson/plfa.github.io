@@ -55,6 +55,26 @@ data Blame : Set where
 ⁻ q = p
 
 -- Terms
-
+-- TODO : Rest of STLC Lol
+-- TODO : Find better syntax for casts
 data Term : Set where
-  _·_ : Term → Term → Term
+  _·_     : Term → Term → Term
+  _∶_—_⇒_ : Term → Type → Blame → Type → Term
+  blame_  : Blame → Term
+
+-- Contexts
+-- TODO : Decide if I wanna do de bruijn or named?
+data Context : Set where
+  ∅ : Context
+  _,_ : Context → Type → Context
+
+data _⊢_⦂_ : Context → Term → Type → Set where
+  ⊢cast : ∀ {Γ M A B}
+    → Γ ⊢ M ⦂ A
+    → A ∼ B
+      ------------------------
+    → Γ ⊢ (M ∶ A — p ⇒ B) ⦂ B
+
+  ⊢blame : ∀ {Γ A}
+      ---------------
+    → Γ ⊢ blame p ⦂ A
