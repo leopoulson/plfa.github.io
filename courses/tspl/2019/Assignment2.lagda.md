@@ -9,6 +9,8 @@ module Assignment2 where
 ```
 
 ## YOUR NAME AND EMAIL GOES HERE
+Leo Poulson
+s1983328@ed.ac.uk
 
 ## Introduction
 
