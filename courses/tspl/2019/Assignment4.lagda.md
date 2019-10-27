@@ -257,6 +257,25 @@ Remember to indent all code by two spaces.
         --------------
       → Γ ⊢ C
 
+  -- begin
+  -- sums
+    `inj₁ : ∀ {Γ A B}
+      → Γ ⊢ A
+        ----------
+      → Γ ⊢ A `⊎ B
+
+    `inj₂ : ∀ {Γ A B}
+      → Γ ⊢ B
+        ----------
+      → Γ ⊢ A `⊎ B
+
+    case⊎ : ∀ {Γ A B C}
+      → Γ ⊢ A `⊎ B
+      → Γ , A ⊢ C
+      → Γ , B ⊢ C
+        -----
+      → Γ ⊢ C
+    -- end
 ```
 
 ### Abbreviating de Bruijn indices
@@ -300,6 +319,14 @@ Remember to indent all code by two spaces.
   rename ρ (`proj₁ L)     =  `proj₁ (rename ρ L)
   rename ρ (`proj₂ L)     =  `proj₂ (rename ρ L)
   rename ρ (case× L M)    =  case× (rename ρ L) (rename (ext (ext ρ)) M)
+
+  -- begin
+  rename ρ (`inj₁ M)       =  `inj₁ (rename ρ M)
+  rename ρ (`inj₂ N)       =  `inj₂ (rename ρ N)
+  rename ρ (case⊎ L M N)   =  case⊎ (rename ρ L)
+                                    (rename (ext ρ) M)
+                                    (rename (ext ρ) N)
+  -- end
 ```
 
 ## Simultaneous Substitution
@@ -324,6 +351,14 @@ Remember to indent all code by two spaces.
   subst σ (`proj₁ L)     =  `proj₁ (subst σ L)
   subst σ (`proj₂ L)     =  `proj₂ (subst σ L)
   subst σ (case× L M)    =  case× (subst σ L) (subst (exts (exts σ)) M)
+
+  -- begin
+  subst σ (`inj₁ M)      =  `inj₁ (subst σ M)
+  subst σ (`inj₂ N)      =  `inj₂ (subst σ N)
+  subst σ (case⊎ L M N)  =  case⊎ (subst σ L)
+                                  (subst (exts σ) M)
+                                  (subst (exts σ) N)
+  -- end
 ```
 
 ## Single and double substitution
@@ -389,6 +424,19 @@ Remember to indent all code by two spaces.
       → Value W
         ----------------
       → Value ⟨ V , W ⟩
+
+    -- begin
+    -- sums
+    V-inj₁ : ∀ {Γ A} {V : Γ ⊢ A}
+      → Value V
+        ---------------
+      → Value (`inj₁ V)
+
+    V-inj₂ : ∀ {Γ B} {W : Γ ⊢ B}
+      → Value W
+        ---------------
+      → Value (`inj₂ W)
+    -- end
 ```
 
 Implicit arguments need to be supplied when they are
@@ -522,6 +570,34 @@ not fixed by the given arguments.
       → Value W
         ----------------------------------
       → case× ⟨ V , W ⟩ M —→ M [ V ][ W ]
+
+    -- begin
+    -- sums
+
+    ξ-inj₁ : ∀ {Γ A B} {M M′ : Γ ⊢ A `⊎ B}
+      → M —→ M′
+        -------------------
+      → `inj₁ M —→ `inj₁ M′
+
+
+    ξ-inj₂ : ∀ {Γ A B} {N N′ : Γ ⊢ A `⊎ B}
+      → N —→ N′
+        -------------------
+      → `inj₂ N —→ `inj₂ N′
+
+    ξ-case⊎ : ∀ {Γ A B C} {L L′ : Γ ⊢ A `⊎ B} {M : Γ , A ⊢ C} {N : Γ , B ⊢ C}
+      → L —→ L′
+        ---------------------------
+      → case⊎ L M N —→ case⊎ L′ M N
+
+    β-inj₁ : ∀ {Γ A B C} {V : Γ ⊢ A} {M : Γ , A ⊢ C} {N : Γ , B ⊢ C}
+        ------------------------------
+      → case⊎ (`inj₁ V) M N —→ M [ V ]
+
+    β-inj₂ : ∀ {Γ A B C} {V : Γ ⊢ B} {M : Γ , A ⊢ C} {N : Γ , B ⊢ C}
+        ------------------------------
+      → case⊎ (`inj₂ V) M N —→ N [ V ]
+    -- end
 ```
 
 ## Reflexive and transitive closure
@@ -565,6 +641,8 @@ not fixed by the given arguments.
   V¬—→ V-con        ()
   V¬—→ V-⟨ VM , _ ⟩ (ξ-⟨,⟩₁ M—→M′)    =  V¬—→ VM M—→M′
   V¬—→ V-⟨ _ , VN ⟩ (ξ-⟨,⟩₂ _ N—→N′)  =  V¬—→ VN N—→N′
+  V¬—→ (V-inj₁ y) x = {!!}
+  V¬—→ (V-inj₂ y) x = {!!}
 ```
 
 
@@ -626,6 +704,12 @@ not fixed by the given arguments.
   progress (case× L M) with progress L
   ...    | step L—→L′                         =  step (ξ-case× L—→L′)
   ...    | done (V-⟨ VM , VN ⟩)               =  step (β-case× VM VN)
+
+  -- begin
+  progress (`inj₁ t) = {!!}
+  progress (`inj₂ t) = {!!}
+  progress (case⊎ t t₁ t₂) = {!!}
+  -- end
 ```
 
 
