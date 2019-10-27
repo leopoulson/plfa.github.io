@@ -52,7 +52,7 @@ data Blame : Set where
 
 ⁻_ : Blame → Blame
 ⁻ p = q
-⁻ q = p
+⁻ q = Term
 
 -- Terms
 -- TODO : Rest of STLC Lol

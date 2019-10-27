@@ -408,10 +408,13 @@ for some element of a list.  Give their definitions.
 Define the following variant of the traditional `filter` function on lists,
 which given a decidable predicate and a list returns all elements of the
 list satisfying the predicate:
+
+TODO: This isn't good fix it
 ```
-postulate
-  filter? : ∀ {A : Set} {P : A → Set}
-    → (P? : Decidable P) → List A → ∃[ ys ]( All P ys )
+filter? : ∀ {A : Set} {P : A → Set}
+  → (P? : Decidable P) → List A → ∃[ ys ]( All P ys )
+filter? P? [] = ⟨ [] , [] ⟩
+filter? P? (x ∷ xs) = filter? P? xs
 ```
 
 
