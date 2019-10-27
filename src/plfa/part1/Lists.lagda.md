@@ -527,12 +527,19 @@ Prove that the map of a composition is equal to the composition of two maps:
 
 The last step of the proof requires extensionality.
 
+```
+-- Your code goes here
+```
+
 #### Exercise `map-++-distribute` (practice)
 
 Prove the following relationship between map and append:
 
     map f (xs ++ ys) ≡ map f xs ++ map f ys
 
+```
+-- Your code goes here
+```
 
 #### Exercise `map-Tree` (practice)
 
@@ -544,12 +551,12 @@ data Tree (A B : Set) : Set where
   node : Tree A B → B → Tree A B → Tree A B
 ```
 Define a suitable map operator over trees:
-```
-postulate
-  map-Tree : ∀ {A B C D : Set}
-    → (A → C) → (B → D) → Tree A B → Tree C D
-```
 
+    map-Tree : ∀ {A B C D : Set} → (A → C) → (B → D) → Tree A B → Tree C D
+
+```
+-- Your code goes here
+```
 
 ## Fold {#Fold}
 
@@ -583,6 +590,7 @@ _ =
     1 + (2 + (3 + (4 + 0)))
   ∎
 ```
+Here we have an instance of `foldr` where `A` and `B` are both `ℕ`.
 Fold requires time linear in the length of the list.
 
 It is often convenient to exploit currying by applying
@@ -609,6 +617,18 @@ so the fold function takes two arguments, `e` and `_⊗_`
 In general, a data type with _n_ constructors will have
 a corresponding fold function that takes _n_ arguments.
 
+As another example, observe that
+
+    foldr _∷_ [] xs ≡ xs
+
+Here, if `xs` is of type `List A`, then we see we have an instance of
+`foldr` where `A` is `A` and `B` is `List A`.  It follows that
+
+    xs ++ ys ≡ foldr _∷_ ys xs
+
+Demonstrating both these equations is left as an exercise.
+
+
 #### Exercise `product` (recommended)
 
 Use fold to define a function to find the product of a list of numbers.
@@ -623,31 +643,46 @@ For example:
 #### Exercise `foldr-++` (recommended)
 
 Show that fold and append are related as follows:
-```
-postulate
-  foldr-++ : ∀ {A B : Set} (_⊗_ : A → B → B) (e : B) (xs ys : List A) →
+
     foldr _⊗_ e (xs ++ ys) ≡ foldr _⊗_ (foldr _⊗_ e ys) xs
+
+```
+-- Your code goes here
 ```
 
+#### Exercise `foldr-∷` (practice)
+
+Show
+
+    foldr _∷_ [] xs ≡ xs
+
+Show as a consequence of `foldr-++` above that
+
+    xs ++ ys ≡ foldr _∷_ ys xs    
+
+
+```
+-- Your code goes here
+```
 
 #### Exercise `map-is-foldr` (practice)
 
 Show that map can be defined using fold:
-```
-postulate
-  map-is-foldr : ∀ {A B : Set} {f : A → B} →
+
     map f ≡ foldr (λ x xs → f x ∷ xs) []
+
+The proof requires extensionality.
+
 ```
-This requires extensionality.
+-- Your code goes here
+```
 
 #### Exercise `fold-Tree` (practice)
 
 Define a suitable fold function for the type of trees given earlier:
-```
-postulate
-  fold-Tree : ∀ {A B C : Set}
-    → (A → C) → (C → B → C → C) → Tree A B → C
-```
+
+    fold-Tree : ∀ {A B C : Set} → (A → C) → (C → B → C → C) → Tree A B → C
+
 
 ```
 -- Your code goes here
@@ -676,11 +711,8 @@ _ = refl
 ```
 Prove that the sum of the numbers `(n - 1) + ⋯ + 0` is
 equal to `n * (n ∸ 1) / 2`:
-```
-postulate
-  sum-downFrom : ∀ (n : ℕ)
-    → sum (downFrom n) * 2 ≡ n * (n ∸ 1)
-```
+
+    sum (downFrom n) * 2 ≡ n * (n ∸ 1)
 
 
 ## Monoids
@@ -755,6 +787,13 @@ foldr-monoid _⊗_ e ⊗-monoid (x ∷ xs) y =
   ≡⟨⟩
     foldr _⊗_ e (x ∷ xs) ⊗ y
   ∎
+```
+
+In a previous exercise we showed the following.
+```
+postulate
+  foldr-++ : ∀ {A : Set} (_⊗_ : A → A → A) (e : A) (xs ys : List A) → 
+    foldr _⊗_ e (xs ++ ys) ≡ foldr _⊗_ (foldr _⊗_ e ys) xs
 ```
 
 As a consequence, using a previous exercise, we have the following:
@@ -992,7 +1031,7 @@ decidable, using `_∷_` rather than `⟨_,_⟩` to combine the evidence for
 the head and tail of the list.
 
 
-#### Exercise `any?` (stretch)
+#### Exercise `Any?` (stretch)
 
 Just as `All` has analogues `all` and `All?` which determine whether a
 predicate holds for every element of a list, so does `Any` have
@@ -1004,17 +1043,49 @@ for some element of a list.  Give their definitions.
 ```
 
 
-#### Exercise `filter?` (stretch)
+#### Exercise `split` (stretch)
+
+The relation `merge` holds when two lists merge to give a third list.
+```
+data merge {A : Set} : (xs ys zs : List A) → Set where
+
+  [] :
+      --------------
+      merge [] [] []
+
+  left-∷ : ∀ {x xs ys zs}
+    → merge xs ys zs
+      --------------------------
+    → merge (x ∷ xs) ys (x ∷ zs)
+
+  right-∷ : ∀ {y xs ys zs}
+    → merge xs ys zs
+      --------------------------
+    → merge xs (y ∷ ys) (y ∷ zs)
+```    
+
+For example,
+```
+_ : merge [ 1 , 4 ] [ 2 , 3 ] [ 1 , 2 , 3 , 4 ]
+_ = left-∷ (right-∷ (right-∷ (left-∷ [])))
+
+```
+
+Given a decidable predicate and a list, we can split the list
+into two lists that merge to give the original list, where all
+elements of one list satisfy the predicate, and all elements of
+the other do not satisfy the predicate.
 
 Define the following variant of the traditional `filter` function on lists,
 which given a decidable predicate and a list returns all elements of the
 list satisfying the predicate:
-```
-postulate
-  filter? : ∀ {A : Set} {P : A → Set}
-    → (P? : Decidable P) → List A → ∃[ ys ]( All P ys )
-```
 
+    split : ∀ {A : Set} {P : A → Set} (P? : Decidable P) (xs : List A)
+      → ∃[ ys ] ∃[ zs ] ( merge xs ys zs × All P ys × All (¬_ ∘ P) zs )
+
+```
+-- Your code goes here
+```
 
 ## Standard Library
 
