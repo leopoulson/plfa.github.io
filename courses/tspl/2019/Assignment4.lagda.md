@@ -427,15 +427,15 @@ Remember to indent all code by two spaces.
 
     -- begin
     -- sums
-    V-inj₁ : ∀ {Γ A} {V : Γ ⊢ A}
-      → Value V
-        ---------------
-      → Value (`inj₁ V)
+    -- V-inj₁ : ∀ {Γ A} {V : Γ ⊢ A}
+    --   → Value V
+    --     ---------------
+    --   → Value (`inj₁ V)
 
-    V-inj₂ : ∀ {Γ B} {W : Γ ⊢ B}
-      → Value W
-        ---------------
-      → Value (`inj₂ W)
+    -- V-inj₂ : ∀ {Γ B} {W : Γ ⊢ B}
+    --   → Value W
+    --     ---------------
+    --   → Value (`inj₂ W)
     -- end
 ```
 
@@ -574,13 +574,12 @@ not fixed by the given arguments.
     -- begin
     -- sums
 
-    ξ-inj₁ : ∀ {Γ A B} {M M′ : Γ ⊢ A `⊎ B}
+    ξ-inj₁ : ∀ {Γ A} {M M′ : Γ ⊢ A}
       → M —→ M′
         -------------------
       → `inj₁ M —→ `inj₁ M′
 
-
-    ξ-inj₂ : ∀ {Γ A B} {N N′ : Γ ⊢ A `⊎ B}
+    ξ-inj₂ : ∀ {Γ B} {N N′ : Γ ⊢ B}
       → N —→ N′
         -------------------
       → `inj₂ N —→ `inj₂ N′
@@ -641,8 +640,8 @@ not fixed by the given arguments.
   V¬—→ V-con        ()
   V¬—→ V-⟨ VM , _ ⟩ (ξ-⟨,⟩₁ M—→M′)    =  V¬—→ VM M—→M′
   V¬—→ V-⟨ _ , VN ⟩ (ξ-⟨,⟩₂ _ N—→N′)  =  V¬—→ VN N—→N′
-  V¬—→ (V-inj₁ y) x = {!!}
-  V¬—→ (V-inj₂ y) x = {!!}
+  -- V¬—→ (V-inj₁ y) x = {!!}
+  -- V¬—→ (V-inj₂ y) x = {!!}
 ```
 
 
@@ -706,8 +705,12 @@ not fixed by the given arguments.
   ...    | done (V-⟨ VM , VN ⟩)               =  step (β-case× VM VN)
 
   -- begin
-  progress (`inj₁ t) = {!!}
-  progress (`inj₂ t) = {!!}
+  progress (`inj₁ M) = {!!} -- with progress M
+  -- ...    | step M—→M'                         =  step (ξ-inj₁ M—→M')
+  -- ...    | done VN                            =  done (V-inj₁ VN)
+  progress (`inj₂ N) = {!!} -- with progress N
+  -- ...    | step N—→N'                         =  step (ξ-inj₂ N—→N')
+  -- ...    | done VN                            =  done (V-inj₂ VN)
   progress (case⊎ t t₁ t₂) = {!!}
   -- end
 ```
@@ -886,6 +889,8 @@ Remember to indent all code by two spaces.
   infix   6  _↓_
   infixl  7  _·_
   infix   9  `_
+
+  infix 7 _`×_
 ```
 
 ### Identifiers, types, and contexts
@@ -897,6 +902,7 @@ Remember to indent all code by two spaces.
   data Type : Set where
     `ℕ    : Type
     _⇒_   : Type → Type → Type
+    _`×_  : Type → Type → Type
 
   data Context : Set where
     ∅     : Context
@@ -920,7 +926,10 @@ Remember to indent all code by two spaces.
     suc                      : Term⁻ → Term⁻
     case_[zero⇒_|suc_⇒_]     : Term⁺ → Term⁻ → Id → Term⁻ → Term⁻
     μ_⇒_                     : Id → Term⁻ → Term⁻
+    `⟨_,_⟩                   : Term⁻ → Term⁻ → Term⁻
     _↑                       : Term⁺ → Term⁻
+    `proj₁_                  : Term⁻ → Term⁻
+    `proj₂_                  : Term⁻ → Term⁻
 ```
 
 ### Sample terms
@@ -976,6 +985,7 @@ Remember to indent all code by two spaces.
         ---------------
       → Γ ⊢ (M ↓ A) ↑ A
 
+
   data _⊢_↓_ where
 
     ⊢ƛ : ∀ {Γ x N A B}
@@ -1009,6 +1019,22 @@ Remember to indent all code by two spaces.
       → A ≡ B
         -------------
       → Γ ⊢ (M ↑) ↓ B
+
+    ⊢× : ∀ {Γ M N A B}
+      → Γ ⊢ M ↓ A
+      → Γ ⊢ N ↓ B
+        -------------------------------
+      → Γ ⊢ `⟨ M , N ⟩ ↓ A `× B
+
+    ⊢proj₁ : ∀ {Γ M N A B}
+      → Γ ⊢ `⟨ M , N ⟩ ↓ A `× B
+        -----------------------
+      → Γ ⊢ `proj₁ M ↓ A
+
+    ⊢proj₂ : ∀ {Γ M N A B}
+      → Γ ⊢ `⟨ M , N ⟩ ↓ A `× B
+        -----------------------
+      → Γ ⊢ `proj₂ N ↓ B
 ```
 
 
@@ -1018,12 +1044,23 @@ Remember to indent all code by two spaces.
   _≟Tp_ : (A B : Type) → Dec (A ≡ B)
   `ℕ      ≟Tp `ℕ              =  yes refl
   `ℕ      ≟Tp (A ⇒ B)         =  no λ()
+  `ℕ      ≟Tp (_ `× _)        = no (λ ())
+
   (A ⇒ B) ≟Tp `ℕ              =  no λ()
   (A ⇒ B) ≟Tp (A′ ⇒ B′)
     with A ≟Tp A′ | B ≟Tp B′
   ...  | no A≢    | _         =  no λ{refl → A≢ refl}
   ...  | yes _    | no B≢     =  no λ{refl → B≢ refl}
   ...  | yes refl | yes refl  =  yes refl
+  (A ⇒ B) ≟Tp (_ `× _)        = no λ()
+
+  (A `× B) ≟Tp `ℕ = no (λ ())
+  (A `× B) ≟Tp (_ ⇒ _) = no (λ ())
+  (A `× B) ≟Tp (A′ `× B′)
+    with A ≟Tp A′ | B ≟Tp B′
+  ...  | no A≠    | _         = no λ{refl → A≠ refl}
+  ...  | yes _    | no B≠     = no λ{refl → B≠ refl}
+  ...  | yes refl | yes refl  = yes refl
 ```
 
 ### Prerequisites
@@ -1037,6 +1074,12 @@ Remember to indent all code by two spaces.
 
   ℕ≢⇒ : ∀ {A B} → `ℕ ≢ A ⇒ B
   ℕ≢⇒ ()
+
+  ℕ≢× : ∀ {A B} → `ℕ ≢ A `× B
+  ℕ≢× ()
+
+  ×≢⇒ : ∀ {A B C D} → A `× B ≢ C ⇒ D
+  ×≢⇒ ()
 ```
 
 
@@ -1117,6 +1160,7 @@ Remember to indent all code by two spaces.
   synthesize Γ (L · M) with synthesize Γ L
   ... | no  ¬∃              =  no  (λ{ ⟨ _ , ⊢L  · _  ⟩  →  ¬∃ ⟨ _ , ⊢L ⟩ })
   ... | yes ⟨ `ℕ ,    ⊢L ⟩  =  no  (λ{ ⟨ _ , ⊢L′ · _  ⟩  →  ℕ≢⇒ (uniq-↑ ⊢L ⊢L′) })
+  ... | yes ⟨ A `× B , ⊢L ⟩ =  no  (λ{ ⟨ _ , ⊢L′ · _ ⟩ → ×≢⇒ (uniq-↑ ⊢L ⊢L′) })
   ... | yes ⟨ A ⇒ B , ⊢L ⟩ with inherit Γ M A
   ...    | no  ¬⊢M          =  no  (¬arg ⊢L ¬⊢M)
   ...    | yes ⊢M           =  yes ⟨ B , ⊢L · ⊢M ⟩
@@ -1128,15 +1172,19 @@ Remember to indent all code by two spaces.
   inherit Γ (ƛ x ⇒ N) (A ⇒ B) with inherit (Γ , x ⦂ A) N B
   ... | no ¬⊢N                =  no  (λ{ (⊢ƛ ⊢N)  →  ¬⊢N ⊢N })
   ... | yes ⊢N                =  yes (⊢ƛ ⊢N)
+  inherit Γ (ƛ x ⇒ N) (A `× B) = no (λ ())
   inherit Γ zero `ℕ           =  yes ⊢zero
   inherit Γ zero (A ⇒ B)      =  no  (λ())
+  inherit Γ zero (A `× B)     = no (λ())
   inherit Γ (suc M) `ℕ with inherit Γ M `ℕ
   ... | no ¬⊢M                =  no  (λ{ (⊢suc ⊢M)  →  ¬⊢M ⊢M })
   ... | yes ⊢M                =  yes (⊢suc ⊢M)
   inherit Γ (suc M) (A ⇒ B)   =  no  (λ())
+  inherit Γ (suc M) (A `× B)  = no (λ ())
   inherit Γ (case L [zero⇒ M |suc x ⇒ N ]) A with synthesize Γ L
   ... | no ¬∃                 =  no  (λ{ (⊢case ⊢L  _ _) → ¬∃ ⟨ `ℕ , ⊢L ⟩})
   ... | yes ⟨ _ ⇒ _ , ⊢L ⟩    =  no  (λ{ (⊢case ⊢L′ _ _) → ℕ≢⇒ (uniq-↑ ⊢L′ ⊢L) })
+  ... | yes ⟨ _ `× _ , ⊢L ⟩   =  no  (λ{ (⊢case ⊢L′ _ _) → ℕ≢× (uniq-↑ ⊢L′ ⊢L) })
   ... | yes ⟨ `ℕ ,    ⊢L ⟩ with inherit Γ M A
   ...    | no ¬⊢M             =  no  (λ{ (⊢case _ ⊢M _) → ¬⊢M ⊢M })
   ...    | yes ⊢M with inherit (Γ , x ⦂ `ℕ) N A
@@ -1150,6 +1198,20 @@ Remember to indent all code by two spaces.
   ... | yes ⟨ A , ⊢M ⟩ with A ≟Tp B
   ...   | no  A≢B             =  no  (¬switch ⊢M A≢B)
   ...   | yes A≡B             =  yes (⊢↑ ⊢M A≡B)
+  inherit Γ `⟨ term , term₁ ⟩ `ℕ = no (λ ())
+  inherit Γ `⟨ term , term₁ ⟩ (type ⇒ type₁) = no (λ ())
+  inherit Γ `⟨ M , N ⟩ (A `× B)
+    with inherit Γ M A | inherit Γ N B
+  ...  | no ¬⊢M        | _      = no λ { (⊢× ⊢M _) → ¬⊢M ⊢M }
+  ...  | _             | no ¬⊢N = no λ { (⊢× _ ⊢N) → ¬⊢N ⊢N }
+  ...  | yes ⊢M        | yes ⊢N = yes (⊢× ⊢M ⊢N)
+  inherit Γ (`proj₁ M) `ℕ = {!!}
+  inherit Γ (`proj₁ M) (A ⇒ B) = {!!}
+  inherit Γ (`proj₁ M) (A `× B) = {!!}
+  inherit Γ (`proj₂ N) `ℕ = {!!}
+  inherit Γ (`proj₂ N) (A ⇒ B) = {!!}
+  inherit Γ (`proj₂ N) (A `× B) = {!!}
+
 ```
 
 ### Erasure
@@ -1158,6 +1220,7 @@ Remember to indent all code by two spaces.
   ∥_∥Tp : Type → DB.Type
   ∥ `ℕ ∥Tp             =  DB.`ℕ
   ∥ A ⇒ B ∥Tp          =  ∥ A ∥Tp DB.⇒ ∥ B ∥Tp
+  ∥ A `× B ∥Tp         =  ∥ A ∥Tp DB.`× ∥ B ∥Tp
 
   ∥_∥Cx : Context → DB.Context
   ∥ ∅ ∥Cx              =  DB.∅
@@ -1180,6 +1243,9 @@ Remember to indent all code by two spaces.
   ∥ ⊢case ⊢L ⊢M ⊢N ∥⁻  =  DB.case ∥ ⊢L ∥⁺ ∥ ⊢M ∥⁻ ∥ ⊢N ∥⁻
   ∥ ⊢μ ⊢M ∥⁻           =  DB.μ ∥ ⊢M ∥⁻
   ∥ ⊢↑ ⊢M refl ∥⁻      =  ∥ ⊢M ∥⁺
+  ∥ ⊢× ⊢M ⊢N ∥⁻        = DB.`⟨ ∥ ⊢M ∥⁻ , ∥ ⊢N ∥⁻ ⟩
+  ∥ ⊢proj₁ ⊢M ∥⁻       = DB.`proj₁ ∥ ⊢M ∥⁻
+  ∥ ⊢proj₂ ⊢N ∥⁻       = DB.`proj₂ ∥ ⊢N ∥⁻
 ```
 
 #### Exercise `bidirectional-mul` (recommended) {#bidirectional-mul}
@@ -1187,6 +1253,22 @@ Remember to indent all code by two spaces.
 Rewrite your definition of multiplication from
 Chapter [Lambda][plfa.Lambda], decorated to support inference.
 
+mul : Term
+mul = μ "*" ⇒ ƛ "m" ⇒ ƛ "n" ⇒
+        case ` "m"
+          [zero⇒ ` "n"
+          |suc "m" ⇒ plus · ` "n" · (` "*" · ` "m" · ` "n" ) ]
+
+```
+bidirectional-mul : Inference.Term⁺
+bidirectional-mul = (μ "*" ⇒ (ƛ "m" ⇒ ƛ "n" ⇒ 
+                       case ` "m"
+                             [zero⇒ ` "n" ↑
+                             |suc "m" ⇒ (plus · (` "n" ↑) · (` "*" · (` "m" ↑) · (` "n" ↑) ↑)) ↑ ]))
+                       ↓ (`ℕ ⇒ `ℕ ⇒ `ℕ)
+  where open Inference
+
+```
 
 #### Exercise `bidirectional-products` (recommended) {#bidirectional-products}
 
