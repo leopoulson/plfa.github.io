@@ -436,15 +436,15 @@ Remember to indent all code by two spaces.
 
     -- begin
     -- sums
-    V-inj₁ : ∀ {Γ A} {V : Γ ⊢ A}
+    V-inj₁ : ∀ {Γ A B} {V : Γ ⊢ A}
       → Value V
         ---------------
-      → Value (`inj₁ V)
+      → Value (`inj₁ {B = B} V )
 
-    V-inj₂ : ∀ {Γ B} {W : Γ ⊢ B}
+    V-inj₂ : ∀ {Γ A B} {W : Γ ⊢ B}
       → Value W
         ---------------
-      → Value (`inj₂ W)
+      → Value (`inj₂ {A = A} W)
     -- end
 ```
 
@@ -583,15 +583,15 @@ not fixed by the given arguments.
     -- begin
     -- sums
 
-    ξ-inj₁ : ∀ {Γ A} {M M′ : Γ ⊢ A}
+    ξ-inj₁ : ∀ {Γ A B} {M M′ : Γ ⊢ A}
       → M —→ M′
         -------------------
-      → `inj₁ M —→ `inj₁ M′
+      → `inj₁ {B = B} M —→ `inj₁ {B = B} M′
 
-    ξ-inj₂ : ∀ {Γ B} {N N′ : Γ ⊢ B}
+    ξ-inj₂ : ∀ {Γ A B} {N N′ : Γ ⊢ B}
       → N —→ N′
         -------------------
-      → `inj₂ N —→ `inj₂ N′
+      → `inj₂ {A = A} N —→ `inj₂ {A = A} N′
 
     ξ-case⊎ : ∀ {Γ A B C} {L L′ : Γ ⊢ A `⊎ B} {M : Γ , A ⊢ C} {N : Γ , B ⊢ C}
       → L —→ L′
@@ -606,10 +606,10 @@ not fixed by the given arguments.
         ------------------------------
       → case⊎ (`inj₂ V) M N —→ N [ V ]
 
-    ξ-case⊥ : ∀ {Γ} {L L′ : Γ ⊢ `⊥}
+    ξ-case⊥ : ∀ {Γ A} {L L′ : Γ ⊢ `⊥}
       → L —→ L′
         -------------------
-      → case⊥ L —→ case⊥ L′
+      → case⊥ {A = A} L —→ case⊥ {A = A} L′
 
     -- end
 ```
@@ -657,8 +657,8 @@ not fixed by the given arguments.
   V¬—→ V-⟨ _ , VN ⟩ (ξ-⟨,⟩₂ _ N—→N′)  =  V¬—→ VN N—→N′
 
   --begin
-  V¬—→ (V-inj₁ y) ()
-  V¬—→ (V-inj₂ y) ()
+  V¬—→ (V-inj₁ VM)  (ξ-inj₁ M—→M′)    = V¬—→ VM M—→M′
+  V¬—→ (V-inj₂ VN)  (ξ-inj₂ N—→N′)    = V¬—→ VN N—→N′
   --end
 ```
 
@@ -1011,12 +1011,12 @@ Remember to indent all code by two spaces.
         ---------------
       → Γ ⊢ (M ↓ A) ↑ A
 
-    ⊢proj₁ : ∀ {Γ M N A B}
+    ⊢proj₁ : ∀ {Γ M A B}
       → Γ ⊢ M ↑ A `× B
         -----------------------
       → Γ ⊢ `proj₁ M ↑ A
 
-    ⊢proj₂ : ∀ {Γ M N A B}
+    ⊢proj₂ : ∀ {Γ N A B}
       → Γ ⊢ N ↑ A `× B
         -----------------------
       → Γ ⊢ `proj₂ N ↑ B
@@ -1136,14 +1136,20 @@ Remember to indent all code by two spaces.
   refl-× : ∀ {A A′ B B′} → A ≡ A′ → B ≡ B′ → A `× B ≡ A′ `× B′
   refl-× refl refl = refl
 
+  refl-A : ∀ {A A′ B B′} → A `× A′ ≡ B `× B′ → A ≡ B
+  refl-A refl = refl
+
+  refl-B : ∀ {A A′ B B′} → A `× A′ ≡ B `× B′ → A′ ≡ B′
+  refl-B refl = refl
+
   uniq-↑ : ∀ {Γ M A B} → Γ ⊢ M ↑ A → Γ ⊢ M ↑ B → A ≡ B
   uniq-↑ (⊢` ∋x) (⊢` ∋x′)       =  uniq-∋ ∋x ∋x′
   uniq-↑ (⊢L · ⊢M) (⊢L′ · ⊢M′)  =  rng≡ (uniq-↑ ⊢L ⊢L′)
   uniq-↑ (⊢↓ ⊢M) (⊢↓ ⊢M′)       =  refl
 
   --begin
-  uniq-↑ (⊢proj₁ x) (⊢proj₁ y)  =  uniq-↑ (⊢proj₁ x) (⊢proj₁ y)
-  uniq-↑ (⊢proj₂ x) (⊢proj₂ y)  =  uniq-↑ (⊢proj₂ x) (⊢proj₂ y)
+  uniq-↑ (⊢proj₁ x) (⊢proj₁ y)  =  refl-A (uniq-↑ x y)
+  uniq-↑ (⊢proj₂ x) (⊢proj₂ y)  =  refl-B (uniq-↑ x y)
   --end
 ```
 
@@ -1417,8791 +1423,8789 @@ mul = μ "*" ⇒ ƛ "m" ⇒ ƛ "n" ⇒
   2*2 : ∀ {Γ} → Γ ⊢ ★
   2*2 = mul · two · two
 
-  ee : Steps 2*2
-  ee = eval (gas 100) 2*2
- 
- 
+
+```
+
   2*2=4 : eval (gas 100) (2*2) ≡
     steps
-    ((plfa.part2.Untyped._⊢_.ƛ
-      (plfa.part2.Untyped._⊢_.ƛ
-       (plfa.part2.Untyped._⊢_.`
-        (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-       plfa.part2.Untyped._⊢_.·
-       ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-        plfa.part2.Untyped._⊢_.·
-        (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-      plfa.part2.Untyped._⊢_.·
-      (plfa.part2.Untyped._⊢_.ƛ
-       (plfa.part2.Untyped._⊢_.`
-        (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-       plfa.part2.Untyped._⊢_.·
-       ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-        plfa.part2.Untyped._⊢_.·
-        (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-     plfa.part2.Untyped._⊢_.·
-     (plfa.part2.Untyped._⊢_.ƛ
-      (plfa.part2.Untyped._⊢_.ƛ
-       (plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.`
-         (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-        plfa.part2.Untyped._⊢_.·
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.`
-            (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-           plfa.part2.Untyped._⊢_.·
-           ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-          plfa.part2.Untyped._⊢_.·
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.`
-            (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-           plfa.part2.Untyped._⊢_.·
-           ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-         plfa.part2.Untyped._⊢_.·
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.`
-             (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.ƛ
-                (plfa.part2.Untyped._⊢_.`
-                 (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.`
-                 (plfa.part2.Untyped._∋_.S
-                  (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-             plfa.part2.Untyped._⊢_.·
-             ((plfa.part2.Untyped._⊢_.`
-               (plfa.part2.Untyped._∋_.S
-                (plfa.part2.Untyped._∋_.S
-                 (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.`
-               (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-         plfa.part2.Untyped._⊢_.·
-         (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-         plfa.part2.Untyped._⊢_.·
-         ((plfa.part2.Untyped._⊢_.`
-           (plfa.part2.Untyped._∋_.S
-            (plfa.part2.Untyped._∋_.S
-             (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-          plfa.part2.Untyped._⊢_.·
-          ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-           plfa.part2.Untyped._⊢_.·
-           (plfa.part2.Untyped._⊢_.`
-            (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z)))))
-        plfa.part2.Untyped._⊢_.·
-        (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-     plfa.part2.Untyped._⊢_.·
-     ((plfa.part2.Untyped._⊢_.ƛ
-       (plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.`
-          (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-         plfa.part2.Untyped._⊢_.·
-         (plfa.part2.Untyped._⊢_.`
-          (plfa.part2.Untyped._∋_.S
-           (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-      plfa.part2.Untyped._⊢_.·
-      ((plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.`
-           (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-          plfa.part2.Untyped._⊢_.·
-          (plfa.part2.Untyped._⊢_.`
-           (plfa.part2.Untyped._∋_.S
-            (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-       plfa.part2.Untyped._⊢_.·
-       (plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))))
-     plfa.part2.Untyped._⊢_.·
-     ((plfa.part2.Untyped._⊢_.ƛ
-       (plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.`
-          (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-         plfa.part2.Untyped._⊢_.·
-         (plfa.part2.Untyped._⊢_.`
-          (plfa.part2.Untyped._∋_.S
-           (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-      plfa.part2.Untyped._⊢_.·
-      ((plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.`
-           (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-          plfa.part2.Untyped._⊢_.·
-          (plfa.part2.Untyped._⊢_.`
-           (plfa.part2.Untyped._∋_.S
-            (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-       plfa.part2.Untyped._⊢_.·
-       (plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))))
-     plfa.part2.Untyped._—↠_.—→⟨
-     plfa.part2.Untyped._—→_.ξ₁
-     (plfa.part2.Untyped._—→_.ξ₁ plfa.part2.Untyped._—→_.β)
+    ((_⊢_.ƛ
+      (_⊢_.ƛ
+       (_⊢_.`
+        (_∋_.S _∋_.Z))
+       _⊢_.·
+       ((_⊢_.` _∋_.Z)
+        _⊢_.·
+        (_⊢_.` _∋_.Z)))
+      _⊢_.·
+      (_⊢_.ƛ
+       (_⊢_.`
+        (_∋_.S _∋_.Z))
+       _⊢_.·
+       ((_⊢_.` _∋_.Z)
+        _⊢_.·
+        (_⊢_.` _∋_.Z))))
+     _⊢_.·
+     (_⊢_.ƛ
+      (_⊢_.ƛ
+       (_⊢_.ƛ
+        (_⊢_.`
+         (_∋_.S _∋_.Z))
+        _⊢_.·
+        (_⊢_.ƛ
+         (_⊢_.ƛ
+          (_⊢_.ƛ
+           (_⊢_.`
+            (_∋_.S _∋_.Z))
+           _⊢_.·
+           ((_⊢_.` _∋_.Z)
+            _⊢_.·
+            (_⊢_.` _∋_.Z)))
+          _⊢_.·
+          (_⊢_.ƛ
+           (_⊢_.`
+            (_∋_.S _∋_.Z))
+           _⊢_.·
+           ((_⊢_.` _∋_.Z)
+            _⊢_.·
+            (_⊢_.` _∋_.Z))))
+         _⊢_.·
+         (_⊢_.ƛ
+          (_⊢_.ƛ
+           (_⊢_.ƛ
+            (_⊢_.`
+             (_∋_.S _∋_.Z))
+            _⊢_.·
+            (_⊢_.ƛ
+             (_⊢_.ƛ
+              (_⊢_.ƛ
+               (_⊢_.ƛ
+                (_⊢_.`
+                 (_∋_.S _∋_.Z))
+                _⊢_.·
+                (_⊢_.`
+                 (_∋_.S
+                  (_∋_.S _∋_.Z))))))
+             _⊢_.·
+             ((_⊢_.`
+               (_∋_.S
+                (_∋_.S
+                 (_∋_.S _∋_.Z))))
+              _⊢_.·
+              (_⊢_.` _∋_.Z)
+              _⊢_.·
+              (_⊢_.`
+               (_∋_.S _∋_.Z))))
+            _⊢_.·
+            (_⊢_.` _∋_.Z))))
+         _⊢_.·
+         (_⊢_.` _∋_.Z)
+         _⊢_.·
+         ((_⊢_.`
+           (_∋_.S
+            (_∋_.S
+             (_∋_.S _∋_.Z))))
+          _⊢_.·
+          ((_⊢_.` _∋_.Z)
+           _⊢_.·
+           (_⊢_.`
+            (_∋_.S _∋_.Z)))))
+        _⊢_.·
+        (_⊢_.` _∋_.Z))))
+     _⊢_.·
+     ((_⊢_.ƛ
+       (_⊢_.ƛ
+        (_⊢_.ƛ
+         (_⊢_.`
+          (_∋_.S _∋_.Z))
+         _⊢_.·
+         (_⊢_.`
+          (_∋_.S
+           (_∋_.S _∋_.Z))))))
+      _⊢_.·
+      ((_⊢_.ƛ
+        (_⊢_.ƛ
+         (_⊢_.ƛ
+          (_⊢_.`
+           (_∋_.S _∋_.Z))
+          _⊢_.·
+          (_⊢_.`
+           (_∋_.S
+            (_∋_.S _∋_.Z))))))
+       _⊢_.·
+       (_⊢_.ƛ
+        (_⊢_.ƛ
+         (_⊢_.` _∋_.Z)))))
+     _⊢_.·
+     ((_⊢_.ƛ
+       (_⊢_.ƛ
+        (_⊢_.ƛ
+         (_⊢_.`
+          (_∋_.S _∋_.Z))
+         _⊢_.·
+         (_⊢_.`
+          (_∋_.S
+           (_∋_.S _∋_.Z))))))
+      _⊢_.·
+      ((_⊢_.ƛ
+        (_⊢_.ƛ
+         (_⊢_.ƛ
+          (_⊢_.`
+           (_∋_.S _∋_.Z))
+          _⊢_.·
+          (_⊢_.`
+           (_∋_.S
+            (_∋_.S _∋_.Z))))))
+       _⊢_.·
+       (_⊢_.ƛ
+        (_⊢_.ƛ
+         (_⊢_.` _∋_.Z)))))
+     _—↠_.—→⟨
+     _—→_.ξ₁
+     (_—→_.ξ₁ _—→_.β)
      ⟩
-     (plfa.part2.Untyped._⊢_.ƛ
-      (plfa.part2.Untyped._⊢_.ƛ
-       (plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.`
-          (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-         plfa.part2.Untyped._⊢_.·
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.`
-             (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-            plfa.part2.Untyped._⊢_.·
-            ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-           plfa.part2.Untyped._⊢_.·
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.`
-             (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-            plfa.part2.Untyped._⊢_.·
-            ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-          plfa.part2.Untyped._⊢_.·
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.ƛ
-                (plfa.part2.Untyped._⊢_.ƛ
-                 (plfa.part2.Untyped._⊢_.`
-                  (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-                 plfa.part2.Untyped._⊢_.·
-                 (plfa.part2.Untyped._⊢_.`
-                  (plfa.part2.Untyped._∋_.S
-                   (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-              plfa.part2.Untyped._⊢_.·
-              ((plfa.part2.Untyped._⊢_.`
-                (plfa.part2.Untyped._∋_.S
-                 (plfa.part2.Untyped._∋_.S
-                  (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-               plfa.part2.Untyped._⊢_.·
-               (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-               plfa.part2.Untyped._⊢_.·
-               (plfa.part2.Untyped._⊢_.`
-                (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-          plfa.part2.Untyped._⊢_.·
-          (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-          plfa.part2.Untyped._⊢_.·
-          ((plfa.part2.Untyped._⊢_.`
-            (plfa.part2.Untyped._∋_.S
-             (plfa.part2.Untyped._∋_.S
-              (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-           plfa.part2.Untyped._⊢_.·
-           ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.`
-             (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z)))))
-         plfa.part2.Untyped._⊢_.·
-         (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-      plfa.part2.Untyped._⊢_.·
-      ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-       plfa.part2.Untyped._⊢_.·
-       (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-     plfa.part2.Untyped._⊢_.·
-     (plfa.part2.Untyped._⊢_.ƛ
-      (plfa.part2.Untyped._⊢_.ƛ
-       (plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.`
-          (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-         plfa.part2.Untyped._⊢_.·
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.`
-             (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-            plfa.part2.Untyped._⊢_.·
-            ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-           plfa.part2.Untyped._⊢_.·
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.`
-             (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-            plfa.part2.Untyped._⊢_.·
-            ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-          plfa.part2.Untyped._⊢_.·
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.ƛ
-                (plfa.part2.Untyped._⊢_.ƛ
-                 (plfa.part2.Untyped._⊢_.`
-                  (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-                 plfa.part2.Untyped._⊢_.·
-                 (plfa.part2.Untyped._⊢_.`
-                  (plfa.part2.Untyped._∋_.S
-                   (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-              plfa.part2.Untyped._⊢_.·
-              ((plfa.part2.Untyped._⊢_.`
-                (plfa.part2.Untyped._∋_.S
-                 (plfa.part2.Untyped._∋_.S
-                  (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-               plfa.part2.Untyped._⊢_.·
-               (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-               plfa.part2.Untyped._⊢_.·
-               (plfa.part2.Untyped._⊢_.`
-                (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-          plfa.part2.Untyped._⊢_.·
-          (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-          plfa.part2.Untyped._⊢_.·
-          ((plfa.part2.Untyped._⊢_.`
-            (plfa.part2.Untyped._∋_.S
-             (plfa.part2.Untyped._∋_.S
-              (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-           plfa.part2.Untyped._⊢_.·
-           ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.`
-             (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z)))))
-         plfa.part2.Untyped._⊢_.·
-         (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-      plfa.part2.Untyped._⊢_.·
-      ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-       plfa.part2.Untyped._⊢_.·
-       (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-     plfa.part2.Untyped._⊢_.·
-     ((plfa.part2.Untyped._⊢_.ƛ
-       (plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.`
-          (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-         plfa.part2.Untyped._⊢_.·
-         (plfa.part2.Untyped._⊢_.`
-          (plfa.part2.Untyped._∋_.S
-           (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-      plfa.part2.Untyped._⊢_.·
-      ((plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.`
-           (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-          plfa.part2.Untyped._⊢_.·
-          (plfa.part2.Untyped._⊢_.`
-           (plfa.part2.Untyped._∋_.S
-            (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-       plfa.part2.Untyped._⊢_.·
-       (plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))))
-     plfa.part2.Untyped._⊢_.·
-     ((plfa.part2.Untyped._⊢_.ƛ
-       (plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.`
-          (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-         plfa.part2.Untyped._⊢_.·
-         (plfa.part2.Untyped._⊢_.`
-          (plfa.part2.Untyped._∋_.S
-           (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-      plfa.part2.Untyped._⊢_.·
-      ((plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.`
-           (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-          plfa.part2.Untyped._⊢_.·
-          (plfa.part2.Untyped._⊢_.`
-           (plfa.part2.Untyped._∋_.S
-            (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-       plfa.part2.Untyped._⊢_.·
-       (plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))))
-     plfa.part2.Untyped._—↠_.—→⟨
-     plfa.part2.Untyped._—→_.ξ₁
-     (plfa.part2.Untyped._—→_.ξ₁ plfa.part2.Untyped._—→_.β)
+     (_⊢_.ƛ
+      (_⊢_.ƛ
+       (_⊢_.ƛ
+        (_⊢_.ƛ
+         (_⊢_.`
+          (_∋_.S _∋_.Z))
+         _⊢_.·
+         (_⊢_.ƛ
+          (_⊢_.ƛ
+           (_⊢_.ƛ
+            (_⊢_.`
+             (_∋_.S _∋_.Z))
+            _⊢_.·
+            ((_⊢_.` _∋_.Z)
+             _⊢_.·
+             (_⊢_.` _∋_.Z)))
+           _⊢_.·
+           (_⊢_.ƛ
+            (_⊢_.`
+             (_∋_.S _∋_.Z))
+            _⊢_.·
+            ((_⊢_.` _∋_.Z)
+             _⊢_.·
+             (_⊢_.` _∋_.Z))))
+          _⊢_.·
+          (_⊢_.ƛ
+           (_⊢_.ƛ
+            (_⊢_.ƛ
+             (_⊢_.`
+              (_∋_.S _∋_.Z))
+             _⊢_.·
+             (_⊢_.ƛ
+              (_⊢_.ƛ
+               (_⊢_.ƛ
+                (_⊢_.ƛ
+                 (_⊢_.`
+                  (_∋_.S _∋_.Z))
+                 _⊢_.·
+                 (_⊢_.`
+                  (_∋_.S
+                   (_∋_.S _∋_.Z))))))
+              _⊢_.·
+              ((_⊢_.`
+                (_∋_.S
+                 (_∋_.S
+                  (_∋_.S _∋_.Z))))
+               _⊢_.·
+               (_⊢_.` _∋_.Z)
+               _⊢_.·
+               (_⊢_.`
+                (_∋_.S _∋_.Z))))
+             _⊢_.·
+             (_⊢_.` _∋_.Z))))
+          _⊢_.·
+          (_⊢_.` _∋_.Z)
+          _⊢_.·
+          ((_⊢_.`
+            (_∋_.S
+             (_∋_.S
+              (_∋_.S _∋_.Z))))
+           _⊢_.·
+           ((_⊢_.` _∋_.Z)
+            _⊢_.·
+            (_⊢_.`
+             (_∋_.S _∋_.Z)))))
+         _⊢_.·
+         (_⊢_.` _∋_.Z))))
+      _⊢_.·
+      ((_⊢_.` _∋_.Z)
+       _⊢_.·
+       (_⊢_.` _∋_.Z)))
+     _⊢_.·
+     (_⊢_.ƛ
+      (_⊢_.ƛ
+       (_⊢_.ƛ
+        (_⊢_.ƛ
+         (_⊢_.`
+          (_∋_.S _∋_.Z))
+         _⊢_.·
+         (_⊢_.ƛ
+          (_⊢_.ƛ
+           (_⊢_.ƛ
+            (_⊢_.`
+             (_∋_.S _∋_.Z))
+            _⊢_.·
+            ((_⊢_.` _∋_.Z)
+             _⊢_.·
+             (_⊢_.` _∋_.Z)))
+           _⊢_.·
+           (_⊢_.ƛ
+            (_⊢_.`
+             (_∋_.S _∋_.Z))
+            _⊢_.·
+            ((_⊢_.` _∋_.Z)
+             _⊢_.·
+             (_⊢_.` _∋_.Z))))
+          _⊢_.·
+          (_⊢_.ƛ
+           (_⊢_.ƛ
+            (_⊢_.ƛ
+             (_⊢_.`
+              (_∋_.S _∋_.Z))
+             _⊢_.·
+             (_⊢_.ƛ
+              (_⊢_.ƛ
+               (_⊢_.ƛ
+                (_⊢_.ƛ
+                 (_⊢_.`
+                  (_∋_.S _∋_.Z))
+                 _⊢_.·
+                 (_⊢_.`
+                  (_∋_.S
+                   (_∋_.S _∋_.Z))))))
+              _⊢_.·
+              ((_⊢_.`
+                (_∋_.S
+                 (_∋_.S
+                  (_∋_.S _∋_.Z))))
+               _⊢_.·
+               (_⊢_.` _∋_.Z)
+               _⊢_.·
+               (_⊢_.`
+                (_∋_.S _∋_.Z))))
+             _⊢_.·
+             (_⊢_.` _∋_.Z))))
+          _⊢_.·
+          (_⊢_.` _∋_.Z)
+          _⊢_.·
+          ((_⊢_.`
+            (_∋_.S
+             (_∋_.S
+              (_∋_.S _∋_.Z))))
+           _⊢_.·
+           ((_⊢_.` _∋_.Z)
+            _⊢_.·
+            (_⊢_.`
+             (_∋_.S _∋_.Z)))))
+         _⊢_.·
+         (_⊢_.` _∋_.Z))))
+      _⊢_.·
+      ((_⊢_.` _∋_.Z)
+       _⊢_.·
+       (_⊢_.` _∋_.Z)))
+     _⊢_.·
+     ((_⊢_.ƛ
+       (_⊢_.ƛ
+        (_⊢_.ƛ
+         (_⊢_.`
+          (_∋_.S _∋_.Z))
+         _⊢_.·
+         (_⊢_.`
+          (_∋_.S
+           (_∋_.S _∋_.Z))))))
+      _⊢_.·
+      ((_⊢_.ƛ
+        (_⊢_.ƛ
+         (_⊢_.ƛ
+          (_⊢_.`
+           (_∋_.S _∋_.Z))
+          _⊢_.·
+          (_⊢_.`
+           (_∋_.S
+            (_∋_.S _∋_.Z))))))
+       _⊢_.·
+       (_⊢_.ƛ
+        (_⊢_.ƛ
+         (_⊢_.` _∋_.Z)))))
+     _⊢_.·
+     ((_⊢_.ƛ
+       (_⊢_.ƛ
+        (_⊢_.ƛ
+         (_⊢_.`
+          (_∋_.S _∋_.Z))
+         _⊢_.·
+         (_⊢_.`
+          (_∋_.S
+           (_∋_.S _∋_.Z))))))
+      _⊢_.·
+      ((_⊢_.ƛ
+        (_⊢_.ƛ
+         (_⊢_.ƛ
+          (_⊢_.`
+           (_∋_.S _∋_.Z))
+          _⊢_.·
+          (_⊢_.`
+           (_∋_.S
+            (_∋_.S _∋_.Z))))))
+       _⊢_.·
+       (_⊢_.ƛ
+        (_⊢_.ƛ
+         (_⊢_.` _∋_.Z)))))
+     _—↠_.—→⟨
+     _—→_.ξ₁
+     (_—→_.ξ₁ _—→_.β)
      ⟩
-     (plfa.part2.Untyped._⊢_.ƛ
-      (plfa.part2.Untyped._⊢_.ƛ
-       (plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.`
-         (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-        plfa.part2.Untyped._⊢_.·
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.`
-            (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-           plfa.part2.Untyped._⊢_.·
-           ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-          plfa.part2.Untyped._⊢_.·
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.`
-            (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-           plfa.part2.Untyped._⊢_.·
-           ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-         plfa.part2.Untyped._⊢_.·
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.`
-             (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.ƛ
-                (plfa.part2.Untyped._⊢_.`
-                 (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.`
-                 (plfa.part2.Untyped._∋_.S
-                  (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-             plfa.part2.Untyped._⊢_.·
-             ((plfa.part2.Untyped._⊢_.`
-               (plfa.part2.Untyped._∋_.S
-                (plfa.part2.Untyped._∋_.S
-                 (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.`
-               (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-         plfa.part2.Untyped._⊢_.·
-         (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-         plfa.part2.Untyped._⊢_.·
-         ((plfa.part2.Untyped._⊢_.`
-           (plfa.part2.Untyped._∋_.S
-            (plfa.part2.Untyped._∋_.S
-             (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-          plfa.part2.Untyped._⊢_.·
-          ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-           plfa.part2.Untyped._⊢_.·
-           (plfa.part2.Untyped._⊢_.`
-            (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z)))))
-        plfa.part2.Untyped._⊢_.·
-        (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-     plfa.part2.Untyped._⊢_.·
-     ((plfa.part2.Untyped._⊢_.ƛ
-       (plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.`
-           (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-          plfa.part2.Untyped._⊢_.·
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-             plfa.part2.Untyped._⊢_.·
-             ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-             plfa.part2.Untyped._⊢_.·
-             ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-           plfa.part2.Untyped._⊢_.·
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.`
-               (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.ƛ
-                (plfa.part2.Untyped._⊢_.ƛ
-                 (plfa.part2.Untyped._⊢_.ƛ
-                  (plfa.part2.Untyped._⊢_.`
-                   (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-                  plfa.part2.Untyped._⊢_.·
-                  (plfa.part2.Untyped._⊢_.`
-                   (plfa.part2.Untyped._∋_.S
-                    (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-               plfa.part2.Untyped._⊢_.·
-               ((plfa.part2.Untyped._⊢_.`
-                 (plfa.part2.Untyped._∋_.S
-                  (plfa.part2.Untyped._∋_.S
-                   (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.`
-                 (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-           plfa.part2.Untyped._⊢_.·
-           (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-           plfa.part2.Untyped._⊢_.·
-           ((plfa.part2.Untyped._⊢_.`
-             (plfa.part2.Untyped._∋_.S
-              (plfa.part2.Untyped._∋_.S
-               (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-            plfa.part2.Untyped._⊢_.·
-            ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z)))))
-          plfa.part2.Untyped._⊢_.·
-          (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-       plfa.part2.Untyped._⊢_.·
-       ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-        plfa.part2.Untyped._⊢_.·
-        (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-      plfa.part2.Untyped._⊢_.·
-      (plfa.part2.Untyped._⊢_.ƛ
-       (plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.`
-           (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-          plfa.part2.Untyped._⊢_.·
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-             plfa.part2.Untyped._⊢_.·
-             ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-             plfa.part2.Untyped._⊢_.·
-             ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-           plfa.part2.Untyped._⊢_.·
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.`
-               (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.ƛ
-                (plfa.part2.Untyped._⊢_.ƛ
-                 (plfa.part2.Untyped._⊢_.ƛ
-                  (plfa.part2.Untyped._⊢_.`
-                   (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-                  plfa.part2.Untyped._⊢_.·
-                  (plfa.part2.Untyped._⊢_.`
-                   (plfa.part2.Untyped._∋_.S
-                    (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-               plfa.part2.Untyped._⊢_.·
-               ((plfa.part2.Untyped._⊢_.`
-                 (plfa.part2.Untyped._∋_.S
-                  (plfa.part2.Untyped._∋_.S
-                   (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.`
-                 (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-           plfa.part2.Untyped._⊢_.·
-           (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-           plfa.part2.Untyped._⊢_.·
-           ((plfa.part2.Untyped._⊢_.`
-             (plfa.part2.Untyped._∋_.S
-              (plfa.part2.Untyped._∋_.S
-               (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-            plfa.part2.Untyped._⊢_.·
-            ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z)))))
-          plfa.part2.Untyped._⊢_.·
-          (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-       plfa.part2.Untyped._⊢_.·
-       ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-        plfa.part2.Untyped._⊢_.·
-        (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-     plfa.part2.Untyped._⊢_.·
-     ((plfa.part2.Untyped._⊢_.ƛ
-       (plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.`
-          (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-         plfa.part2.Untyped._⊢_.·
-         (plfa.part2.Untyped._⊢_.`
-          (plfa.part2.Untyped._∋_.S
-           (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-      plfa.part2.Untyped._⊢_.·
-      ((plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.`
-           (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-          plfa.part2.Untyped._⊢_.·
-          (plfa.part2.Untyped._⊢_.`
-           (plfa.part2.Untyped._∋_.S
-            (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-       plfa.part2.Untyped._⊢_.·
-       (plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))))
-     plfa.part2.Untyped._⊢_.·
-     ((plfa.part2.Untyped._⊢_.ƛ
-       (plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.`
-          (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-         plfa.part2.Untyped._⊢_.·
-         (plfa.part2.Untyped._⊢_.`
-          (plfa.part2.Untyped._∋_.S
-           (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-      plfa.part2.Untyped._⊢_.·
-      ((plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.`
-           (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-          plfa.part2.Untyped._⊢_.·
-          (plfa.part2.Untyped._⊢_.`
-           (plfa.part2.Untyped._∋_.S
-            (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-       plfa.part2.Untyped._⊢_.·
-       (plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))))
-     plfa.part2.Untyped._—↠_.—→⟨
-     plfa.part2.Untyped._—→_.ξ₁
-     (plfa.part2.Untyped._—→_.ξ₁ plfa.part2.Untyped._—→_.β)
+     (_⊢_.ƛ
+      (_⊢_.ƛ
+       (_⊢_.ƛ
+        (_⊢_.`
+         (_∋_.S _∋_.Z))
+        _⊢_.·
+        (_⊢_.ƛ
+         (_⊢_.ƛ
+          (_⊢_.ƛ
+           (_⊢_.`
+            (_∋_.S _∋_.Z))
+           _⊢_.·
+           ((_⊢_.` _∋_.Z)
+            _⊢_.·
+            (_⊢_.` _∋_.Z)))
+          _⊢_.·
+          (_⊢_.ƛ
+           (_⊢_.`
+            (_∋_.S _∋_.Z))
+           _⊢_.·
+           ((_⊢_.` _∋_.Z)
+            _⊢_.·
+            (_⊢_.` _∋_.Z))))
+         _⊢_.·
+         (_⊢_.ƛ
+          (_⊢_.ƛ
+           (_⊢_.ƛ
+            (_⊢_.`
+             (_∋_.S _∋_.Z))
+            _⊢_.·
+            (_⊢_.ƛ
+             (_⊢_.ƛ
+              (_⊢_.ƛ
+               (_⊢_.ƛ
+                (_⊢_.`
+                 (_∋_.S _∋_.Z))
+                _⊢_.·
+                (_⊢_.`
+                 (_∋_.S
+                  (_∋_.S _∋_.Z))))))
+             _⊢_.·
+             ((_⊢_.`
+               (_∋_.S
+                (_∋_.S
+                 (_∋_.S _∋_.Z))))
+              _⊢_.·
+              (_⊢_.` _∋_.Z)
+              _⊢_.·
+              (_⊢_.`
+               (_∋_.S _∋_.Z))))
+            _⊢_.·
+            (_⊢_.` _∋_.Z))))
+         _⊢_.·
+         (_⊢_.` _∋_.Z)
+         _⊢_.·
+         ((_⊢_.`
+           (_∋_.S
+            (_∋_.S
+             (_∋_.S _∋_.Z))))
+          _⊢_.·
+          ((_⊢_.` _∋_.Z)
+           _⊢_.·
+           (_⊢_.`
+            (_∋_.S _∋_.Z)))))
+        _⊢_.·
+        (_⊢_.` _∋_.Z))))
+     _⊢_.·
+     ((_⊢_.ƛ
+       (_⊢_.ƛ
+        (_⊢_.ƛ
+         (_⊢_.ƛ
+          (_⊢_.`
+           (_∋_.S _∋_.Z))
+          _⊢_.·
+          (_⊢_.ƛ
+           (_⊢_.ƛ
+            (_⊢_.ƛ
+             (_⊢_.`
+              (_∋_.S _∋_.Z))
+             _⊢_.·
+             ((_⊢_.` _∋_.Z)
+              _⊢_.·
+              (_⊢_.` _∋_.Z)))
+            _⊢_.·
+            (_⊢_.ƛ
+             (_⊢_.`
+              (_∋_.S _∋_.Z))
+             _⊢_.·
+             ((_⊢_.` _∋_.Z)
+              _⊢_.·
+              (_⊢_.` _∋_.Z))))
+           _⊢_.·
+           (_⊢_.ƛ
+            (_⊢_.ƛ
+             (_⊢_.ƛ
+              (_⊢_.`
+               (_∋_.S _∋_.Z))
+              _⊢_.·
+              (_⊢_.ƛ
+               (_⊢_.ƛ
+                (_⊢_.ƛ
+                 (_⊢_.ƛ
+                  (_⊢_.`
+                   (_∋_.S _∋_.Z))
+                  _⊢_.·
+                  (_⊢_.`
+                   (_∋_.S
+                    (_∋_.S _∋_.Z))))))
+               _⊢_.·
+               ((_⊢_.`
+                 (_∋_.S
+                  (_∋_.S
+                   (_∋_.S _∋_.Z))))
+                _⊢_.·
+                (_⊢_.` _∋_.Z)
+                _⊢_.·
+                (_⊢_.`
+                 (_∋_.S _∋_.Z))))
+              _⊢_.·
+              (_⊢_.` _∋_.Z))))
+           _⊢_.·
+           (_⊢_.` _∋_.Z)
+           _⊢_.·
+           ((_⊢_.`
+             (_∋_.S
+              (_∋_.S
+               (_∋_.S _∋_.Z))))
+            _⊢_.·
+            ((_⊢_.` _∋_.Z)
+             _⊢_.·
+             (_⊢_.`
+              (_∋_.S _∋_.Z)))))
+          _⊢_.·
+          (_⊢_.` _∋_.Z))))
+       _⊢_.·
+       ((_⊢_.` _∋_.Z)
+        _⊢_.·
+        (_⊢_.` _∋_.Z)))
+      _⊢_.·
+      (_⊢_.ƛ
+       (_⊢_.ƛ
+        (_⊢_.ƛ
+         (_⊢_.ƛ
+          (_⊢_.`
+           (_∋_.S _∋_.Z))
+          _⊢_.·
+          (_⊢_.ƛ
+           (_⊢_.ƛ
+            (_⊢_.ƛ
+             (_⊢_.`
+              (_∋_.S _∋_.Z))
+             _⊢_.·
+             ((_⊢_.` _∋_.Z)
+              _⊢_.·
+              (_⊢_.` _∋_.Z)))
+            _⊢_.·
+            (_⊢_.ƛ
+             (_⊢_.`
+              (_∋_.S _∋_.Z))
+             _⊢_.·
+             ((_⊢_.` _∋_.Z)
+              _⊢_.·
+              (_⊢_.` _∋_.Z))))
+           _⊢_.·
+           (_⊢_.ƛ
+            (_⊢_.ƛ
+             (_⊢_.ƛ
+              (_⊢_.`
+               (_∋_.S _∋_.Z))
+              _⊢_.·
+              (_⊢_.ƛ
+               (_⊢_.ƛ
+                (_⊢_.ƛ
+                 (_⊢_.ƛ
+                  (_⊢_.`
+                   (_∋_.S _∋_.Z))
+                  _⊢_.·
+                  (_⊢_.`
+                   (_∋_.S
+                    (_∋_.S _∋_.Z))))))
+               _⊢_.·
+               ((_⊢_.`
+                 (_∋_.S
+                  (_∋_.S
+                   (_∋_.S _∋_.Z))))
+                _⊢_.·
+                (_⊢_.` _∋_.Z)
+                _⊢_.·
+                (_⊢_.`
+                 (_∋_.S _∋_.Z))))
+              _⊢_.·
+              (_⊢_.` _∋_.Z))))
+           _⊢_.·
+           (_⊢_.` _∋_.Z)
+           _⊢_.·
+           ((_⊢_.`
+             (_∋_.S
+              (_∋_.S
+               (_∋_.S _∋_.Z))))
+            _⊢_.·
+            ((_⊢_.` _∋_.Z)
+             _⊢_.·
+             (_⊢_.`
+              (_∋_.S _∋_.Z)))))
+          _⊢_.·
+          (_⊢_.` _∋_.Z))))
+       _⊢_.·
+       ((_⊢_.` _∋_.Z)
+        _⊢_.·
+        (_⊢_.` _∋_.Z))))
+     _⊢_.·
+     ((_⊢_.ƛ
+       (_⊢_.ƛ
+        (_⊢_.ƛ
+         (_⊢_.`
+          (_∋_.S _∋_.Z))
+         _⊢_.·
+         (_⊢_.`
+          (_∋_.S
+           (_∋_.S _∋_.Z))))))
+      _⊢_.·
+      ((_⊢_.ƛ
+        (_⊢_.ƛ
+         (_⊢_.ƛ
+          (_⊢_.`
+           (_∋_.S _∋_.Z))
+          _⊢_.·
+          (_⊢_.`
+           (_∋_.S
+            (_∋_.S _∋_.Z))))))
+       _⊢_.·
+       (_⊢_.ƛ
+        (_⊢_.ƛ
+         (_⊢_.` _∋_.Z)))))
+     _⊢_.·
+     ((_⊢_.ƛ
+       (_⊢_.ƛ
+        (_⊢_.ƛ
+         (_⊢_.`
+          (_∋_.S _∋_.Z))
+         _⊢_.·
+         (_⊢_.`
+          (_∋_.S
+           (_∋_.S _∋_.Z))))))
+      _⊢_.·
+      ((_⊢_.ƛ
+        (_⊢_.ƛ
+         (_⊢_.ƛ
+          (_⊢_.`
+           (_∋_.S _∋_.Z))
+          _⊢_.·
+          (_⊢_.`
+           (_∋_.S
+            (_∋_.S _∋_.Z))))))
+       _⊢_.·
+       (_⊢_.ƛ
+        (_⊢_.ƛ
+         (_⊢_.` _∋_.Z)))))
+     _—↠_.—→⟨
+     _—→_.ξ₁
+     (_—→_.ξ₁ _—→_.β)
      ⟩
-     (plfa.part2.Untyped._⊢_.ƛ
-      (plfa.part2.Untyped._⊢_.ƛ
-       (plfa.part2.Untyped._⊢_.`
-        (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-       plfa.part2.Untyped._⊢_.·
-       (plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.`
-           (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-          plfa.part2.Untyped._⊢_.·
-          ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-           plfa.part2.Untyped._⊢_.·
-           (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-         plfa.part2.Untyped._⊢_.·
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.`
-           (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-          plfa.part2.Untyped._⊢_.·
-          ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-           plfa.part2.Untyped._⊢_.·
-           (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-        plfa.part2.Untyped._⊢_.·
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.`
-            (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-           plfa.part2.Untyped._⊢_.·
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.`
-                (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-               plfa.part2.Untyped._⊢_.·
-               (plfa.part2.Untyped._⊢_.`
-                (plfa.part2.Untyped._∋_.S
-                 (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-            plfa.part2.Untyped._⊢_.·
-            ((plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S
-               (plfa.part2.Untyped._∋_.S
-                (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-           plfa.part2.Untyped._⊢_.·
-           (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-        plfa.part2.Untyped._⊢_.·
-        (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-        plfa.part2.Untyped._⊢_.·
-        ((plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.ƛ
-                (plfa.part2.Untyped._⊢_.`
-                 (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-                plfa.part2.Untyped._⊢_.·
-                ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                 plfa.part2.Untyped._⊢_.·
-                 (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-               plfa.part2.Untyped._⊢_.·
-               (plfa.part2.Untyped._⊢_.ƛ
-                (plfa.part2.Untyped._⊢_.`
-                 (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-                plfa.part2.Untyped._⊢_.·
-                ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                 plfa.part2.Untyped._⊢_.·
-                 (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.ƛ
-                (plfa.part2.Untyped._⊢_.ƛ
-                 (plfa.part2.Untyped._⊢_.`
-                  (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-                 plfa.part2.Untyped._⊢_.·
-                 (plfa.part2.Untyped._⊢_.ƛ
-                  (plfa.part2.Untyped._⊢_.ƛ
-                   (plfa.part2.Untyped._⊢_.ƛ
-                    (plfa.part2.Untyped._⊢_.ƛ
-                     (plfa.part2.Untyped._⊢_.`
-                      (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-                     plfa.part2.Untyped._⊢_.·
-                     (plfa.part2.Untyped._⊢_.`
-                      (plfa.part2.Untyped._∋_.S
-                       (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-                  plfa.part2.Untyped._⊢_.·
-                  ((plfa.part2.Untyped._⊢_.`
-                    (plfa.part2.Untyped._∋_.S
-                     (plfa.part2.Untyped._∋_.S
-                      (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-                   plfa.part2.Untyped._⊢_.·
-                   (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                   plfa.part2.Untyped._⊢_.·
-                   (plfa.part2.Untyped._⊢_.`
-                    (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-                 plfa.part2.Untyped._⊢_.·
-                 (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-              plfa.part2.Untyped._⊢_.·
-              ((plfa.part2.Untyped._⊢_.`
-                (plfa.part2.Untyped._∋_.S
-                 (plfa.part2.Untyped._∋_.S
-                  (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-               plfa.part2.Untyped._⊢_.·
-               ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.`
-                 (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z)))))
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-          plfa.part2.Untyped._⊢_.·
-          ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-           plfa.part2.Untyped._⊢_.·
-           (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-         plfa.part2.Untyped._⊢_.·
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.ƛ
-                (plfa.part2.Untyped._⊢_.`
-                 (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-                plfa.part2.Untyped._⊢_.·
-                ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                 plfa.part2.Untyped._⊢_.·
-                 (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-               plfa.part2.Untyped._⊢_.·
-               (plfa.part2.Untyped._⊢_.ƛ
-                (plfa.part2.Untyped._⊢_.`
-                 (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-                plfa.part2.Untyped._⊢_.·
-                ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                 plfa.part2.Untyped._⊢_.·
-                 (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.ƛ
-                (plfa.part2.Untyped._⊢_.ƛ
-                 (plfa.part2.Untyped._⊢_.`
-                  (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-                 plfa.part2.Untyped._⊢_.·
-                 (plfa.part2.Untyped._⊢_.ƛ
-                  (plfa.part2.Untyped._⊢_.ƛ
-                   (plfa.part2.Untyped._⊢_.ƛ
-                    (plfa.part2.Untyped._⊢_.ƛ
-                     (plfa.part2.Untyped._⊢_.`
-                      (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-                     plfa.part2.Untyped._⊢_.·
-                     (plfa.part2.Untyped._⊢_.`
-                      (plfa.part2.Untyped._∋_.S
-                       (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-                  plfa.part2.Untyped._⊢_.·
-                  ((plfa.part2.Untyped._⊢_.`
-                    (plfa.part2.Untyped._∋_.S
-                     (plfa.part2.Untyped._∋_.S
-                      (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-                   plfa.part2.Untyped._⊢_.·
-                   (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                   plfa.part2.Untyped._⊢_.·
-                   (plfa.part2.Untyped._⊢_.`
-                    (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-                 plfa.part2.Untyped._⊢_.·
-                 (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-              plfa.part2.Untyped._⊢_.·
-              ((plfa.part2.Untyped._⊢_.`
-                (plfa.part2.Untyped._∋_.S
-                 (plfa.part2.Untyped._∋_.S
-                  (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-               plfa.part2.Untyped._⊢_.·
-               ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.`
-                 (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z)))))
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-          plfa.part2.Untyped._⊢_.·
-          ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-           plfa.part2.Untyped._⊢_.·
-           (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-         plfa.part2.Untyped._⊢_.·
-         ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-          plfa.part2.Untyped._⊢_.·
-          (plfa.part2.Untyped._⊢_.`
-           (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z)))))
-       plfa.part2.Untyped._⊢_.·
-       (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-     plfa.part2.Untyped._⊢_.·
-     ((plfa.part2.Untyped._⊢_.ƛ
-       (plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.`
-          (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-         plfa.part2.Untyped._⊢_.·
-         (plfa.part2.Untyped._⊢_.`
-          (plfa.part2.Untyped._∋_.S
-           (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-      plfa.part2.Untyped._⊢_.·
-      ((plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.`
-           (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-          plfa.part2.Untyped._⊢_.·
-          (plfa.part2.Untyped._⊢_.`
-           (plfa.part2.Untyped._∋_.S
-            (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-       plfa.part2.Untyped._⊢_.·
-       (plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))))
-     plfa.part2.Untyped._⊢_.·
-     ((plfa.part2.Untyped._⊢_.ƛ
-       (plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.`
-          (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-         plfa.part2.Untyped._⊢_.·
-         (plfa.part2.Untyped._⊢_.`
-          (plfa.part2.Untyped._∋_.S
-           (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-      plfa.part2.Untyped._⊢_.·
-      ((plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.`
-           (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-          plfa.part2.Untyped._⊢_.·
-          (plfa.part2.Untyped._⊢_.`
-           (plfa.part2.Untyped._∋_.S
-            (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-       plfa.part2.Untyped._⊢_.·
-       (plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))))
-     plfa.part2.Untyped._—↠_.—→⟨
-     plfa.part2.Untyped._—→_.ξ₁ plfa.part2.Untyped._—→_.β ⟩
-     (plfa.part2.Untyped._⊢_.ƛ
-      (plfa.part2.Untyped._⊢_.ƛ
-       (plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.`
-          (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-         plfa.part2.Untyped._⊢_.·
-         (plfa.part2.Untyped._⊢_.`
-          (plfa.part2.Untyped._∋_.S
-           (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-      plfa.part2.Untyped._⊢_.·
-      ((plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.`
-           (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-          plfa.part2.Untyped._⊢_.·
-          (plfa.part2.Untyped._⊢_.`
-           (plfa.part2.Untyped._∋_.S
-            (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-       plfa.part2.Untyped._⊢_.·
-       (plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-      plfa.part2.Untyped._⊢_.·
-      (plfa.part2.Untyped._⊢_.ƛ
-       (plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.`
-          (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-         plfa.part2.Untyped._⊢_.·
-         ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-          plfa.part2.Untyped._⊢_.·
-          (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-        plfa.part2.Untyped._⊢_.·
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.`
-          (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-         plfa.part2.Untyped._⊢_.·
-         ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-          plfa.part2.Untyped._⊢_.·
-          (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-       plfa.part2.Untyped._⊢_.·
-       (plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.`
-           (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-          plfa.part2.Untyped._⊢_.·
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.`
-               (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.`
-               (plfa.part2.Untyped._∋_.S
-                (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-           plfa.part2.Untyped._⊢_.·
-           ((plfa.part2.Untyped._⊢_.`
-             (plfa.part2.Untyped._∋_.S
-              (plfa.part2.Untyped._∋_.S
-               (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.`
-             (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-          plfa.part2.Untyped._⊢_.·
-          (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-       plfa.part2.Untyped._⊢_.·
-       (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-       plfa.part2.Untyped._⊢_.·
-       ((plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.`
-             (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.`
-                (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-               plfa.part2.Untyped._⊢_.·
-               ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.`
-                (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-               plfa.part2.Untyped._⊢_.·
-               ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.ƛ
-                (plfa.part2.Untyped._⊢_.`
-                 (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.ƛ
-                 (plfa.part2.Untyped._⊢_.ƛ
-                  (plfa.part2.Untyped._⊢_.ƛ
-                   (plfa.part2.Untyped._⊢_.ƛ
-                    (plfa.part2.Untyped._⊢_.`
-                     (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-                    plfa.part2.Untyped._⊢_.·
-                    (plfa.part2.Untyped._⊢_.`
-                     (plfa.part2.Untyped._∋_.S
-                      (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-                 plfa.part2.Untyped._⊢_.·
-                 ((plfa.part2.Untyped._⊢_.`
-                   (plfa.part2.Untyped._∋_.S
-                    (plfa.part2.Untyped._∋_.S
-                     (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-                  plfa.part2.Untyped._⊢_.·
-                  (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                  plfa.part2.Untyped._⊢_.·
-                  (plfa.part2.Untyped._⊢_.`
-                   (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-             plfa.part2.Untyped._⊢_.·
-             ((plfa.part2.Untyped._⊢_.`
-               (plfa.part2.Untyped._∋_.S
-                (plfa.part2.Untyped._∋_.S
-                 (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-              plfa.part2.Untyped._⊢_.·
-              ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-               plfa.part2.Untyped._⊢_.·
-               (plfa.part2.Untyped._⊢_.`
-                (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z)))))
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-         plfa.part2.Untyped._⊢_.·
-         ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-          plfa.part2.Untyped._⊢_.·
-          (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-        plfa.part2.Untyped._⊢_.·
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.`
-             (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.`
-                (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-               plfa.part2.Untyped._⊢_.·
-               ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.`
-                (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-               plfa.part2.Untyped._⊢_.·
-               ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.ƛ
-                (plfa.part2.Untyped._⊢_.`
-                 (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.ƛ
-                 (plfa.part2.Untyped._⊢_.ƛ
-                  (plfa.part2.Untyped._⊢_.ƛ
-                   (plfa.part2.Untyped._⊢_.ƛ
-                    (plfa.part2.Untyped._⊢_.`
-                     (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-                    plfa.part2.Untyped._⊢_.·
-                    (plfa.part2.Untyped._⊢_.`
-                     (plfa.part2.Untyped._∋_.S
-                      (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-                 plfa.part2.Untyped._⊢_.·
-                 ((plfa.part2.Untyped._⊢_.`
-                   (plfa.part2.Untyped._∋_.S
-                    (plfa.part2.Untyped._∋_.S
-                     (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-                  plfa.part2.Untyped._⊢_.·
-                  (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                  plfa.part2.Untyped._⊢_.·
-                  (plfa.part2.Untyped._⊢_.`
-                   (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-             plfa.part2.Untyped._⊢_.·
-             ((plfa.part2.Untyped._⊢_.`
-               (plfa.part2.Untyped._∋_.S
-                (plfa.part2.Untyped._∋_.S
-                 (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-              plfa.part2.Untyped._⊢_.·
-              ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-               plfa.part2.Untyped._⊢_.·
-               (plfa.part2.Untyped._⊢_.`
-                (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z)))))
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-         plfa.part2.Untyped._⊢_.·
-         ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-          plfa.part2.Untyped._⊢_.·
-          (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-        plfa.part2.Untyped._⊢_.·
-        ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-         plfa.part2.Untyped._⊢_.·
-         (plfa.part2.Untyped._⊢_.`
-          (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z)))))
-      plfa.part2.Untyped._⊢_.·
-      (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))
-     plfa.part2.Untyped._⊢_.·
-     ((plfa.part2.Untyped._⊢_.ƛ
-       (plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.`
-          (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-         plfa.part2.Untyped._⊢_.·
-         (plfa.part2.Untyped._⊢_.`
-          (plfa.part2.Untyped._∋_.S
-           (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-      plfa.part2.Untyped._⊢_.·
-      ((plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.`
-           (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-          plfa.part2.Untyped._⊢_.·
-          (plfa.part2.Untyped._⊢_.`
-           (plfa.part2.Untyped._∋_.S
-            (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-       plfa.part2.Untyped._⊢_.·
-       (plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))))
-     plfa.part2.Untyped._—↠_.—→⟨ plfa.part2.Untyped._—→_.β ⟩
-     (plfa.part2.Untyped._⊢_.ƛ
-      (plfa.part2.Untyped._⊢_.ƛ
-       (plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.`
-         (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-        plfa.part2.Untyped._⊢_.·
-        (plfa.part2.Untyped._⊢_.`
-         (plfa.part2.Untyped._∋_.S
-          (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-     plfa.part2.Untyped._⊢_.·
-     ((plfa.part2.Untyped._⊢_.ƛ
-       (plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.`
-          (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-         plfa.part2.Untyped._⊢_.·
-         (plfa.part2.Untyped._⊢_.`
-          (plfa.part2.Untyped._∋_.S
-           (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-      plfa.part2.Untyped._⊢_.·
-      (plfa.part2.Untyped._⊢_.ƛ
-       (plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-     plfa.part2.Untyped._⊢_.·
-     (plfa.part2.Untyped._⊢_.ƛ
-      (plfa.part2.Untyped._⊢_.ƛ
-       (plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.`
-         (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-        plfa.part2.Untyped._⊢_.·
-        ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-         plfa.part2.Untyped._⊢_.·
-         (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-       plfa.part2.Untyped._⊢_.·
-       (plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.`
-         (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-        plfa.part2.Untyped._⊢_.·
-        ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-         plfa.part2.Untyped._⊢_.·
-         (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-      plfa.part2.Untyped._⊢_.·
-      (plfa.part2.Untyped._⊢_.ƛ
-       (plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.`
-          (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-         plfa.part2.Untyped._⊢_.·
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S
-               (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-          plfa.part2.Untyped._⊢_.·
-          ((plfa.part2.Untyped._⊢_.`
-            (plfa.part2.Untyped._∋_.S
-             (plfa.part2.Untyped._∋_.S
-              (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-           plfa.part2.Untyped._⊢_.·
-           (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-           plfa.part2.Untyped._⊢_.·
-           (plfa.part2.Untyped._⊢_.`
-            (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-         plfa.part2.Untyped._⊢_.·
-         (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-      plfa.part2.Untyped._⊢_.·
-      (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-      plfa.part2.Untyped._⊢_.·
-      ((plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.`
-            (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-           plfa.part2.Untyped._⊢_.·
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.`
-               (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-              plfa.part2.Untyped._⊢_.·
-              ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-               plfa.part2.Untyped._⊢_.·
-               (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.`
-               (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-              plfa.part2.Untyped._⊢_.·
-              ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-               plfa.part2.Untyped._⊢_.·
-               (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.`
-                (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-               plfa.part2.Untyped._⊢_.·
-               (plfa.part2.Untyped._⊢_.ƛ
-                (plfa.part2.Untyped._⊢_.ƛ
-                 (plfa.part2.Untyped._⊢_.ƛ
-                  (plfa.part2.Untyped._⊢_.ƛ
-                   (plfa.part2.Untyped._⊢_.`
-                    (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-                   plfa.part2.Untyped._⊢_.·
-                   (plfa.part2.Untyped._⊢_.`
-                    (plfa.part2.Untyped._∋_.S
-                     (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-                plfa.part2.Untyped._⊢_.·
-                ((plfa.part2.Untyped._⊢_.`
-                  (plfa.part2.Untyped._∋_.S
-                   (plfa.part2.Untyped._∋_.S
-                    (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-                 plfa.part2.Untyped._⊢_.·
-                 (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                 plfa.part2.Untyped._⊢_.·
-                 (plfa.part2.Untyped._⊢_.`
-                  (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-               plfa.part2.Untyped._⊢_.·
-               (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-            plfa.part2.Untyped._⊢_.·
-            ((plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S
-               (plfa.part2.Untyped._∋_.S
-                (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-             plfa.part2.Untyped._⊢_.·
-             ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.`
-               (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z)))))
-           plfa.part2.Untyped._⊢_.·
-           (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-        plfa.part2.Untyped._⊢_.·
-        ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-         plfa.part2.Untyped._⊢_.·
-         (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-       plfa.part2.Untyped._⊢_.·
-       (plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.`
-            (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-           plfa.part2.Untyped._⊢_.·
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.`
-               (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-              plfa.part2.Untyped._⊢_.·
-              ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-               plfa.part2.Untyped._⊢_.·
-               (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.`
-               (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-              plfa.part2.Untyped._⊢_.·
-              ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-               plfa.part2.Untyped._⊢_.·
-               (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.`
-                (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-               plfa.part2.Untyped._⊢_.·
-               (plfa.part2.Untyped._⊢_.ƛ
-                (plfa.part2.Untyped._⊢_.ƛ
-                 (plfa.part2.Untyped._⊢_.ƛ
-                  (plfa.part2.Untyped._⊢_.ƛ
-                   (plfa.part2.Untyped._⊢_.`
-                    (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-                   plfa.part2.Untyped._⊢_.·
-                   (plfa.part2.Untyped._⊢_.`
-                    (plfa.part2.Untyped._∋_.S
-                     (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-                plfa.part2.Untyped._⊢_.·
-                ((plfa.part2.Untyped._⊢_.`
-                  (plfa.part2.Untyped._∋_.S
-                   (plfa.part2.Untyped._∋_.S
-                    (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-                 plfa.part2.Untyped._⊢_.·
-                 (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                 plfa.part2.Untyped._⊢_.·
-                 (plfa.part2.Untyped._⊢_.`
-                  (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-               plfa.part2.Untyped._⊢_.·
-               (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-            plfa.part2.Untyped._⊢_.·
-            ((plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S
-               (plfa.part2.Untyped._∋_.S
-                (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-             plfa.part2.Untyped._⊢_.·
-             ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.`
-               (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z)))))
-           plfa.part2.Untyped._⊢_.·
-           (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-        plfa.part2.Untyped._⊢_.·
-        ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-         plfa.part2.Untyped._⊢_.·
-         (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-       plfa.part2.Untyped._⊢_.·
-       ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-        plfa.part2.Untyped._⊢_.·
-        ((plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.`
-             (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.`
-             (plfa.part2.Untyped._∋_.S
-              (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-         plfa.part2.Untyped._⊢_.·
-         ((plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S
-               (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-          plfa.part2.Untyped._⊢_.·
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))))))
-     plfa.part2.Untyped._⊢_.·
-     ((plfa.part2.Untyped._⊢_.ƛ
-       (plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.`
-          (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-         plfa.part2.Untyped._⊢_.·
-         (plfa.part2.Untyped._⊢_.`
-          (plfa.part2.Untyped._∋_.S
-           (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-      plfa.part2.Untyped._⊢_.·
-      ((plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.`
-           (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-          plfa.part2.Untyped._⊢_.·
-          (plfa.part2.Untyped._⊢_.`
-           (plfa.part2.Untyped._∋_.S
-            (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-       plfa.part2.Untyped._⊢_.·
-       (plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))))
-     plfa.part2.Untyped._—↠_.—→⟨
-     plfa.part2.Untyped._—→_.ξ₁
-     (plfa.part2.Untyped._—→_.ξ₁ plfa.part2.Untyped._—→_.β)
+     (_⊢_.ƛ
+      (_⊢_.ƛ
+       (_⊢_.`
+        (_∋_.S _∋_.Z))
+       _⊢_.·
+       (_⊢_.ƛ
+        (_⊢_.ƛ
+         (_⊢_.ƛ
+          (_⊢_.`
+           (_∋_.S _∋_.Z))
+          _⊢_.·
+          ((_⊢_.` _∋_.Z)
+           _⊢_.·
+           (_⊢_.` _∋_.Z)))
+         _⊢_.·
+         (_⊢_.ƛ
+          (_⊢_.`
+           (_∋_.S _∋_.Z))
+          _⊢_.·
+          ((_⊢_.` _∋_.Z)
+           _⊢_.·
+           (_⊢_.` _∋_.Z))))
+        _⊢_.·
+        (_⊢_.ƛ
+         (_⊢_.ƛ
+          (_⊢_.ƛ
+           (_⊢_.`
+            (_∋_.S _∋_.Z))
+           _⊢_.·
+           (_⊢_.ƛ
+            (_⊢_.ƛ
+             (_⊢_.ƛ
+              (_⊢_.ƛ
+               (_⊢_.`
+                (_∋_.S _∋_.Z))
+               _⊢_.·
+               (_⊢_.`
+                (_∋_.S
+                 (_∋_.S _∋_.Z))))))
+            _⊢_.·
+            ((_⊢_.`
+              (_∋_.S
+               (_∋_.S
+                (_∋_.S _∋_.Z))))
+             _⊢_.·
+             (_⊢_.` _∋_.Z)
+             _⊢_.·
+             (_⊢_.`
+              (_∋_.S _∋_.Z))))
+           _⊢_.·
+           (_⊢_.` _∋_.Z))))
+        _⊢_.·
+        (_⊢_.` _∋_.Z)
+        _⊢_.·
+        ((_⊢_.ƛ
+          (_⊢_.ƛ
+           (_⊢_.ƛ
+            (_⊢_.ƛ
+             (_⊢_.`
+              (_∋_.S _∋_.Z))
+             _⊢_.·
+             (_⊢_.ƛ
+              (_⊢_.ƛ
+               (_⊢_.ƛ
+                (_⊢_.`
+                 (_∋_.S _∋_.Z))
+                _⊢_.·
+                ((_⊢_.` _∋_.Z)
+                 _⊢_.·
+                 (_⊢_.` _∋_.Z)))
+               _⊢_.·
+               (_⊢_.ƛ
+                (_⊢_.`
+                 (_∋_.S _∋_.Z))
+                _⊢_.·
+                ((_⊢_.` _∋_.Z)
+                 _⊢_.·
+                 (_⊢_.` _∋_.Z))))
+              _⊢_.·
+              (_⊢_.ƛ
+               (_⊢_.ƛ
+                (_⊢_.ƛ
+                 (_⊢_.`
+                  (_∋_.S _∋_.Z))
+                 _⊢_.·
+                 (_⊢_.ƛ
+                  (_⊢_.ƛ
+                   (_⊢_.ƛ
+                    (_⊢_.ƛ
+                     (_⊢_.`
+                      (_∋_.S _∋_.Z))
+                     _⊢_.·
+                     (_⊢_.`
+                      (_∋_.S
+                       (_∋_.S _∋_.Z))))))
+                  _⊢_.·
+                  ((_⊢_.`
+                    (_∋_.S
+                     (_∋_.S
+                      (_∋_.S _∋_.Z))))
+                   _⊢_.·
+                   (_⊢_.` _∋_.Z)
+                   _⊢_.·
+                   (_⊢_.`
+                    (_∋_.S _∋_.Z))))
+                 _⊢_.·
+                 (_⊢_.` _∋_.Z))))
+              _⊢_.·
+              (_⊢_.` _∋_.Z)
+              _⊢_.·
+              ((_⊢_.`
+                (_∋_.S
+                 (_∋_.S
+                  (_∋_.S _∋_.Z))))
+               _⊢_.·
+               ((_⊢_.` _∋_.Z)
+                _⊢_.·
+                (_⊢_.`
+                 (_∋_.S _∋_.Z)))))
+             _⊢_.·
+             (_⊢_.` _∋_.Z))))
+          _⊢_.·
+          ((_⊢_.` _∋_.Z)
+           _⊢_.·
+           (_⊢_.` _∋_.Z)))
+         _⊢_.·
+         (_⊢_.ƛ
+          (_⊢_.ƛ
+           (_⊢_.ƛ
+            (_⊢_.ƛ
+             (_⊢_.`
+              (_∋_.S _∋_.Z))
+             _⊢_.·
+             (_⊢_.ƛ
+              (_⊢_.ƛ
+               (_⊢_.ƛ
+                (_⊢_.`
+                 (_∋_.S _∋_.Z))
+                _⊢_.·
+                ((_⊢_.` _∋_.Z)
+                 _⊢_.·
+                 (_⊢_.` _∋_.Z)))
+               _⊢_.·
+               (_⊢_.ƛ
+                (_⊢_.`
+                 (_∋_.S _∋_.Z))
+                _⊢_.·
+                ((_⊢_.` _∋_.Z)
+                 _⊢_.·
+                 (_⊢_.` _∋_.Z))))
+              _⊢_.·
+              (_⊢_.ƛ
+               (_⊢_.ƛ
+                (_⊢_.ƛ
+                 (_⊢_.`
+                  (_∋_.S _∋_.Z))
+                 _⊢_.·
+                 (_⊢_.ƛ
+                  (_⊢_.ƛ
+                   (_⊢_.ƛ
+                    (_⊢_.ƛ
+                     (_⊢_.`
+                      (_∋_.S _∋_.Z))
+                     _⊢_.·
+                     (_⊢_.`
+                      (_∋_.S
+                       (_∋_.S _∋_.Z))))))
+                  _⊢_.·
+                  ((_⊢_.`
+                    (_∋_.S
+                     (_∋_.S
+                      (_∋_.S _∋_.Z))))
+                   _⊢_.·
+                   (_⊢_.` _∋_.Z)
+                   _⊢_.·
+                   (_⊢_.`
+                    (_∋_.S _∋_.Z))))
+                 _⊢_.·
+                 (_⊢_.` _∋_.Z))))
+              _⊢_.·
+              (_⊢_.` _∋_.Z)
+              _⊢_.·
+              ((_⊢_.`
+                (_∋_.S
+                 (_∋_.S
+                  (_∋_.S _∋_.Z))))
+               _⊢_.·
+               ((_⊢_.` _∋_.Z)
+                _⊢_.·
+                (_⊢_.`
+                 (_∋_.S _∋_.Z)))))
+             _⊢_.·
+             (_⊢_.` _∋_.Z))))
+          _⊢_.·
+          ((_⊢_.` _∋_.Z)
+           _⊢_.·
+           (_⊢_.` _∋_.Z)))
+         _⊢_.·
+         ((_⊢_.` _∋_.Z)
+          _⊢_.·
+          (_⊢_.`
+           (_∋_.S _∋_.Z)))))
+       _⊢_.·
+       (_⊢_.` _∋_.Z)))
+     _⊢_.·
+     ((_⊢_.ƛ
+       (_⊢_.ƛ
+        (_⊢_.ƛ
+         (_⊢_.`
+          (_∋_.S _∋_.Z))
+         _⊢_.·
+         (_⊢_.`
+          (_∋_.S
+           (_∋_.S _∋_.Z))))))
+      _⊢_.·
+      ((_⊢_.ƛ
+        (_⊢_.ƛ
+         (_⊢_.ƛ
+          (_⊢_.`
+           (_∋_.S _∋_.Z))
+          _⊢_.·
+          (_⊢_.`
+           (_∋_.S
+            (_∋_.S _∋_.Z))))))
+       _⊢_.·
+       (_⊢_.ƛ
+        (_⊢_.ƛ
+         (_⊢_.` _∋_.Z)))))
+     _⊢_.·
+     ((_⊢_.ƛ
+       (_⊢_.ƛ
+        (_⊢_.ƛ
+         (_⊢_.`
+          (_∋_.S _∋_.Z))
+         _⊢_.·
+         (_⊢_.`
+          (_∋_.S
+           (_∋_.S _∋_.Z))))))
+      _⊢_.·
+      ((_⊢_.ƛ
+        (_⊢_.ƛ
+         (_⊢_.ƛ
+          (_⊢_.`
+           (_∋_.S _∋_.Z))
+          _⊢_.·
+          (_⊢_.`
+           (_∋_.S
+            (_∋_.S _∋_.Z))))))
+       _⊢_.·
+       (_⊢_.ƛ
+        (_⊢_.ƛ
+         (_⊢_.` _∋_.Z)))))
+     _—↠_.—→⟨
+     _—→_.ξ₁ _—→_.β ⟩
+     (_⊢_.ƛ
+      (_⊢_.ƛ
+       (_⊢_.ƛ
+        (_⊢_.ƛ
+         (_⊢_.`
+          (_∋_.S _∋_.Z))
+         _⊢_.·
+         (_⊢_.`
+          (_∋_.S
+           (_∋_.S _∋_.Z))))))
+      _⊢_.·
+      ((_⊢_.ƛ
+        (_⊢_.ƛ
+         (_⊢_.ƛ
+          (_⊢_.`
+           (_∋_.S _∋_.Z))
+          _⊢_.·
+          (_⊢_.`
+           (_∋_.S
+            (_∋_.S _∋_.Z))))))
+       _⊢_.·
+       (_⊢_.ƛ
+        (_⊢_.ƛ
+         (_⊢_.` _∋_.Z))))
+      _⊢_.·
+      (_⊢_.ƛ
+       (_⊢_.ƛ
+        (_⊢_.ƛ
+         (_⊢_.`
+          (_∋_.S _∋_.Z))
+         _⊢_.·
+         ((_⊢_.` _∋_.Z)
+          _⊢_.·
+          (_⊢_.` _∋_.Z)))
+        _⊢_.·
+        (_⊢_.ƛ
+         (_⊢_.`
+          (_∋_.S _∋_.Z))
+         _⊢_.·
+         ((_⊢_.` _∋_.Z)
+          _⊢_.·
+          (_⊢_.` _∋_.Z))))
+       _⊢_.·
+       (_⊢_.ƛ
+        (_⊢_.ƛ
+         (_⊢_.ƛ
+          (_⊢_.`
+           (_∋_.S _∋_.Z))
+          _⊢_.·
+          (_⊢_.ƛ
+           (_⊢_.ƛ
+            (_⊢_.ƛ
+             (_⊢_.ƛ
+              (_⊢_.`
+               (_∋_.S _∋_.Z))
+              _⊢_.·
+              (_⊢_.`
+               (_∋_.S
+                (_∋_.S _∋_.Z))))))
+           _⊢_.·
+           ((_⊢_.`
+             (_∋_.S
+              (_∋_.S
+               (_∋_.S _∋_.Z))))
+            _⊢_.·
+            (_⊢_.` _∋_.Z)
+            _⊢_.·
+            (_⊢_.`
+             (_∋_.S _∋_.Z))))
+          _⊢_.·
+          (_⊢_.` _∋_.Z))))
+       _⊢_.·
+       (_⊢_.` _∋_.Z)
+       _⊢_.·
+       ((_⊢_.ƛ
+         (_⊢_.ƛ
+          (_⊢_.ƛ
+           (_⊢_.ƛ
+            (_⊢_.`
+             (_∋_.S _∋_.Z))
+            _⊢_.·
+            (_⊢_.ƛ
+             (_⊢_.ƛ
+              (_⊢_.ƛ
+               (_⊢_.`
+                (_∋_.S _∋_.Z))
+               _⊢_.·
+               ((_⊢_.` _∋_.Z)
+                _⊢_.·
+                (_⊢_.` _∋_.Z)))
+              _⊢_.·
+              (_⊢_.ƛ
+               (_⊢_.`
+                (_∋_.S _∋_.Z))
+               _⊢_.·
+               ((_⊢_.` _∋_.Z)
+                _⊢_.·
+                (_⊢_.` _∋_.Z))))
+             _⊢_.·
+             (_⊢_.ƛ
+              (_⊢_.ƛ
+               (_⊢_.ƛ
+                (_⊢_.`
+                 (_∋_.S _∋_.Z))
+                _⊢_.·
+                (_⊢_.ƛ
+                 (_⊢_.ƛ
+                  (_⊢_.ƛ
+                   (_⊢_.ƛ
+                    (_⊢_.`
+                     (_∋_.S _∋_.Z))
+                    _⊢_.·
+                    (_⊢_.`
+                     (_∋_.S
+                      (_∋_.S _∋_.Z))))))
+                 _⊢_.·
+                 ((_⊢_.`
+                   (_∋_.S
+                    (_∋_.S
+                     (_∋_.S _∋_.Z))))
+                  _⊢_.·
+                  (_⊢_.` _∋_.Z)
+                  _⊢_.·
+                  (_⊢_.`
+                   (_∋_.S _∋_.Z))))
+                _⊢_.·
+                (_⊢_.` _∋_.Z))))
+             _⊢_.·
+             (_⊢_.` _∋_.Z)
+             _⊢_.·
+             ((_⊢_.`
+               (_∋_.S
+                (_∋_.S
+                 (_∋_.S _∋_.Z))))
+              _⊢_.·
+              ((_⊢_.` _∋_.Z)
+               _⊢_.·
+               (_⊢_.`
+                (_∋_.S _∋_.Z)))))
+            _⊢_.·
+            (_⊢_.` _∋_.Z))))
+         _⊢_.·
+         ((_⊢_.` _∋_.Z)
+          _⊢_.·
+          (_⊢_.` _∋_.Z)))
+        _⊢_.·
+        (_⊢_.ƛ
+         (_⊢_.ƛ
+          (_⊢_.ƛ
+           (_⊢_.ƛ
+            (_⊢_.`
+             (_∋_.S _∋_.Z))
+            _⊢_.·
+            (_⊢_.ƛ
+             (_⊢_.ƛ
+              (_⊢_.ƛ
+               (_⊢_.`
+                (_∋_.S _∋_.Z))
+               _⊢_.·
+               ((_⊢_.` _∋_.Z)
+                _⊢_.·
+                (_⊢_.` _∋_.Z)))
+              _⊢_.·
+              (_⊢_.ƛ
+               (_⊢_.`
+                (_∋_.S _∋_.Z))
+               _⊢_.·
+               ((_⊢_.` _∋_.Z)
+                _⊢_.·
+                (_⊢_.` _∋_.Z))))
+             _⊢_.·
+             (_⊢_.ƛ
+              (_⊢_.ƛ
+               (_⊢_.ƛ
+                (_⊢_.`
+                 (_∋_.S _∋_.Z))
+                _⊢_.·
+                (_⊢_.ƛ
+                 (_⊢_.ƛ
+                  (_⊢_.ƛ
+                   (_⊢_.ƛ
+                    (_⊢_.`
+                     (_∋_.S _∋_.Z))
+                    _⊢_.·
+                    (_⊢_.`
+                     (_∋_.S
+                      (_∋_.S _∋_.Z))))))
+                 _⊢_.·
+                 ((_⊢_.`
+                   (_∋_.S
+                    (_∋_.S
+                     (_∋_.S _∋_.Z))))
+                  _⊢_.·
+                  (_⊢_.` _∋_.Z)
+                  _⊢_.·
+                  (_⊢_.`
+                   (_∋_.S _∋_.Z))))
+                _⊢_.·
+                (_⊢_.` _∋_.Z))))
+             _⊢_.·
+             (_⊢_.` _∋_.Z)
+             _⊢_.·
+             ((_⊢_.`
+               (_∋_.S
+                (_∋_.S
+                 (_∋_.S _∋_.Z))))
+              _⊢_.·
+              ((_⊢_.` _∋_.Z)
+               _⊢_.·
+               (_⊢_.`
+                (_∋_.S _∋_.Z)))))
+            _⊢_.·
+            (_⊢_.` _∋_.Z))))
+         _⊢_.·
+         ((_⊢_.` _∋_.Z)
+          _⊢_.·
+          (_⊢_.` _∋_.Z)))
+        _⊢_.·
+        ((_⊢_.` _∋_.Z)
+         _⊢_.·
+         (_⊢_.`
+          (_∋_.S _∋_.Z)))))
+      _⊢_.·
+      (_⊢_.` _∋_.Z))
+     _⊢_.·
+     ((_⊢_.ƛ
+       (_⊢_.ƛ
+        (_⊢_.ƛ
+         (_⊢_.`
+          (_∋_.S _∋_.Z))
+         _⊢_.·
+         (_⊢_.`
+          (_∋_.S
+           (_∋_.S _∋_.Z))))))
+      _⊢_.·
+      ((_⊢_.ƛ
+        (_⊢_.ƛ
+         (_⊢_.ƛ
+          (_⊢_.`
+           (_∋_.S _∋_.Z))
+          _⊢_.·
+          (_⊢_.`
+           (_∋_.S
+            (_∋_.S _∋_.Z))))))
+       _⊢_.·
+       (_⊢_.ƛ
+        (_⊢_.ƛ
+         (_⊢_.` _∋_.Z)))))
+     _—↠_.—→⟨ _—→_.β ⟩
+     (_⊢_.ƛ
+      (_⊢_.ƛ
+       (_⊢_.ƛ
+        (_⊢_.`
+         (_∋_.S _∋_.Z))
+        _⊢_.·
+        (_⊢_.`
+         (_∋_.S
+          (_∋_.S _∋_.Z))))))
+     _⊢_.·
+     ((_⊢_.ƛ
+       (_⊢_.ƛ
+        (_⊢_.ƛ
+         (_⊢_.`
+          (_∋_.S _∋_.Z))
+         _⊢_.·
+         (_⊢_.`
+          (_∋_.S
+           (_∋_.S _∋_.Z))))))
+      _⊢_.·
+      (_⊢_.ƛ
+       (_⊢_.ƛ
+        (_⊢_.` _∋_.Z))))
+     _⊢_.·
+     (_⊢_.ƛ
+      (_⊢_.ƛ
+       (_⊢_.ƛ
+        (_⊢_.`
+         (_∋_.S _∋_.Z))
+        _⊢_.·
+        ((_⊢_.` _∋_.Z)
+         _⊢_.·
+         (_⊢_.` _∋_.Z)))
+       _⊢_.·
+       (_⊢_.ƛ
+        (_⊢_.`
+         (_∋_.S _∋_.Z))
+        _⊢_.·
+        ((_⊢_.` _∋_.Z)
+         _⊢_.·
+         (_⊢_.` _∋_.Z))))
+      _⊢_.·
+      (_⊢_.ƛ
+       (_⊢_.ƛ
+        (_⊢_.ƛ
+         (_⊢_.`
+          (_∋_.S _∋_.Z))
+         _⊢_.·
+         (_⊢_.ƛ
+          (_⊢_.ƛ
+           (_⊢_.ƛ
+            (_⊢_.ƛ
+             (_⊢_.`
+              (_∋_.S _∋_.Z))
+             _⊢_.·
+             (_⊢_.`
+              (_∋_.S
+               (_∋_.S _∋_.Z))))))
+          _⊢_.·
+          ((_⊢_.`
+            (_∋_.S
+             (_∋_.S
+              (_∋_.S _∋_.Z))))
+           _⊢_.·
+           (_⊢_.` _∋_.Z)
+           _⊢_.·
+           (_⊢_.`
+            (_∋_.S _∋_.Z))))
+         _⊢_.·
+         (_⊢_.` _∋_.Z))))
+      _⊢_.·
+      (_⊢_.` _∋_.Z)
+      _⊢_.·
+      ((_⊢_.ƛ
+        (_⊢_.ƛ
+         (_⊢_.ƛ
+          (_⊢_.ƛ
+           (_⊢_.`
+            (_∋_.S _∋_.Z))
+           _⊢_.·
+           (_⊢_.ƛ
+            (_⊢_.ƛ
+             (_⊢_.ƛ
+              (_⊢_.`
+               (_∋_.S _∋_.Z))
+              _⊢_.·
+              ((_⊢_.` _∋_.Z)
+               _⊢_.·
+               (_⊢_.` _∋_.Z)))
+             _⊢_.·
+             (_⊢_.ƛ
+              (_⊢_.`
+               (_∋_.S _∋_.Z))
+              _⊢_.·
+              ((_⊢_.` _∋_.Z)
+               _⊢_.·
+               (_⊢_.` _∋_.Z))))
+            _⊢_.·
+            (_⊢_.ƛ
+             (_⊢_.ƛ
+              (_⊢_.ƛ
+               (_⊢_.`
+                (_∋_.S _∋_.Z))
+               _⊢_.·
+               (_⊢_.ƛ
+                (_⊢_.ƛ
+                 (_⊢_.ƛ
+                  (_⊢_.ƛ
+                   (_⊢_.`
+                    (_∋_.S _∋_.Z))
+                   _⊢_.·
+                   (_⊢_.`
+                    (_∋_.S
+                     (_∋_.S _∋_.Z))))))
+                _⊢_.·
+                ((_⊢_.`
+                  (_∋_.S
+                   (_∋_.S
+                    (_∋_.S _∋_.Z))))
+                 _⊢_.·
+                 (_⊢_.` _∋_.Z)
+                 _⊢_.·
+                 (_⊢_.`
+                  (_∋_.S _∋_.Z))))
+               _⊢_.·
+               (_⊢_.` _∋_.Z))))
+            _⊢_.·
+            (_⊢_.` _∋_.Z)
+            _⊢_.·
+            ((_⊢_.`
+              (_∋_.S
+               (_∋_.S
+                (_∋_.S _∋_.Z))))
+             _⊢_.·
+             ((_⊢_.` _∋_.Z)
+              _⊢_.·
+              (_⊢_.`
+               (_∋_.S _∋_.Z)))))
+           _⊢_.·
+           (_⊢_.` _∋_.Z))))
+        _⊢_.·
+        ((_⊢_.` _∋_.Z)
+         _⊢_.·
+         (_⊢_.` _∋_.Z)))
+       _⊢_.·
+       (_⊢_.ƛ
+        (_⊢_.ƛ
+         (_⊢_.ƛ
+          (_⊢_.ƛ
+           (_⊢_.`
+            (_∋_.S _∋_.Z))
+           _⊢_.·
+           (_⊢_.ƛ
+            (_⊢_.ƛ
+             (_⊢_.ƛ
+              (_⊢_.`
+               (_∋_.S _∋_.Z))
+              _⊢_.·
+              ((_⊢_.` _∋_.Z)
+               _⊢_.·
+               (_⊢_.` _∋_.Z)))
+             _⊢_.·
+             (_⊢_.ƛ
+              (_⊢_.`
+               (_∋_.S _∋_.Z))
+              _⊢_.·
+              ((_⊢_.` _∋_.Z)
+               _⊢_.·
+               (_⊢_.` _∋_.Z))))
+            _⊢_.·
+            (_⊢_.ƛ
+             (_⊢_.ƛ
+              (_⊢_.ƛ
+               (_⊢_.`
+                (_∋_.S _∋_.Z))
+               _⊢_.·
+               (_⊢_.ƛ
+                (_⊢_.ƛ
+                 (_⊢_.ƛ
+                  (_⊢_.ƛ
+                   (_⊢_.`
+                    (_∋_.S _∋_.Z))
+                   _⊢_.·
+                   (_⊢_.`
+                    (_∋_.S
+                     (_∋_.S _∋_.Z))))))
+                _⊢_.·
+                ((_⊢_.`
+                  (_∋_.S
+                   (_∋_.S
+                    (_∋_.S _∋_.Z))))
+                 _⊢_.·
+                 (_⊢_.` _∋_.Z)
+                 _⊢_.·
+                 (_⊢_.`
+                  (_∋_.S _∋_.Z))))
+               _⊢_.·
+               (_⊢_.` _∋_.Z))))
+            _⊢_.·
+            (_⊢_.` _∋_.Z)
+            _⊢_.·
+            ((_⊢_.`
+              (_∋_.S
+               (_∋_.S
+                (_∋_.S _∋_.Z))))
+             _⊢_.·
+             ((_⊢_.` _∋_.Z)
+              _⊢_.·
+              (_⊢_.`
+               (_∋_.S _∋_.Z)))))
+           _⊢_.·
+           (_⊢_.` _∋_.Z))))
+        _⊢_.·
+        ((_⊢_.` _∋_.Z)
+         _⊢_.·
+         (_⊢_.` _∋_.Z)))
+       _⊢_.·
+       ((_⊢_.` _∋_.Z)
+        _⊢_.·
+        ((_⊢_.ƛ
+          (_⊢_.ƛ
+           (_⊢_.ƛ
+            (_⊢_.`
+             (_∋_.S _∋_.Z))
+            _⊢_.·
+            (_⊢_.`
+             (_∋_.S
+              (_∋_.S _∋_.Z))))))
+         _⊢_.·
+         ((_⊢_.ƛ
+           (_⊢_.ƛ
+            (_⊢_.ƛ
+             (_⊢_.`
+              (_∋_.S _∋_.Z))
+             _⊢_.·
+             (_⊢_.`
+              (_∋_.S
+               (_∋_.S _∋_.Z))))))
+          _⊢_.·
+          (_⊢_.ƛ
+           (_⊢_.ƛ
+            (_⊢_.` _∋_.Z))))))))
+     _⊢_.·
+     ((_⊢_.ƛ
+       (_⊢_.ƛ
+        (_⊢_.ƛ
+         (_⊢_.`
+          (_∋_.S _∋_.Z))
+         _⊢_.·
+         (_⊢_.`
+          (_∋_.S
+           (_∋_.S _∋_.Z))))))
+      _⊢_.·
+      ((_⊢_.ƛ
+        (_⊢_.ƛ
+         (_⊢_.ƛ
+          (_⊢_.`
+           (_∋_.S _∋_.Z))
+          _⊢_.·
+          (_⊢_.`
+           (_∋_.S
+            (_∋_.S _∋_.Z))))))
+       _⊢_.·
+       (_⊢_.ƛ
+        (_⊢_.ƛ
+         (_⊢_.` _∋_.Z)))))
+     _—↠_.—→⟨
+     _—→_.ξ₁
+     (_—→_.ξ₁ _—→_.β)
      ⟩
-     (plfa.part2.Untyped._⊢_.ƛ
-      (plfa.part2.Untyped._⊢_.ƛ
-       (plfa.part2.Untyped._⊢_.`
-        (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-       plfa.part2.Untyped._⊢_.·
-       ((plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.`
-            (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-           plfa.part2.Untyped._⊢_.·
-           (plfa.part2.Untyped._⊢_.`
-            (plfa.part2.Untyped._∋_.S
-             (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-        plfa.part2.Untyped._⊢_.·
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))))
-     plfa.part2.Untyped._⊢_.·
-     (plfa.part2.Untyped._⊢_.ƛ
-      (plfa.part2.Untyped._⊢_.ƛ
-       (plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.`
-         (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-        plfa.part2.Untyped._⊢_.·
-        ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-         plfa.part2.Untyped._⊢_.·
-         (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-       plfa.part2.Untyped._⊢_.·
-       (plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.`
-         (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-        plfa.part2.Untyped._⊢_.·
-        ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-         plfa.part2.Untyped._⊢_.·
-         (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-      plfa.part2.Untyped._⊢_.·
-      (plfa.part2.Untyped._⊢_.ƛ
-       (plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.`
-          (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-         plfa.part2.Untyped._⊢_.·
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S
-               (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-          plfa.part2.Untyped._⊢_.·
-          ((plfa.part2.Untyped._⊢_.`
-            (plfa.part2.Untyped._∋_.S
-             (plfa.part2.Untyped._∋_.S
-              (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-           plfa.part2.Untyped._⊢_.·
-           (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-           plfa.part2.Untyped._⊢_.·
-           (plfa.part2.Untyped._⊢_.`
-            (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-         plfa.part2.Untyped._⊢_.·
-         (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-      plfa.part2.Untyped._⊢_.·
-      (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-      plfa.part2.Untyped._⊢_.·
-      ((plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.`
-            (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-           plfa.part2.Untyped._⊢_.·
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.`
-               (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-              plfa.part2.Untyped._⊢_.·
-              ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-               plfa.part2.Untyped._⊢_.·
-               (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.`
-               (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-              plfa.part2.Untyped._⊢_.·
-              ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-               plfa.part2.Untyped._⊢_.·
-               (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.`
-                (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-               plfa.part2.Untyped._⊢_.·
-               (plfa.part2.Untyped._⊢_.ƛ
-                (plfa.part2.Untyped._⊢_.ƛ
-                 (plfa.part2.Untyped._⊢_.ƛ
-                  (plfa.part2.Untyped._⊢_.ƛ
-                   (plfa.part2.Untyped._⊢_.`
-                    (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-                   plfa.part2.Untyped._⊢_.·
-                   (plfa.part2.Untyped._⊢_.`
-                    (plfa.part2.Untyped._∋_.S
-                     (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-                plfa.part2.Untyped._⊢_.·
-                ((plfa.part2.Untyped._⊢_.`
-                  (plfa.part2.Untyped._∋_.S
-                   (plfa.part2.Untyped._∋_.S
-                    (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-                 plfa.part2.Untyped._⊢_.·
-                 (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                 plfa.part2.Untyped._⊢_.·
-                 (plfa.part2.Untyped._⊢_.`
-                  (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-               plfa.part2.Untyped._⊢_.·
-               (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-            plfa.part2.Untyped._⊢_.·
-            ((plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S
-               (plfa.part2.Untyped._∋_.S
-                (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-             plfa.part2.Untyped._⊢_.·
-             ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.`
-               (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z)))))
-           plfa.part2.Untyped._⊢_.·
-           (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-        plfa.part2.Untyped._⊢_.·
-        ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-         plfa.part2.Untyped._⊢_.·
-         (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-       plfa.part2.Untyped._⊢_.·
-       (plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.`
-            (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-           plfa.part2.Untyped._⊢_.·
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.`
-               (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-              plfa.part2.Untyped._⊢_.·
-              ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-               plfa.part2.Untyped._⊢_.·
-               (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.`
-               (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-              plfa.part2.Untyped._⊢_.·
-              ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-               plfa.part2.Untyped._⊢_.·
-               (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.`
-                (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-               plfa.part2.Untyped._⊢_.·
-               (plfa.part2.Untyped._⊢_.ƛ
-                (plfa.part2.Untyped._⊢_.ƛ
-                 (plfa.part2.Untyped._⊢_.ƛ
-                  (plfa.part2.Untyped._⊢_.ƛ
-                   (plfa.part2.Untyped._⊢_.`
-                    (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-                   plfa.part2.Untyped._⊢_.·
-                   (plfa.part2.Untyped._⊢_.`
-                    (plfa.part2.Untyped._∋_.S
-                     (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-                plfa.part2.Untyped._⊢_.·
-                ((plfa.part2.Untyped._⊢_.`
-                  (plfa.part2.Untyped._∋_.S
-                   (plfa.part2.Untyped._∋_.S
-                    (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-                 plfa.part2.Untyped._⊢_.·
-                 (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                 plfa.part2.Untyped._⊢_.·
-                 (plfa.part2.Untyped._⊢_.`
-                  (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-               plfa.part2.Untyped._⊢_.·
-               (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-            plfa.part2.Untyped._⊢_.·
-            ((plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S
-               (plfa.part2.Untyped._∋_.S
-                (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-             plfa.part2.Untyped._⊢_.·
-             ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.`
-               (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z)))))
-           plfa.part2.Untyped._⊢_.·
-           (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-        plfa.part2.Untyped._⊢_.·
-        ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-         plfa.part2.Untyped._⊢_.·
-         (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-       plfa.part2.Untyped._⊢_.·
-       ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-        plfa.part2.Untyped._⊢_.·
-        ((plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.`
-             (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.`
-             (plfa.part2.Untyped._∋_.S
-              (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-         plfa.part2.Untyped._⊢_.·
-         ((plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S
-               (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-          plfa.part2.Untyped._⊢_.·
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))))))
-     plfa.part2.Untyped._⊢_.·
-     ((plfa.part2.Untyped._⊢_.ƛ
-       (plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.`
-          (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-         plfa.part2.Untyped._⊢_.·
-         (plfa.part2.Untyped._⊢_.`
-          (plfa.part2.Untyped._∋_.S
-           (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-      plfa.part2.Untyped._⊢_.·
-      ((plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.`
-           (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-          plfa.part2.Untyped._⊢_.·
-          (plfa.part2.Untyped._⊢_.`
-           (plfa.part2.Untyped._∋_.S
-            (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-       plfa.part2.Untyped._⊢_.·
-       (plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))))
-     plfa.part2.Untyped._—↠_.—→⟨
-     plfa.part2.Untyped._—→_.ξ₁ plfa.part2.Untyped._—→_.β ⟩
-     (plfa.part2.Untyped._⊢_.ƛ
-      (plfa.part2.Untyped._⊢_.ƛ
-       (plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.`
-          (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-         plfa.part2.Untyped._⊢_.·
-         ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-          plfa.part2.Untyped._⊢_.·
-          (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-        plfa.part2.Untyped._⊢_.·
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.`
-          (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-         plfa.part2.Untyped._⊢_.·
-         ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-          plfa.part2.Untyped._⊢_.·
-          (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-       plfa.part2.Untyped._⊢_.·
-       (plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.`
-           (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-          plfa.part2.Untyped._⊢_.·
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.`
-               (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.`
-               (plfa.part2.Untyped._∋_.S
-                (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-           plfa.part2.Untyped._⊢_.·
-           ((plfa.part2.Untyped._⊢_.`
-             (plfa.part2.Untyped._∋_.S
-              (plfa.part2.Untyped._∋_.S
-               (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.`
-             (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-          plfa.part2.Untyped._⊢_.·
-          (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-       plfa.part2.Untyped._⊢_.·
-       (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-       plfa.part2.Untyped._⊢_.·
-       ((plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.`
-             (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.`
-                (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-               plfa.part2.Untyped._⊢_.·
-               ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.`
-                (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-               plfa.part2.Untyped._⊢_.·
-               ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.ƛ
-                (plfa.part2.Untyped._⊢_.`
-                 (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.ƛ
-                 (plfa.part2.Untyped._⊢_.ƛ
-                  (plfa.part2.Untyped._⊢_.ƛ
-                   (plfa.part2.Untyped._⊢_.ƛ
-                    (plfa.part2.Untyped._⊢_.`
-                     (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-                    plfa.part2.Untyped._⊢_.·
-                    (plfa.part2.Untyped._⊢_.`
-                     (plfa.part2.Untyped._∋_.S
-                      (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-                 plfa.part2.Untyped._⊢_.·
-                 ((plfa.part2.Untyped._⊢_.`
-                   (plfa.part2.Untyped._∋_.S
-                    (plfa.part2.Untyped._∋_.S
-                     (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-                  plfa.part2.Untyped._⊢_.·
-                  (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                  plfa.part2.Untyped._⊢_.·
-                  (plfa.part2.Untyped._⊢_.`
-                   (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-             plfa.part2.Untyped._⊢_.·
-             ((plfa.part2.Untyped._⊢_.`
-               (plfa.part2.Untyped._∋_.S
-                (plfa.part2.Untyped._∋_.S
-                 (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-              plfa.part2.Untyped._⊢_.·
-              ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-               plfa.part2.Untyped._⊢_.·
-               (plfa.part2.Untyped._⊢_.`
-                (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z)))))
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-         plfa.part2.Untyped._⊢_.·
-         ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-          plfa.part2.Untyped._⊢_.·
-          (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-        plfa.part2.Untyped._⊢_.·
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.`
-             (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.`
-                (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-               plfa.part2.Untyped._⊢_.·
-               ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.`
-                (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-               plfa.part2.Untyped._⊢_.·
-               ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.ƛ
-                (plfa.part2.Untyped._⊢_.`
-                 (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.ƛ
-                 (plfa.part2.Untyped._⊢_.ƛ
-                  (plfa.part2.Untyped._⊢_.ƛ
-                   (plfa.part2.Untyped._⊢_.ƛ
-                    (plfa.part2.Untyped._⊢_.`
-                     (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-                    plfa.part2.Untyped._⊢_.·
-                    (plfa.part2.Untyped._⊢_.`
-                     (plfa.part2.Untyped._∋_.S
-                      (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-                 plfa.part2.Untyped._⊢_.·
-                 ((plfa.part2.Untyped._⊢_.`
-                   (plfa.part2.Untyped._∋_.S
-                    (plfa.part2.Untyped._∋_.S
-                     (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-                  plfa.part2.Untyped._⊢_.·
-                  (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                  plfa.part2.Untyped._⊢_.·
-                  (plfa.part2.Untyped._⊢_.`
-                   (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-             plfa.part2.Untyped._⊢_.·
-             ((plfa.part2.Untyped._⊢_.`
-               (plfa.part2.Untyped._∋_.S
-                (plfa.part2.Untyped._∋_.S
-                 (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-              plfa.part2.Untyped._⊢_.·
-              ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-               plfa.part2.Untyped._⊢_.·
-               (plfa.part2.Untyped._⊢_.`
-                (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z)))))
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-         plfa.part2.Untyped._⊢_.·
-         ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-          plfa.part2.Untyped._⊢_.·
-          (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-        plfa.part2.Untyped._⊢_.·
-        ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-         plfa.part2.Untyped._⊢_.·
-         ((plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S
-               (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-          plfa.part2.Untyped._⊢_.·
-          ((plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.`
-               (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.`
-               (plfa.part2.Untyped._∋_.S
-                (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-           plfa.part2.Untyped._⊢_.·
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))))))
-      plfa.part2.Untyped._⊢_.·
-      ((plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.`
-           (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-          plfa.part2.Untyped._⊢_.·
-          (plfa.part2.Untyped._⊢_.`
-           (plfa.part2.Untyped._∋_.S
-            (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-       plfa.part2.Untyped._⊢_.·
-       (plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))))
-     plfa.part2.Untyped._⊢_.·
-     ((plfa.part2.Untyped._⊢_.ƛ
-       (plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.`
-          (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-         plfa.part2.Untyped._⊢_.·
-         (plfa.part2.Untyped._⊢_.`
-          (plfa.part2.Untyped._∋_.S
-           (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-      plfa.part2.Untyped._⊢_.·
-      ((plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.`
-           (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-          plfa.part2.Untyped._⊢_.·
-          (plfa.part2.Untyped._⊢_.`
-           (plfa.part2.Untyped._∋_.S
-            (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-       plfa.part2.Untyped._⊢_.·
-       (plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))))
-     plfa.part2.Untyped._—↠_.—→⟨ plfa.part2.Untyped._—→_.β ⟩
-     (plfa.part2.Untyped._⊢_.ƛ
-      (plfa.part2.Untyped._⊢_.ƛ
-       (plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.`
-         (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-        plfa.part2.Untyped._⊢_.·
-        ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-         plfa.part2.Untyped._⊢_.·
-         (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-       plfa.part2.Untyped._⊢_.·
-       (plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.`
-         (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-        plfa.part2.Untyped._⊢_.·
-        ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-         plfa.part2.Untyped._⊢_.·
-         (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-      plfa.part2.Untyped._⊢_.·
-      (plfa.part2.Untyped._⊢_.ƛ
-       (plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.`
-          (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-         plfa.part2.Untyped._⊢_.·
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S
-               (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-          plfa.part2.Untyped._⊢_.·
-          ((plfa.part2.Untyped._⊢_.`
-            (plfa.part2.Untyped._∋_.S
-             (plfa.part2.Untyped._∋_.S
-              (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-           plfa.part2.Untyped._⊢_.·
-           (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-           plfa.part2.Untyped._⊢_.·
-           (plfa.part2.Untyped._⊢_.`
-            (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-         plfa.part2.Untyped._⊢_.·
-         (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-      plfa.part2.Untyped._⊢_.·
-      (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-      plfa.part2.Untyped._⊢_.·
-      ((plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.`
-            (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-           plfa.part2.Untyped._⊢_.·
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.`
-               (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-              plfa.part2.Untyped._⊢_.·
-              ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-               plfa.part2.Untyped._⊢_.·
-               (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.`
-               (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-              plfa.part2.Untyped._⊢_.·
-              ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-               plfa.part2.Untyped._⊢_.·
-               (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.`
-                (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-               plfa.part2.Untyped._⊢_.·
-               (plfa.part2.Untyped._⊢_.ƛ
-                (plfa.part2.Untyped._⊢_.ƛ
-                 (plfa.part2.Untyped._⊢_.ƛ
-                  (plfa.part2.Untyped._⊢_.ƛ
-                   (plfa.part2.Untyped._⊢_.`
-                    (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-                   plfa.part2.Untyped._⊢_.·
-                   (plfa.part2.Untyped._⊢_.`
-                    (plfa.part2.Untyped._∋_.S
-                     (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-                plfa.part2.Untyped._⊢_.·
-                ((plfa.part2.Untyped._⊢_.`
-                  (plfa.part2.Untyped._∋_.S
-                   (plfa.part2.Untyped._∋_.S
-                    (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-                 plfa.part2.Untyped._⊢_.·
-                 (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                 plfa.part2.Untyped._⊢_.·
-                 (plfa.part2.Untyped._⊢_.`
-                  (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-               plfa.part2.Untyped._⊢_.·
-               (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-            plfa.part2.Untyped._⊢_.·
-            ((plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S
-               (plfa.part2.Untyped._∋_.S
-                (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-             plfa.part2.Untyped._⊢_.·
-             ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.`
-               (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z)))))
-           plfa.part2.Untyped._⊢_.·
-           (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-        plfa.part2.Untyped._⊢_.·
-        ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-         plfa.part2.Untyped._⊢_.·
-         (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-       plfa.part2.Untyped._⊢_.·
-       (plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.`
-            (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-           plfa.part2.Untyped._⊢_.·
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.`
-               (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-              plfa.part2.Untyped._⊢_.·
-              ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-               plfa.part2.Untyped._⊢_.·
-               (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.`
-               (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-              plfa.part2.Untyped._⊢_.·
-              ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-               plfa.part2.Untyped._⊢_.·
-               (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.`
-                (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-               plfa.part2.Untyped._⊢_.·
-               (plfa.part2.Untyped._⊢_.ƛ
-                (plfa.part2.Untyped._⊢_.ƛ
-                 (plfa.part2.Untyped._⊢_.ƛ
-                  (plfa.part2.Untyped._⊢_.ƛ
-                   (plfa.part2.Untyped._⊢_.`
-                    (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-                   plfa.part2.Untyped._⊢_.·
-                   (plfa.part2.Untyped._⊢_.`
-                    (plfa.part2.Untyped._∋_.S
-                     (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-                plfa.part2.Untyped._⊢_.·
-                ((plfa.part2.Untyped._⊢_.`
-                  (plfa.part2.Untyped._∋_.S
-                   (plfa.part2.Untyped._∋_.S
-                    (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-                 plfa.part2.Untyped._⊢_.·
-                 (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                 plfa.part2.Untyped._⊢_.·
-                 (plfa.part2.Untyped._⊢_.`
-                  (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-               plfa.part2.Untyped._⊢_.·
-               (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-            plfa.part2.Untyped._⊢_.·
-            ((plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S
-               (plfa.part2.Untyped._∋_.S
-                (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-             plfa.part2.Untyped._⊢_.·
-             ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.`
-               (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z)))))
-           plfa.part2.Untyped._⊢_.·
-           (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-        plfa.part2.Untyped._⊢_.·
-        ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-         plfa.part2.Untyped._⊢_.·
-         (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-       plfa.part2.Untyped._⊢_.·
-       ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-        plfa.part2.Untyped._⊢_.·
-        ((plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.`
-             (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.`
-             (plfa.part2.Untyped._∋_.S
-              (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-         plfa.part2.Untyped._⊢_.·
-         ((plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S
-               (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-          plfa.part2.Untyped._⊢_.·
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))))))
-     plfa.part2.Untyped._⊢_.·
-     ((plfa.part2.Untyped._⊢_.ƛ
-       (plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.`
-          (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-         plfa.part2.Untyped._⊢_.·
-         (plfa.part2.Untyped._⊢_.`
-          (plfa.part2.Untyped._∋_.S
-           (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-      plfa.part2.Untyped._⊢_.·
-      (plfa.part2.Untyped._⊢_.ƛ
-       (plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-     plfa.part2.Untyped._—↠_.—→⟨ plfa.part2.Untyped._—→_.β ⟩
-     (plfa.part2.Untyped._⊢_.ƛ
-      (plfa.part2.Untyped._⊢_.ƛ
-       (plfa.part2.Untyped._⊢_.`
-        (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-       plfa.part2.Untyped._⊢_.·
-       ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-        plfa.part2.Untyped._⊢_.·
-        (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-      plfa.part2.Untyped._⊢_.·
-      (plfa.part2.Untyped._⊢_.ƛ
-       (plfa.part2.Untyped._⊢_.`
-        (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-       plfa.part2.Untyped._⊢_.·
-       ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-        plfa.part2.Untyped._⊢_.·
-        (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-     plfa.part2.Untyped._⊢_.·
-     (plfa.part2.Untyped._⊢_.ƛ
-      (plfa.part2.Untyped._⊢_.ƛ
-       (plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.`
-         (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-        plfa.part2.Untyped._⊢_.·
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.`
-             (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.`
-             (plfa.part2.Untyped._∋_.S
-              (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-         plfa.part2.Untyped._⊢_.·
-         ((plfa.part2.Untyped._⊢_.`
-           (plfa.part2.Untyped._∋_.S
-            (plfa.part2.Untyped._∋_.S
-             (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-          plfa.part2.Untyped._⊢_.·
-          (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-          plfa.part2.Untyped._⊢_.·
-          (plfa.part2.Untyped._⊢_.`
-           (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-        plfa.part2.Untyped._⊢_.·
-        (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-     plfa.part2.Untyped._⊢_.·
-     ((plfa.part2.Untyped._⊢_.ƛ
-       (plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.`
-          (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-         plfa.part2.Untyped._⊢_.·
-         (plfa.part2.Untyped._⊢_.`
-          (plfa.part2.Untyped._∋_.S
-           (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-      plfa.part2.Untyped._⊢_.·
-      (plfa.part2.Untyped._⊢_.ƛ
-       (plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-     plfa.part2.Untyped._⊢_.·
-     ((plfa.part2.Untyped._⊢_.ƛ
-       (plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.`
-           (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-          plfa.part2.Untyped._⊢_.·
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-             plfa.part2.Untyped._⊢_.·
-             ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-             plfa.part2.Untyped._⊢_.·
-             ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-           plfa.part2.Untyped._⊢_.·
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.`
-               (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.ƛ
-                (plfa.part2.Untyped._⊢_.ƛ
-                 (plfa.part2.Untyped._⊢_.ƛ
-                  (plfa.part2.Untyped._⊢_.`
-                   (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-                  plfa.part2.Untyped._⊢_.·
-                  (plfa.part2.Untyped._⊢_.`
-                   (plfa.part2.Untyped._∋_.S
-                    (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-               plfa.part2.Untyped._⊢_.·
-               ((plfa.part2.Untyped._⊢_.`
-                 (plfa.part2.Untyped._∋_.S
-                  (plfa.part2.Untyped._∋_.S
-                   (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.`
-                 (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-           plfa.part2.Untyped._⊢_.·
-           (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-           plfa.part2.Untyped._⊢_.·
-           ((plfa.part2.Untyped._⊢_.`
-             (plfa.part2.Untyped._∋_.S
-              (plfa.part2.Untyped._∋_.S
-               (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-            plfa.part2.Untyped._⊢_.·
-            ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z)))))
-          plfa.part2.Untyped._⊢_.·
-          (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-       plfa.part2.Untyped._⊢_.·
-       ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-        plfa.part2.Untyped._⊢_.·
-        (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-      plfa.part2.Untyped._⊢_.·
-      (plfa.part2.Untyped._⊢_.ƛ
-       (plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.`
-           (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-          plfa.part2.Untyped._⊢_.·
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-             plfa.part2.Untyped._⊢_.·
-             ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-             plfa.part2.Untyped._⊢_.·
-             ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-           plfa.part2.Untyped._⊢_.·
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.`
-               (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.ƛ
-                (plfa.part2.Untyped._⊢_.ƛ
-                 (plfa.part2.Untyped._⊢_.ƛ
-                  (plfa.part2.Untyped._⊢_.`
-                   (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-                  plfa.part2.Untyped._⊢_.·
-                  (plfa.part2.Untyped._⊢_.`
-                   (plfa.part2.Untyped._∋_.S
-                    (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-               plfa.part2.Untyped._⊢_.·
-               ((plfa.part2.Untyped._⊢_.`
-                 (plfa.part2.Untyped._∋_.S
-                  (plfa.part2.Untyped._∋_.S
-                   (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.`
-                 (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-           plfa.part2.Untyped._⊢_.·
-           (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-           plfa.part2.Untyped._⊢_.·
-           ((plfa.part2.Untyped._⊢_.`
-             (plfa.part2.Untyped._∋_.S
-              (plfa.part2.Untyped._∋_.S
-               (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-            plfa.part2.Untyped._⊢_.·
-            ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z)))))
-          plfa.part2.Untyped._⊢_.·
-          (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-       plfa.part2.Untyped._⊢_.·
-       ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-        plfa.part2.Untyped._⊢_.·
-        (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-      plfa.part2.Untyped._⊢_.·
-      ((plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.`
-           (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-          plfa.part2.Untyped._⊢_.·
-          (plfa.part2.Untyped._⊢_.`
-           (plfa.part2.Untyped._∋_.S
-            (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-       plfa.part2.Untyped._⊢_.·
-       (plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-       plfa.part2.Untyped._⊢_.·
-       ((plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.`
-            (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-           plfa.part2.Untyped._⊢_.·
-           (plfa.part2.Untyped._⊢_.`
-            (plfa.part2.Untyped._∋_.S
-             (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-        plfa.part2.Untyped._⊢_.·
-        ((plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.`
-             (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.`
-             (plfa.part2.Untyped._∋_.S
-              (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-         plfa.part2.Untyped._⊢_.·
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))))))
-     plfa.part2.Untyped._—↠_.—→⟨
-     plfa.part2.Untyped._—→_.ξ₁
-     (plfa.part2.Untyped._—→_.ξ₁ plfa.part2.Untyped._—→_.β)
+     (_⊢_.ƛ
+      (_⊢_.ƛ
+       (_⊢_.`
+        (_∋_.S _∋_.Z))
+       _⊢_.·
+       ((_⊢_.ƛ
+         (_⊢_.ƛ
+          (_⊢_.ƛ
+           (_⊢_.`
+            (_∋_.S _∋_.Z))
+           _⊢_.·
+           (_⊢_.`
+            (_∋_.S
+             (_∋_.S _∋_.Z))))))
+        _⊢_.·
+        (_⊢_.ƛ
+         (_⊢_.ƛ
+          (_⊢_.` _∋_.Z))))))
+     _⊢_.·
+     (_⊢_.ƛ
+      (_⊢_.ƛ
+       (_⊢_.ƛ
+        (_⊢_.`
+         (_∋_.S _∋_.Z))
+        _⊢_.·
+        ((_⊢_.` _∋_.Z)
+         _⊢_.·
+         (_⊢_.` _∋_.Z)))
+       _⊢_.·
+       (_⊢_.ƛ
+        (_⊢_.`
+         (_∋_.S _∋_.Z))
+        _⊢_.·
+        ((_⊢_.` _∋_.Z)
+         _⊢_.·
+         (_⊢_.` _∋_.Z))))
+      _⊢_.·
+      (_⊢_.ƛ
+       (_⊢_.ƛ
+        (_⊢_.ƛ
+         (_⊢_.`
+          (_∋_.S _∋_.Z))
+         _⊢_.·
+         (_⊢_.ƛ
+          (_⊢_.ƛ
+           (_⊢_.ƛ
+            (_⊢_.ƛ
+             (_⊢_.`
+              (_∋_.S _∋_.Z))
+             _⊢_.·
+             (_⊢_.`
+              (_∋_.S
+               (_∋_.S _∋_.Z))))))
+          _⊢_.·
+          ((_⊢_.`
+            (_∋_.S
+             (_∋_.S
+              (_∋_.S _∋_.Z))))
+           _⊢_.·
+           (_⊢_.` _∋_.Z)
+           _⊢_.·
+           (_⊢_.`
+            (_∋_.S _∋_.Z))))
+         _⊢_.·
+         (_⊢_.` _∋_.Z))))
+      _⊢_.·
+      (_⊢_.` _∋_.Z)
+      _⊢_.·
+      ((_⊢_.ƛ
+        (_⊢_.ƛ
+         (_⊢_.ƛ
+          (_⊢_.ƛ
+           (_⊢_.`
+            (_∋_.S _∋_.Z))
+           _⊢_.·
+           (_⊢_.ƛ
+            (_⊢_.ƛ
+             (_⊢_.ƛ
+              (_⊢_.`
+               (_∋_.S _∋_.Z))
+              _⊢_.·
+              ((_⊢_.` _∋_.Z)
+               _⊢_.·
+               (_⊢_.` _∋_.Z)))
+             _⊢_.·
+             (_⊢_.ƛ
+              (_⊢_.`
+               (_∋_.S _∋_.Z))
+              _⊢_.·
+              ((_⊢_.` _∋_.Z)
+               _⊢_.·
+               (_⊢_.` _∋_.Z))))
+            _⊢_.·
+            (_⊢_.ƛ
+             (_⊢_.ƛ
+              (_⊢_.ƛ
+               (_⊢_.`
+                (_∋_.S _∋_.Z))
+               _⊢_.·
+               (_⊢_.ƛ
+                (_⊢_.ƛ
+                 (_⊢_.ƛ
+                  (_⊢_.ƛ
+                   (_⊢_.`
+                    (_∋_.S _∋_.Z))
+                   _⊢_.·
+                   (_⊢_.`
+                    (_∋_.S
+                     (_∋_.S _∋_.Z))))))
+                _⊢_.·
+                ((_⊢_.`
+                  (_∋_.S
+                   (_∋_.S
+                    (_∋_.S _∋_.Z))))
+                 _⊢_.·
+                 (_⊢_.` _∋_.Z)
+                 _⊢_.·
+                 (_⊢_.`
+                  (_∋_.S _∋_.Z))))
+               _⊢_.·
+               (_⊢_.` _∋_.Z))))
+            _⊢_.·
+            (_⊢_.` _∋_.Z)
+            _⊢_.·
+            ((_⊢_.`
+              (_∋_.S
+               (_∋_.S
+                (_∋_.S _∋_.Z))))
+             _⊢_.·
+             ((_⊢_.` _∋_.Z)
+              _⊢_.·
+              (_⊢_.`
+               (_∋_.S _∋_.Z)))))
+           _⊢_.·
+           (_⊢_.` _∋_.Z))))
+        _⊢_.·
+        ((_⊢_.` _∋_.Z)
+         _⊢_.·
+         (_⊢_.` _∋_.Z)))
+       _⊢_.·
+       (_⊢_.ƛ
+        (_⊢_.ƛ
+         (_⊢_.ƛ
+          (_⊢_.ƛ
+           (_⊢_.`
+            (_∋_.S _∋_.Z))
+           _⊢_.·
+           (_⊢_.ƛ
+            (_⊢_.ƛ
+             (_⊢_.ƛ
+              (_⊢_.`
+               (_∋_.S _∋_.Z))
+              _⊢_.·
+              ((_⊢_.` _∋_.Z)
+               _⊢_.·
+               (_⊢_.` _∋_.Z)))
+             _⊢_.·
+             (_⊢_.ƛ
+              (_⊢_.`
+               (_∋_.S _∋_.Z))
+              _⊢_.·
+              ((_⊢_.` _∋_.Z)
+               _⊢_.·
+               (_⊢_.` _∋_.Z))))
+            _⊢_.·
+            (_⊢_.ƛ
+             (_⊢_.ƛ
+              (_⊢_.ƛ
+               (_⊢_.`
+                (_∋_.S _∋_.Z))
+               _⊢_.·
+               (_⊢_.ƛ
+                (_⊢_.ƛ
+                 (_⊢_.ƛ
+                  (_⊢_.ƛ
+                   (_⊢_.`
+                    (_∋_.S _∋_.Z))
+                   _⊢_.·
+                   (_⊢_.`
+                    (_∋_.S
+                     (_∋_.S _∋_.Z))))))
+                _⊢_.·
+                ((_⊢_.`
+                  (_∋_.S
+                   (_∋_.S
+                    (_∋_.S _∋_.Z))))
+                 _⊢_.·
+                 (_⊢_.` _∋_.Z)
+                 _⊢_.·
+                 (_⊢_.`
+                  (_∋_.S _∋_.Z))))
+               _⊢_.·
+               (_⊢_.` _∋_.Z))))
+            _⊢_.·
+            (_⊢_.` _∋_.Z)
+            _⊢_.·
+            ((_⊢_.`
+              (_∋_.S
+               (_∋_.S
+                (_∋_.S _∋_.Z))))
+             _⊢_.·
+             ((_⊢_.` _∋_.Z)
+              _⊢_.·
+              (_⊢_.`
+               (_∋_.S _∋_.Z)))))
+           _⊢_.·
+           (_⊢_.` _∋_.Z))))
+        _⊢_.·
+        ((_⊢_.` _∋_.Z)
+         _⊢_.·
+         (_⊢_.` _∋_.Z)))
+       _⊢_.·
+       ((_⊢_.` _∋_.Z)
+        _⊢_.·
+        ((_⊢_.ƛ
+          (_⊢_.ƛ
+           (_⊢_.ƛ
+            (_⊢_.`
+             (_∋_.S _∋_.Z))
+            _⊢_.·
+            (_⊢_.`
+             (_∋_.S
+              (_∋_.S _∋_.Z))))))
+         _⊢_.·
+         ((_⊢_.ƛ
+           (_⊢_.ƛ
+            (_⊢_.ƛ
+             (_⊢_.`
+              (_∋_.S _∋_.Z))
+             _⊢_.·
+             (_⊢_.`
+              (_∋_.S
+               (_∋_.S _∋_.Z))))))
+          _⊢_.·
+          (_⊢_.ƛ
+           (_⊢_.ƛ
+            (_⊢_.` _∋_.Z))))))))
+     _⊢_.·
+     ((_⊢_.ƛ
+       (_⊢_.ƛ
+        (_⊢_.ƛ
+         (_⊢_.`
+          (_∋_.S _∋_.Z))
+         _⊢_.·
+         (_⊢_.`
+          (_∋_.S
+           (_∋_.S _∋_.Z))))))
+      _⊢_.·
+      ((_⊢_.ƛ
+        (_⊢_.ƛ
+         (_⊢_.ƛ
+          (_⊢_.`
+           (_∋_.S _∋_.Z))
+          _⊢_.·
+          (_⊢_.`
+           (_∋_.S
+            (_∋_.S _∋_.Z))))))
+       _⊢_.·
+       (_⊢_.ƛ
+        (_⊢_.ƛ
+         (_⊢_.` _∋_.Z)))))
+     _—↠_.—→⟨
+     _—→_.ξ₁ _—→_.β ⟩
+     (_⊢_.ƛ
+      (_⊢_.ƛ
+       (_⊢_.ƛ
+        (_⊢_.ƛ
+         (_⊢_.`
+          (_∋_.S _∋_.Z))
+         _⊢_.·
+         ((_⊢_.` _∋_.Z)
+          _⊢_.·
+          (_⊢_.` _∋_.Z)))
+        _⊢_.·
+        (_⊢_.ƛ
+         (_⊢_.`
+          (_∋_.S _∋_.Z))
+         _⊢_.·
+         ((_⊢_.` _∋_.Z)
+          _⊢_.·
+          (_⊢_.` _∋_.Z))))
+       _⊢_.·
+       (_⊢_.ƛ
+        (_⊢_.ƛ
+         (_⊢_.ƛ
+          (_⊢_.`
+           (_∋_.S _∋_.Z))
+          _⊢_.·
+          (_⊢_.ƛ
+           (_⊢_.ƛ
+            (_⊢_.ƛ
+             (_⊢_.ƛ
+              (_⊢_.`
+               (_∋_.S _∋_.Z))
+              _⊢_.·
+              (_⊢_.`
+               (_∋_.S
+                (_∋_.S _∋_.Z))))))
+           _⊢_.·
+           ((_⊢_.`
+             (_∋_.S
+              (_∋_.S
+               (_∋_.S _∋_.Z))))
+            _⊢_.·
+            (_⊢_.` _∋_.Z)
+            _⊢_.·
+            (_⊢_.`
+             (_∋_.S _∋_.Z))))
+          _⊢_.·
+          (_⊢_.` _∋_.Z))))
+       _⊢_.·
+       (_⊢_.` _∋_.Z)
+       _⊢_.·
+       ((_⊢_.ƛ
+         (_⊢_.ƛ
+          (_⊢_.ƛ
+           (_⊢_.ƛ
+            (_⊢_.`
+             (_∋_.S _∋_.Z))
+            _⊢_.·
+            (_⊢_.ƛ
+             (_⊢_.ƛ
+              (_⊢_.ƛ
+               (_⊢_.`
+                (_∋_.S _∋_.Z))
+               _⊢_.·
+               ((_⊢_.` _∋_.Z)
+                _⊢_.·
+                (_⊢_.` _∋_.Z)))
+              _⊢_.·
+              (_⊢_.ƛ
+               (_⊢_.`
+                (_∋_.S _∋_.Z))
+               _⊢_.·
+               ((_⊢_.` _∋_.Z)
+                _⊢_.·
+                (_⊢_.` _∋_.Z))))
+             _⊢_.·
+             (_⊢_.ƛ
+              (_⊢_.ƛ
+               (_⊢_.ƛ
+                (_⊢_.`
+                 (_∋_.S _∋_.Z))
+                _⊢_.·
+                (_⊢_.ƛ
+                 (_⊢_.ƛ
+                  (_⊢_.ƛ
+                   (_⊢_.ƛ
+                    (_⊢_.`
+                     (_∋_.S _∋_.Z))
+                    _⊢_.·
+                    (_⊢_.`
+                     (_∋_.S
+                      (_∋_.S _∋_.Z))))))
+                 _⊢_.·
+                 ((_⊢_.`
+                   (_∋_.S
+                    (_∋_.S
+                     (_∋_.S _∋_.Z))))
+                  _⊢_.·
+                  (_⊢_.` _∋_.Z)
+                  _⊢_.·
+                  (_⊢_.`
+                   (_∋_.S _∋_.Z))))
+                _⊢_.·
+                (_⊢_.` _∋_.Z))))
+             _⊢_.·
+             (_⊢_.` _∋_.Z)
+             _⊢_.·
+             ((_⊢_.`
+               (_∋_.S
+                (_∋_.S
+                 (_∋_.S _∋_.Z))))
+              _⊢_.·
+              ((_⊢_.` _∋_.Z)
+               _⊢_.·
+               (_⊢_.`
+                (_∋_.S _∋_.Z)))))
+            _⊢_.·
+            (_⊢_.` _∋_.Z))))
+         _⊢_.·
+         ((_⊢_.` _∋_.Z)
+          _⊢_.·
+          (_⊢_.` _∋_.Z)))
+        _⊢_.·
+        (_⊢_.ƛ
+         (_⊢_.ƛ
+          (_⊢_.ƛ
+           (_⊢_.ƛ
+            (_⊢_.`
+             (_∋_.S _∋_.Z))
+            _⊢_.·
+            (_⊢_.ƛ
+             (_⊢_.ƛ
+              (_⊢_.ƛ
+               (_⊢_.`
+                (_∋_.S _∋_.Z))
+               _⊢_.·
+               ((_⊢_.` _∋_.Z)
+                _⊢_.·
+                (_⊢_.` _∋_.Z)))
+              _⊢_.·
+              (_⊢_.ƛ
+               (_⊢_.`
+                (_∋_.S _∋_.Z))
+               _⊢_.·
+               ((_⊢_.` _∋_.Z)
+                _⊢_.·
+                (_⊢_.` _∋_.Z))))
+             _⊢_.·
+             (_⊢_.ƛ
+              (_⊢_.ƛ
+               (_⊢_.ƛ
+                (_⊢_.`
+                 (_∋_.S _∋_.Z))
+                _⊢_.·
+                (_⊢_.ƛ
+                 (_⊢_.ƛ
+                  (_⊢_.ƛ
+                   (_⊢_.ƛ
+                    (_⊢_.`
+                     (_∋_.S _∋_.Z))
+                    _⊢_.·
+                    (_⊢_.`
+                     (_∋_.S
+                      (_∋_.S _∋_.Z))))))
+                 _⊢_.·
+                 ((_⊢_.`
+                   (_∋_.S
+                    (_∋_.S
+                     (_∋_.S _∋_.Z))))
+                  _⊢_.·
+                  (_⊢_.` _∋_.Z)
+                  _⊢_.·
+                  (_⊢_.`
+                   (_∋_.S _∋_.Z))))
+                _⊢_.·
+                (_⊢_.` _∋_.Z))))
+             _⊢_.·
+             (_⊢_.` _∋_.Z)
+             _⊢_.·
+             ((_⊢_.`
+               (_∋_.S
+                (_∋_.S
+                 (_∋_.S _∋_.Z))))
+              _⊢_.·
+              ((_⊢_.` _∋_.Z)
+               _⊢_.·
+               (_⊢_.`
+                (_∋_.S _∋_.Z)))))
+            _⊢_.·
+            (_⊢_.` _∋_.Z))))
+         _⊢_.·
+         ((_⊢_.` _∋_.Z)
+          _⊢_.·
+          (_⊢_.` _∋_.Z)))
+        _⊢_.·
+        ((_⊢_.` _∋_.Z)
+         _⊢_.·
+         ((_⊢_.ƛ
+           (_⊢_.ƛ
+            (_⊢_.ƛ
+             (_⊢_.`
+              (_∋_.S _∋_.Z))
+             _⊢_.·
+             (_⊢_.`
+              (_∋_.S
+               (_∋_.S _∋_.Z))))))
+          _⊢_.·
+          ((_⊢_.ƛ
+            (_⊢_.ƛ
+             (_⊢_.ƛ
+              (_⊢_.`
+               (_∋_.S _∋_.Z))
+              _⊢_.·
+              (_⊢_.`
+               (_∋_.S
+                (_∋_.S _∋_.Z))))))
+           _⊢_.·
+           (_⊢_.ƛ
+            (_⊢_.ƛ
+             (_⊢_.` _∋_.Z))))))))
+      _⊢_.·
+      ((_⊢_.ƛ
+        (_⊢_.ƛ
+         (_⊢_.ƛ
+          (_⊢_.`
+           (_∋_.S _∋_.Z))
+          _⊢_.·
+          (_⊢_.`
+           (_∋_.S
+            (_∋_.S _∋_.Z))))))
+       _⊢_.·
+       (_⊢_.ƛ
+        (_⊢_.ƛ
+         (_⊢_.` _∋_.Z)))))
+     _⊢_.·
+     ((_⊢_.ƛ
+       (_⊢_.ƛ
+        (_⊢_.ƛ
+         (_⊢_.`
+          (_∋_.S _∋_.Z))
+         _⊢_.·
+         (_⊢_.`
+          (_∋_.S
+           (_∋_.S _∋_.Z))))))
+      _⊢_.·
+      ((_⊢_.ƛ
+        (_⊢_.ƛ
+         (_⊢_.ƛ
+          (_⊢_.`
+           (_∋_.S _∋_.Z))
+          _⊢_.·
+          (_⊢_.`
+           (_∋_.S
+            (_∋_.S _∋_.Z))))))
+       _⊢_.·
+       (_⊢_.ƛ
+        (_⊢_.ƛ
+         (_⊢_.` _∋_.Z)))))
+     _—↠_.—→⟨ _—→_.β ⟩
+     (_⊢_.ƛ
+      (_⊢_.ƛ
+       (_⊢_.ƛ
+        (_⊢_.`
+         (_∋_.S _∋_.Z))
+        _⊢_.·
+        ((_⊢_.` _∋_.Z)
+         _⊢_.·
+         (_⊢_.` _∋_.Z)))
+       _⊢_.·
+       (_⊢_.ƛ
+        (_⊢_.`
+         (_∋_.S _∋_.Z))
+        _⊢_.·
+        ((_⊢_.` _∋_.Z)
+         _⊢_.·
+         (_⊢_.` _∋_.Z))))
+      _⊢_.·
+      (_⊢_.ƛ
+       (_⊢_.ƛ
+        (_⊢_.ƛ
+         (_⊢_.`
+          (_∋_.S _∋_.Z))
+         _⊢_.·
+         (_⊢_.ƛ
+          (_⊢_.ƛ
+           (_⊢_.ƛ
+            (_⊢_.ƛ
+             (_⊢_.`
+              (_∋_.S _∋_.Z))
+             _⊢_.·
+             (_⊢_.`
+              (_∋_.S
+               (_∋_.S _∋_.Z))))))
+          _⊢_.·
+          ((_⊢_.`
+            (_∋_.S
+             (_∋_.S
+              (_∋_.S _∋_.Z))))
+           _⊢_.·
+           (_⊢_.` _∋_.Z)
+           _⊢_.·
+           (_⊢_.`
+            (_∋_.S _∋_.Z))))
+         _⊢_.·
+         (_⊢_.` _∋_.Z))))
+      _⊢_.·
+      (_⊢_.` _∋_.Z)
+      _⊢_.·
+      ((_⊢_.ƛ
+        (_⊢_.ƛ
+         (_⊢_.ƛ
+          (_⊢_.ƛ
+           (_⊢_.`
+            (_∋_.S _∋_.Z))
+           _⊢_.·
+           (_⊢_.ƛ
+            (_⊢_.ƛ
+             (_⊢_.ƛ
+              (_⊢_.`
+               (_∋_.S _∋_.Z))
+              _⊢_.·
+              ((_⊢_.` _∋_.Z)
+               _⊢_.·
+               (_⊢_.` _∋_.Z)))
+             _⊢_.·
+             (_⊢_.ƛ
+              (_⊢_.`
+               (_∋_.S _∋_.Z))
+              _⊢_.·
+              ((_⊢_.` _∋_.Z)
+               _⊢_.·
+               (_⊢_.` _∋_.Z))))
+            _⊢_.·
+            (_⊢_.ƛ
+             (_⊢_.ƛ
+              (_⊢_.ƛ
+               (_⊢_.`
+                (_∋_.S _∋_.Z))
+               _⊢_.·
+               (_⊢_.ƛ
+                (_⊢_.ƛ
+                 (_⊢_.ƛ
+                  (_⊢_.ƛ
+                   (_⊢_.`
+                    (_∋_.S _∋_.Z))
+                   _⊢_.·
+                   (_⊢_.`
+                    (_∋_.S
+                     (_∋_.S _∋_.Z))))))
+                _⊢_.·
+                ((_⊢_.`
+                  (_∋_.S
+                   (_∋_.S
+                    (_∋_.S _∋_.Z))))
+                 _⊢_.·
+                 (_⊢_.` _∋_.Z)
+                 _⊢_.·
+                 (_⊢_.`
+                  (_∋_.S _∋_.Z))))
+               _⊢_.·
+               (_⊢_.` _∋_.Z))))
+            _⊢_.·
+            (_⊢_.` _∋_.Z)
+            _⊢_.·
+            ((_⊢_.`
+              (_∋_.S
+               (_∋_.S
+                (_∋_.S _∋_.Z))))
+             _⊢_.·
+             ((_⊢_.` _∋_.Z)
+              _⊢_.·
+              (_⊢_.`
+               (_∋_.S _∋_.Z)))))
+           _⊢_.·
+           (_⊢_.` _∋_.Z))))
+        _⊢_.·
+        ((_⊢_.` _∋_.Z)
+         _⊢_.·
+         (_⊢_.` _∋_.Z)))
+       _⊢_.·
+       (_⊢_.ƛ
+        (_⊢_.ƛ
+         (_⊢_.ƛ
+          (_⊢_.ƛ
+           (_⊢_.`
+            (_∋_.S _∋_.Z))
+           _⊢_.·
+           (_⊢_.ƛ
+            (_⊢_.ƛ
+             (_⊢_.ƛ
+              (_⊢_.`
+               (_∋_.S _∋_.Z))
+              _⊢_.·
+              ((_⊢_.` _∋_.Z)
+               _⊢_.·
+               (_⊢_.` _∋_.Z)))
+             _⊢_.·
+             (_⊢_.ƛ
+              (_⊢_.`
+               (_∋_.S _∋_.Z))
+              _⊢_.·
+              ((_⊢_.` _∋_.Z)
+               _⊢_.·
+               (_⊢_.` _∋_.Z))))
+            _⊢_.·
+            (_⊢_.ƛ
+             (_⊢_.ƛ
+              (_⊢_.ƛ
+               (_⊢_.`
+                (_∋_.S _∋_.Z))
+               _⊢_.·
+               (_⊢_.ƛ
+                (_⊢_.ƛ
+                 (_⊢_.ƛ
+                  (_⊢_.ƛ
+                   (_⊢_.`
+                    (_∋_.S _∋_.Z))
+                   _⊢_.·
+                   (_⊢_.`
+                    (_∋_.S
+                     (_∋_.S _∋_.Z))))))
+                _⊢_.·
+                ((_⊢_.`
+                  (_∋_.S
+                   (_∋_.S
+                    (_∋_.S _∋_.Z))))
+                 _⊢_.·
+                 (_⊢_.` _∋_.Z)
+                 _⊢_.·
+                 (_⊢_.`
+                  (_∋_.S _∋_.Z))))
+               _⊢_.·
+               (_⊢_.` _∋_.Z))))
+            _⊢_.·
+            (_⊢_.` _∋_.Z)
+            _⊢_.·
+            ((_⊢_.`
+              (_∋_.S
+               (_∋_.S
+                (_∋_.S _∋_.Z))))
+             _⊢_.·
+             ((_⊢_.` _∋_.Z)
+              _⊢_.·
+              (_⊢_.`
+               (_∋_.S _∋_.Z)))))
+           _⊢_.·
+           (_⊢_.` _∋_.Z))))
+        _⊢_.·
+        ((_⊢_.` _∋_.Z)
+         _⊢_.·
+         (_⊢_.` _∋_.Z)))
+       _⊢_.·
+       ((_⊢_.` _∋_.Z)
+        _⊢_.·
+        ((_⊢_.ƛ
+          (_⊢_.ƛ
+           (_⊢_.ƛ
+            (_⊢_.`
+             (_∋_.S _∋_.Z))
+            _⊢_.·
+            (_⊢_.`
+             (_∋_.S
+              (_∋_.S _∋_.Z))))))
+         _⊢_.·
+         ((_⊢_.ƛ
+           (_⊢_.ƛ
+            (_⊢_.ƛ
+             (_⊢_.`
+              (_∋_.S _∋_.Z))
+             _⊢_.·
+             (_⊢_.`
+              (_∋_.S
+               (_∋_.S _∋_.Z))))))
+          _⊢_.·
+          (_⊢_.ƛ
+           (_⊢_.ƛ
+            (_⊢_.` _∋_.Z))))))))
+     _⊢_.·
+     ((_⊢_.ƛ
+       (_⊢_.ƛ
+        (_⊢_.ƛ
+         (_⊢_.`
+          (_∋_.S _∋_.Z))
+         _⊢_.·
+         (_⊢_.`
+          (_∋_.S
+           (_∋_.S _∋_.Z))))))
+      _⊢_.·
+      (_⊢_.ƛ
+       (_⊢_.ƛ
+        (_⊢_.` _∋_.Z))))
+     _—↠_.—→⟨ _—→_.β ⟩
+     (_⊢_.ƛ
+      (_⊢_.ƛ
+       (_⊢_.`
+        (_∋_.S _∋_.Z))
+       _⊢_.·
+       ((_⊢_.` _∋_.Z)
+        _⊢_.·
+        (_⊢_.` _∋_.Z)))
+      _⊢_.·
+      (_⊢_.ƛ
+       (_⊢_.`
+        (_∋_.S _∋_.Z))
+       _⊢_.·
+       ((_⊢_.` _∋_.Z)
+        _⊢_.·
+        (_⊢_.` _∋_.Z))))
+     _⊢_.·
+     (_⊢_.ƛ
+      (_⊢_.ƛ
+       (_⊢_.ƛ
+        (_⊢_.`
+         (_∋_.S _∋_.Z))
+        _⊢_.·
+        (_⊢_.ƛ
+         (_⊢_.ƛ
+          (_⊢_.ƛ
+           (_⊢_.ƛ
+            (_⊢_.`
+             (_∋_.S _∋_.Z))
+            _⊢_.·
+            (_⊢_.`
+             (_∋_.S
+              (_∋_.S _∋_.Z))))))
+         _⊢_.·
+         ((_⊢_.`
+           (_∋_.S
+            (_∋_.S
+             (_∋_.S _∋_.Z))))
+          _⊢_.·
+          (_⊢_.` _∋_.Z)
+          _⊢_.·
+          (_⊢_.`
+           (_∋_.S _∋_.Z))))
+        _⊢_.·
+        (_⊢_.` _∋_.Z))))
+     _⊢_.·
+     ((_⊢_.ƛ
+       (_⊢_.ƛ
+        (_⊢_.ƛ
+         (_⊢_.`
+          (_∋_.S _∋_.Z))
+         _⊢_.·
+         (_⊢_.`
+          (_∋_.S
+           (_∋_.S _∋_.Z))))))
+      _⊢_.·
+      (_⊢_.ƛ
+       (_⊢_.ƛ
+        (_⊢_.` _∋_.Z))))
+     _⊢_.·
+     ((_⊢_.ƛ
+       (_⊢_.ƛ
+        (_⊢_.ƛ
+         (_⊢_.ƛ
+          (_⊢_.`
+           (_∋_.S _∋_.Z))
+          _⊢_.·
+          (_⊢_.ƛ
+           (_⊢_.ƛ
+            (_⊢_.ƛ
+             (_⊢_.`
+              (_∋_.S _∋_.Z))
+             _⊢_.·
+             ((_⊢_.` _∋_.Z)
+              _⊢_.·
+              (_⊢_.` _∋_.Z)))
+            _⊢_.·
+            (_⊢_.ƛ
+             (_⊢_.`
+              (_∋_.S _∋_.Z))
+             _⊢_.·
+             ((_⊢_.` _∋_.Z)
+              _⊢_.·
+              (_⊢_.` _∋_.Z))))
+           _⊢_.·
+           (_⊢_.ƛ
+            (_⊢_.ƛ
+             (_⊢_.ƛ
+              (_⊢_.`
+               (_∋_.S _∋_.Z))
+              _⊢_.·
+              (_⊢_.ƛ
+               (_⊢_.ƛ
+                (_⊢_.ƛ
+                 (_⊢_.ƛ
+                  (_⊢_.`
+                   (_∋_.S _∋_.Z))
+                  _⊢_.·
+                  (_⊢_.`
+                   (_∋_.S
+                    (_∋_.S _∋_.Z))))))
+               _⊢_.·
+               ((_⊢_.`
+                 (_∋_.S
+                  (_∋_.S
+                   (_∋_.S _∋_.Z))))
+                _⊢_.·
+                (_⊢_.` _∋_.Z)
+                _⊢_.·
+                (_⊢_.`
+                 (_∋_.S _∋_.Z))))
+              _⊢_.·
+              (_⊢_.` _∋_.Z))))
+           _⊢_.·
+           (_⊢_.` _∋_.Z)
+           _⊢_.·
+           ((_⊢_.`
+             (_∋_.S
+              (_∋_.S
+               (_∋_.S _∋_.Z))))
+            _⊢_.·
+            ((_⊢_.` _∋_.Z)
+             _⊢_.·
+             (_⊢_.`
+              (_∋_.S _∋_.Z)))))
+          _⊢_.·
+          (_⊢_.` _∋_.Z))))
+       _⊢_.·
+       ((_⊢_.` _∋_.Z)
+        _⊢_.·
+        (_⊢_.` _∋_.Z)))
+      _⊢_.·
+      (_⊢_.ƛ
+       (_⊢_.ƛ
+        (_⊢_.ƛ
+         (_⊢_.ƛ
+          (_⊢_.`
+           (_∋_.S _∋_.Z))
+          _⊢_.·
+          (_⊢_.ƛ
+           (_⊢_.ƛ
+            (_⊢_.ƛ
+             (_⊢_.`
+              (_∋_.S _∋_.Z))
+             _⊢_.·
+             ((_⊢_.` _∋_.Z)
+              _⊢_.·
+              (_⊢_.` _∋_.Z)))
+            _⊢_.·
+            (_⊢_.ƛ
+             (_⊢_.`
+              (_∋_.S _∋_.Z))
+             _⊢_.·
+             ((_⊢_.` _∋_.Z)
+              _⊢_.·
+              (_⊢_.` _∋_.Z))))
+           _⊢_.·
+           (_⊢_.ƛ
+            (_⊢_.ƛ
+             (_⊢_.ƛ
+              (_⊢_.`
+               (_∋_.S _∋_.Z))
+              _⊢_.·
+              (_⊢_.ƛ
+               (_⊢_.ƛ
+                (_⊢_.ƛ
+                 (_⊢_.ƛ
+                  (_⊢_.`
+                   (_∋_.S _∋_.Z))
+                  _⊢_.·
+                  (_⊢_.`
+                   (_∋_.S
+                    (_∋_.S _∋_.Z))))))
+               _⊢_.·
+               ((_⊢_.`
+                 (_∋_.S
+                  (_∋_.S
+                   (_∋_.S _∋_.Z))))
+                _⊢_.·
+                (_⊢_.` _∋_.Z)
+                _⊢_.·
+                (_⊢_.`
+                 (_∋_.S _∋_.Z))))
+              _⊢_.·
+              (_⊢_.` _∋_.Z))))
+           _⊢_.·
+           (_⊢_.` _∋_.Z)
+           _⊢_.·
+           ((_⊢_.`
+             (_∋_.S
+              (_∋_.S
+               (_∋_.S _∋_.Z))))
+            _⊢_.·
+            ((_⊢_.` _∋_.Z)
+             _⊢_.·
+             (_⊢_.`
+              (_∋_.S _∋_.Z)))))
+          _⊢_.·
+          (_⊢_.` _∋_.Z))))
+       _⊢_.·
+       ((_⊢_.` _∋_.Z)
+        _⊢_.·
+        (_⊢_.` _∋_.Z)))
+      _⊢_.·
+      ((_⊢_.ƛ
+        (_⊢_.ƛ
+         (_⊢_.ƛ
+          (_⊢_.`
+           (_∋_.S _∋_.Z))
+          _⊢_.·
+          (_⊢_.`
+           (_∋_.S
+            (_∋_.S _∋_.Z))))))
+       _⊢_.·
+       (_⊢_.ƛ
+        (_⊢_.ƛ
+         (_⊢_.` _∋_.Z)))
+       _⊢_.·
+       ((_⊢_.ƛ
+         (_⊢_.ƛ
+          (_⊢_.ƛ
+           (_⊢_.`
+            (_∋_.S _∋_.Z))
+           _⊢_.·
+           (_⊢_.`
+            (_∋_.S
+             (_∋_.S _∋_.Z))))))
+        _⊢_.·
+        ((_⊢_.ƛ
+          (_⊢_.ƛ
+           (_⊢_.ƛ
+            (_⊢_.`
+             (_∋_.S _∋_.Z))
+            _⊢_.·
+            (_⊢_.`
+             (_∋_.S
+              (_∋_.S _∋_.Z))))))
+         _⊢_.·
+         (_⊢_.ƛ
+          (_⊢_.ƛ
+           (_⊢_.` _∋_.Z)))))))
+     _—↠_.—→⟨
+     _—→_.ξ₁
+     (_—→_.ξ₁ _—→_.β)
      ⟩
-     (plfa.part2.Untyped._⊢_.ƛ
-      (plfa.part2.Untyped._⊢_.ƛ
-       (plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.`
-          (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-         plfa.part2.Untyped._⊢_.·
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S
-               (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-          plfa.part2.Untyped._⊢_.·
-          ((plfa.part2.Untyped._⊢_.`
-            (plfa.part2.Untyped._∋_.S
-             (plfa.part2.Untyped._∋_.S
-              (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-           plfa.part2.Untyped._⊢_.·
-           (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-           plfa.part2.Untyped._⊢_.·
-           (plfa.part2.Untyped._⊢_.`
-            (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-         plfa.part2.Untyped._⊢_.·
-         (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-      plfa.part2.Untyped._⊢_.·
-      ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-       plfa.part2.Untyped._⊢_.·
-       (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-     plfa.part2.Untyped._⊢_.·
-     (plfa.part2.Untyped._⊢_.ƛ
-      (plfa.part2.Untyped._⊢_.ƛ
-       (plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.`
-          (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-         plfa.part2.Untyped._⊢_.·
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S
-               (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-          plfa.part2.Untyped._⊢_.·
-          ((plfa.part2.Untyped._⊢_.`
-            (plfa.part2.Untyped._∋_.S
-             (plfa.part2.Untyped._∋_.S
-              (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-           plfa.part2.Untyped._⊢_.·
-           (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-           plfa.part2.Untyped._⊢_.·
-           (plfa.part2.Untyped._⊢_.`
-            (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-         plfa.part2.Untyped._⊢_.·
-         (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-      plfa.part2.Untyped._⊢_.·
-      ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-       plfa.part2.Untyped._⊢_.·
-       (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-     plfa.part2.Untyped._⊢_.·
-     ((plfa.part2.Untyped._⊢_.ƛ
-       (plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.`
-          (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-         plfa.part2.Untyped._⊢_.·
-         (plfa.part2.Untyped._⊢_.`
-          (plfa.part2.Untyped._∋_.S
-           (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-      plfa.part2.Untyped._⊢_.·
-      (plfa.part2.Untyped._⊢_.ƛ
-       (plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-     plfa.part2.Untyped._⊢_.·
-     ((plfa.part2.Untyped._⊢_.ƛ
-       (plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.`
-           (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-          plfa.part2.Untyped._⊢_.·
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-             plfa.part2.Untyped._⊢_.·
-             ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-             plfa.part2.Untyped._⊢_.·
-             ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-           plfa.part2.Untyped._⊢_.·
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.`
-               (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.ƛ
-                (plfa.part2.Untyped._⊢_.ƛ
-                 (plfa.part2.Untyped._⊢_.ƛ
-                  (plfa.part2.Untyped._⊢_.`
-                   (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-                  plfa.part2.Untyped._⊢_.·
-                  (plfa.part2.Untyped._⊢_.`
-                   (plfa.part2.Untyped._∋_.S
-                    (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-               plfa.part2.Untyped._⊢_.·
-               ((plfa.part2.Untyped._⊢_.`
-                 (plfa.part2.Untyped._∋_.S
-                  (plfa.part2.Untyped._∋_.S
-                   (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.`
-                 (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-           plfa.part2.Untyped._⊢_.·
-           (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-           plfa.part2.Untyped._⊢_.·
-           ((plfa.part2.Untyped._⊢_.`
-             (plfa.part2.Untyped._∋_.S
-              (plfa.part2.Untyped._∋_.S
-               (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-            plfa.part2.Untyped._⊢_.·
-            ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z)))))
-          plfa.part2.Untyped._⊢_.·
-          (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-       plfa.part2.Untyped._⊢_.·
-       ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-        plfa.part2.Untyped._⊢_.·
-        (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-      plfa.part2.Untyped._⊢_.·
-      (plfa.part2.Untyped._⊢_.ƛ
-       (plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.`
-           (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-          plfa.part2.Untyped._⊢_.·
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-             plfa.part2.Untyped._⊢_.·
-             ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-             plfa.part2.Untyped._⊢_.·
-             ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-           plfa.part2.Untyped._⊢_.·
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.`
-               (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.ƛ
-                (plfa.part2.Untyped._⊢_.ƛ
-                 (plfa.part2.Untyped._⊢_.ƛ
-                  (plfa.part2.Untyped._⊢_.`
-                   (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-                  plfa.part2.Untyped._⊢_.·
-                  (plfa.part2.Untyped._⊢_.`
-                   (plfa.part2.Untyped._∋_.S
-                    (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-               plfa.part2.Untyped._⊢_.·
-               ((plfa.part2.Untyped._⊢_.`
-                 (plfa.part2.Untyped._∋_.S
-                  (plfa.part2.Untyped._∋_.S
-                   (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.`
-                 (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-           plfa.part2.Untyped._⊢_.·
-           (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-           plfa.part2.Untyped._⊢_.·
-           ((plfa.part2.Untyped._⊢_.`
-             (plfa.part2.Untyped._∋_.S
-              (plfa.part2.Untyped._∋_.S
-               (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-            plfa.part2.Untyped._⊢_.·
-            ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z)))))
-          plfa.part2.Untyped._⊢_.·
-          (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-       plfa.part2.Untyped._⊢_.·
-       ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-        plfa.part2.Untyped._⊢_.·
-        (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-      plfa.part2.Untyped._⊢_.·
-      ((plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.`
-           (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-          plfa.part2.Untyped._⊢_.·
-          (plfa.part2.Untyped._⊢_.`
-           (plfa.part2.Untyped._∋_.S
-            (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-       plfa.part2.Untyped._⊢_.·
-       (plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-       plfa.part2.Untyped._⊢_.·
-       ((plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.`
-            (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-           plfa.part2.Untyped._⊢_.·
-           (plfa.part2.Untyped._⊢_.`
-            (plfa.part2.Untyped._∋_.S
-             (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-        plfa.part2.Untyped._⊢_.·
-        ((plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.`
-             (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.`
-             (plfa.part2.Untyped._∋_.S
-              (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-         plfa.part2.Untyped._⊢_.·
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))))))
-     plfa.part2.Untyped._—↠_.—→⟨
-     plfa.part2.Untyped._—→_.ξ₁
-     (plfa.part2.Untyped._—→_.ξ₁ plfa.part2.Untyped._—→_.β)
+     (_⊢_.ƛ
+      (_⊢_.ƛ
+       (_⊢_.ƛ
+        (_⊢_.ƛ
+         (_⊢_.`
+          (_∋_.S _∋_.Z))
+         _⊢_.·
+         (_⊢_.ƛ
+          (_⊢_.ƛ
+           (_⊢_.ƛ
+            (_⊢_.ƛ
+             (_⊢_.`
+              (_∋_.S _∋_.Z))
+             _⊢_.·
+             (_⊢_.`
+              (_∋_.S
+               (_∋_.S _∋_.Z))))))
+          _⊢_.·
+          ((_⊢_.`
+            (_∋_.S
+             (_∋_.S
+              (_∋_.S _∋_.Z))))
+           _⊢_.·
+           (_⊢_.` _∋_.Z)
+           _⊢_.·
+           (_⊢_.`
+            (_∋_.S _∋_.Z))))
+         _⊢_.·
+         (_⊢_.` _∋_.Z))))
+      _⊢_.·
+      ((_⊢_.` _∋_.Z)
+       _⊢_.·
+       (_⊢_.` _∋_.Z)))
+     _⊢_.·
+     (_⊢_.ƛ
+      (_⊢_.ƛ
+       (_⊢_.ƛ
+        (_⊢_.ƛ
+         (_⊢_.`
+          (_∋_.S _∋_.Z))
+         _⊢_.·
+         (_⊢_.ƛ
+          (_⊢_.ƛ
+           (_⊢_.ƛ
+            (_⊢_.ƛ
+             (_⊢_.`
+              (_∋_.S _∋_.Z))
+             _⊢_.·
+             (_⊢_.`
+              (_∋_.S
+               (_∋_.S _∋_.Z))))))
+          _⊢_.·
+          ((_⊢_.`
+            (_∋_.S
+             (_∋_.S
+              (_∋_.S _∋_.Z))))
+           _⊢_.·
+           (_⊢_.` _∋_.Z)
+           _⊢_.·
+           (_⊢_.`
+            (_∋_.S _∋_.Z))))
+         _⊢_.·
+         (_⊢_.` _∋_.Z))))
+      _⊢_.·
+      ((_⊢_.` _∋_.Z)
+       _⊢_.·
+       (_⊢_.` _∋_.Z)))
+     _⊢_.·
+     ((_⊢_.ƛ
+       (_⊢_.ƛ
+        (_⊢_.ƛ
+         (_⊢_.`
+          (_∋_.S _∋_.Z))
+         _⊢_.·
+         (_⊢_.`
+          (_∋_.S
+           (_∋_.S _∋_.Z))))))
+      _⊢_.·
+      (_⊢_.ƛ
+       (_⊢_.ƛ
+        (_⊢_.` _∋_.Z))))
+     _⊢_.·
+     ((_⊢_.ƛ
+       (_⊢_.ƛ
+        (_⊢_.ƛ
+         (_⊢_.ƛ
+          (_⊢_.`
+           (_∋_.S _∋_.Z))
+          _⊢_.·
+          (_⊢_.ƛ
+           (_⊢_.ƛ
+            (_⊢_.ƛ
+             (_⊢_.`
+              (_∋_.S _∋_.Z))
+             _⊢_.·
+             ((_⊢_.` _∋_.Z)
+              _⊢_.·
+              (_⊢_.` _∋_.Z)))
+            _⊢_.·
+            (_⊢_.ƛ
+             (_⊢_.`
+              (_∋_.S _∋_.Z))
+             _⊢_.·
+             ((_⊢_.` _∋_.Z)
+              _⊢_.·
+              (_⊢_.` _∋_.Z))))
+           _⊢_.·
+           (_⊢_.ƛ
+            (_⊢_.ƛ
+             (_⊢_.ƛ
+              (_⊢_.`
+               (_∋_.S _∋_.Z))
+              _⊢_.·
+              (_⊢_.ƛ
+               (_⊢_.ƛ
+                (_⊢_.ƛ
+                 (_⊢_.ƛ
+                  (_⊢_.`
+                   (_∋_.S _∋_.Z))
+                  _⊢_.·
+                  (_⊢_.`
+                   (_∋_.S
+                    (_∋_.S _∋_.Z))))))
+               _⊢_.·
+               ((_⊢_.`
+                 (_∋_.S
+                  (_∋_.S
+                   (_∋_.S _∋_.Z))))
+                _⊢_.·
+                (_⊢_.` _∋_.Z)
+                _⊢_.·
+                (_⊢_.`
+                 (_∋_.S _∋_.Z))))
+              _⊢_.·
+              (_⊢_.` _∋_.Z))))
+           _⊢_.·
+           (_⊢_.` _∋_.Z)
+           _⊢_.·
+           ((_⊢_.`
+             (_∋_.S
+              (_∋_.S
+               (_∋_.S _∋_.Z))))
+            _⊢_.·
+            ((_⊢_.` _∋_.Z)
+             _⊢_.·
+             (_⊢_.`
+              (_∋_.S _∋_.Z)))))
+          _⊢_.·
+          (_⊢_.` _∋_.Z))))
+       _⊢_.·
+       ((_⊢_.` _∋_.Z)
+        _⊢_.·
+        (_⊢_.` _∋_.Z)))
+      _⊢_.·
+      (_⊢_.ƛ
+       (_⊢_.ƛ
+        (_⊢_.ƛ
+         (_⊢_.ƛ
+          (_⊢_.`
+           (_∋_.S _∋_.Z))
+          _⊢_.·
+          (_⊢_.ƛ
+           (_⊢_.ƛ
+            (_⊢_.ƛ
+             (_⊢_.`
+              (_∋_.S _∋_.Z))
+             _⊢_.·
+             ((_⊢_.` _∋_.Z)
+              _⊢_.·
+              (_⊢_.` _∋_.Z)))
+            _⊢_.·
+            (_⊢_.ƛ
+             (_⊢_.`
+              (_∋_.S _∋_.Z))
+             _⊢_.·
+             ((_⊢_.` _∋_.Z)
+              _⊢_.·
+              (_⊢_.` _∋_.Z))))
+           _⊢_.·
+           (_⊢_.ƛ
+            (_⊢_.ƛ
+             (_⊢_.ƛ
+              (_⊢_.`
+               (_∋_.S _∋_.Z))
+              _⊢_.·
+              (_⊢_.ƛ
+               (_⊢_.ƛ
+                (_⊢_.ƛ
+                 (_⊢_.ƛ
+                  (_⊢_.`
+                   (_∋_.S _∋_.Z))
+                  _⊢_.·
+                  (_⊢_.`
+                   (_∋_.S
+                    (_∋_.S _∋_.Z))))))
+               _⊢_.·
+               ((_⊢_.`
+                 (_∋_.S
+                  (_∋_.S
+                   (_∋_.S _∋_.Z))))
+                _⊢_.·
+                (_⊢_.` _∋_.Z)
+                _⊢_.·
+                (_⊢_.`
+                 (_∋_.S _∋_.Z))))
+              _⊢_.·
+              (_⊢_.` _∋_.Z))))
+           _⊢_.·
+           (_⊢_.` _∋_.Z)
+           _⊢_.·
+           ((_⊢_.`
+             (_∋_.S
+              (_∋_.S
+               (_∋_.S _∋_.Z))))
+            _⊢_.·
+            ((_⊢_.` _∋_.Z)
+             _⊢_.·
+             (_⊢_.`
+              (_∋_.S _∋_.Z)))))
+          _⊢_.·
+          (_⊢_.` _∋_.Z))))
+       _⊢_.·
+       ((_⊢_.` _∋_.Z)
+        _⊢_.·
+        (_⊢_.` _∋_.Z)))
+      _⊢_.·
+      ((_⊢_.ƛ
+        (_⊢_.ƛ
+         (_⊢_.ƛ
+          (_⊢_.`
+           (_∋_.S _∋_.Z))
+          _⊢_.·
+          (_⊢_.`
+           (_∋_.S
+            (_∋_.S _∋_.Z))))))
+       _⊢_.·
+       (_⊢_.ƛ
+        (_⊢_.ƛ
+         (_⊢_.` _∋_.Z)))
+       _⊢_.·
+       ((_⊢_.ƛ
+         (_⊢_.ƛ
+          (_⊢_.ƛ
+           (_⊢_.`
+            (_∋_.S _∋_.Z))
+           _⊢_.·
+           (_⊢_.`
+            (_∋_.S
+             (_∋_.S _∋_.Z))))))
+        _⊢_.·
+        ((_⊢_.ƛ
+          (_⊢_.ƛ
+           (_⊢_.ƛ
+            (_⊢_.`
+             (_∋_.S _∋_.Z))
+            _⊢_.·
+            (_⊢_.`
+             (_∋_.S
+              (_∋_.S _∋_.Z))))))
+         _⊢_.·
+         (_⊢_.ƛ
+          (_⊢_.ƛ
+           (_⊢_.` _∋_.Z)))))))
+     _—↠_.—→⟨
+     _—→_.ξ₁
+     (_—→_.ξ₁ _—→_.β)
      ⟩
-     (plfa.part2.Untyped._⊢_.ƛ
-      (plfa.part2.Untyped._⊢_.ƛ
-       (plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.`
-         (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-        plfa.part2.Untyped._⊢_.·
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.`
-             (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.`
-             (plfa.part2.Untyped._∋_.S
-              (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-         plfa.part2.Untyped._⊢_.·
-         ((plfa.part2.Untyped._⊢_.`
-           (plfa.part2.Untyped._∋_.S
-            (plfa.part2.Untyped._∋_.S
-             (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-          plfa.part2.Untyped._⊢_.·
-          (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-          plfa.part2.Untyped._⊢_.·
-          (plfa.part2.Untyped._⊢_.`
-           (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-        plfa.part2.Untyped._⊢_.·
-        (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-     plfa.part2.Untyped._⊢_.·
-     ((plfa.part2.Untyped._⊢_.ƛ
-       (plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.`
-           (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-          plfa.part2.Untyped._⊢_.·
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.`
-               (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.`
-               (plfa.part2.Untyped._∋_.S
-                (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-           plfa.part2.Untyped._⊢_.·
-           ((plfa.part2.Untyped._⊢_.`
-             (plfa.part2.Untyped._∋_.S
-              (plfa.part2.Untyped._∋_.S
-               (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.`
-             (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-          plfa.part2.Untyped._⊢_.·
-          (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-       plfa.part2.Untyped._⊢_.·
-       ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-        plfa.part2.Untyped._⊢_.·
-        (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-      plfa.part2.Untyped._⊢_.·
-      (plfa.part2.Untyped._⊢_.ƛ
-       (plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.`
-           (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-          plfa.part2.Untyped._⊢_.·
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.`
-               (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.`
-               (plfa.part2.Untyped._∋_.S
-                (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-           plfa.part2.Untyped._⊢_.·
-           ((plfa.part2.Untyped._⊢_.`
-             (plfa.part2.Untyped._∋_.S
-              (plfa.part2.Untyped._∋_.S
-               (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.`
-             (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-          plfa.part2.Untyped._⊢_.·
-          (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-       plfa.part2.Untyped._⊢_.·
-       ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-        plfa.part2.Untyped._⊢_.·
-        (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-     plfa.part2.Untyped._⊢_.·
-     ((plfa.part2.Untyped._⊢_.ƛ
-       (plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.`
-          (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-         plfa.part2.Untyped._⊢_.·
-         (plfa.part2.Untyped._⊢_.`
-          (plfa.part2.Untyped._∋_.S
-           (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-      plfa.part2.Untyped._⊢_.·
-      (plfa.part2.Untyped._⊢_.ƛ
-       (plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-     plfa.part2.Untyped._⊢_.·
-     ((plfa.part2.Untyped._⊢_.ƛ
-       (plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.`
-           (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-          plfa.part2.Untyped._⊢_.·
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-             plfa.part2.Untyped._⊢_.·
-             ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-             plfa.part2.Untyped._⊢_.·
-             ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-           plfa.part2.Untyped._⊢_.·
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.`
-               (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.ƛ
-                (plfa.part2.Untyped._⊢_.ƛ
-                 (plfa.part2.Untyped._⊢_.ƛ
-                  (plfa.part2.Untyped._⊢_.`
-                   (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-                  plfa.part2.Untyped._⊢_.·
-                  (plfa.part2.Untyped._⊢_.`
-                   (plfa.part2.Untyped._∋_.S
-                    (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-               plfa.part2.Untyped._⊢_.·
-               ((plfa.part2.Untyped._⊢_.`
-                 (plfa.part2.Untyped._∋_.S
-                  (plfa.part2.Untyped._∋_.S
-                   (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.`
-                 (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-           plfa.part2.Untyped._⊢_.·
-           (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-           plfa.part2.Untyped._⊢_.·
-           ((plfa.part2.Untyped._⊢_.`
-             (plfa.part2.Untyped._∋_.S
-              (plfa.part2.Untyped._∋_.S
-               (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-            plfa.part2.Untyped._⊢_.·
-            ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z)))))
-          plfa.part2.Untyped._⊢_.·
-          (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-       plfa.part2.Untyped._⊢_.·
-       ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-        plfa.part2.Untyped._⊢_.·
-        (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-      plfa.part2.Untyped._⊢_.·
-      (plfa.part2.Untyped._⊢_.ƛ
-       (plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.`
-           (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-          plfa.part2.Untyped._⊢_.·
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-             plfa.part2.Untyped._⊢_.·
-             ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-             plfa.part2.Untyped._⊢_.·
-             ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-           plfa.part2.Untyped._⊢_.·
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.`
-               (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.ƛ
-                (plfa.part2.Untyped._⊢_.ƛ
-                 (plfa.part2.Untyped._⊢_.ƛ
-                  (plfa.part2.Untyped._⊢_.`
-                   (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-                  plfa.part2.Untyped._⊢_.·
-                  (plfa.part2.Untyped._⊢_.`
-                   (plfa.part2.Untyped._∋_.S
-                    (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-               plfa.part2.Untyped._⊢_.·
-               ((plfa.part2.Untyped._⊢_.`
-                 (plfa.part2.Untyped._∋_.S
-                  (plfa.part2.Untyped._∋_.S
-                   (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.`
-                 (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-           plfa.part2.Untyped._⊢_.·
-           (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-           plfa.part2.Untyped._⊢_.·
-           ((plfa.part2.Untyped._⊢_.`
-             (plfa.part2.Untyped._∋_.S
-              (plfa.part2.Untyped._∋_.S
-               (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-            plfa.part2.Untyped._⊢_.·
-            ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z)))))
-          plfa.part2.Untyped._⊢_.·
-          (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-       plfa.part2.Untyped._⊢_.·
-       ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-        plfa.part2.Untyped._⊢_.·
-        (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-      plfa.part2.Untyped._⊢_.·
-      ((plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.`
-           (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-          plfa.part2.Untyped._⊢_.·
-          (plfa.part2.Untyped._⊢_.`
-           (plfa.part2.Untyped._∋_.S
-            (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-       plfa.part2.Untyped._⊢_.·
-       (plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-       plfa.part2.Untyped._⊢_.·
-       ((plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.`
-            (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-           plfa.part2.Untyped._⊢_.·
-           (plfa.part2.Untyped._⊢_.`
-            (plfa.part2.Untyped._∋_.S
-             (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-        plfa.part2.Untyped._⊢_.·
-        ((plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.`
-             (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.`
-             (plfa.part2.Untyped._∋_.S
-              (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-         plfa.part2.Untyped._⊢_.·
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))))))
-     plfa.part2.Untyped._—↠_.—→⟨
-     plfa.part2.Untyped._—→_.ξ₁
-     (plfa.part2.Untyped._—→_.ξ₁ plfa.part2.Untyped._—→_.β)
+     (_⊢_.ƛ
+      (_⊢_.ƛ
+       (_⊢_.ƛ
+        (_⊢_.`
+         (_∋_.S _∋_.Z))
+        _⊢_.·
+        (_⊢_.ƛ
+         (_⊢_.ƛ
+          (_⊢_.ƛ
+           (_⊢_.ƛ
+            (_⊢_.`
+             (_∋_.S _∋_.Z))
+            _⊢_.·
+            (_⊢_.`
+             (_∋_.S
+              (_∋_.S _∋_.Z))))))
+         _⊢_.·
+         ((_⊢_.`
+           (_∋_.S
+            (_∋_.S
+             (_∋_.S _∋_.Z))))
+          _⊢_.·
+          (_⊢_.` _∋_.Z)
+          _⊢_.·
+          (_⊢_.`
+           (_∋_.S _∋_.Z))))
+        _⊢_.·
+        (_⊢_.` _∋_.Z))))
+     _⊢_.·
+     ((_⊢_.ƛ
+       (_⊢_.ƛ
+        (_⊢_.ƛ
+         (_⊢_.ƛ
+          (_⊢_.`
+           (_∋_.S _∋_.Z))
+          _⊢_.·
+          (_⊢_.ƛ
+           (_⊢_.ƛ
+            (_⊢_.ƛ
+             (_⊢_.ƛ
+              (_⊢_.`
+               (_∋_.S _∋_.Z))
+              _⊢_.·
+              (_⊢_.`
+               (_∋_.S
+                (_∋_.S _∋_.Z))))))
+           _⊢_.·
+           ((_⊢_.`
+             (_∋_.S
+              (_∋_.S
+               (_∋_.S _∋_.Z))))
+            _⊢_.·
+            (_⊢_.` _∋_.Z)
+            _⊢_.·
+            (_⊢_.`
+             (_∋_.S _∋_.Z))))
+          _⊢_.·
+          (_⊢_.` _∋_.Z))))
+       _⊢_.·
+       ((_⊢_.` _∋_.Z)
+        _⊢_.·
+        (_⊢_.` _∋_.Z)))
+      _⊢_.·
+      (_⊢_.ƛ
+       (_⊢_.ƛ
+        (_⊢_.ƛ
+         (_⊢_.ƛ
+          (_⊢_.`
+           (_∋_.S _∋_.Z))
+          _⊢_.·
+          (_⊢_.ƛ
+           (_⊢_.ƛ
+            (_⊢_.ƛ
+             (_⊢_.ƛ
+              (_⊢_.`
+               (_∋_.S _∋_.Z))
+              _⊢_.·
+              (_⊢_.`
+               (_∋_.S
+                (_∋_.S _∋_.Z))))))
+           _⊢_.·
+           ((_⊢_.`
+             (_∋_.S
+              (_∋_.S
+               (_∋_.S _∋_.Z))))
+            _⊢_.·
+            (_⊢_.` _∋_.Z)
+            _⊢_.·
+            (_⊢_.`
+             (_∋_.S _∋_.Z))))
+          _⊢_.·
+          (_⊢_.` _∋_.Z))))
+       _⊢_.·
+       ((_⊢_.` _∋_.Z)
+        _⊢_.·
+        (_⊢_.` _∋_.Z))))
+     _⊢_.·
+     ((_⊢_.ƛ
+       (_⊢_.ƛ
+        (_⊢_.ƛ
+         (_⊢_.`
+          (_∋_.S _∋_.Z))
+         _⊢_.·
+         (_⊢_.`
+          (_∋_.S
+           (_∋_.S _∋_.Z))))))
+      _⊢_.·
+      (_⊢_.ƛ
+       (_⊢_.ƛ
+        (_⊢_.` _∋_.Z))))
+     _⊢_.·
+     ((_⊢_.ƛ
+       (_⊢_.ƛ
+        (_⊢_.ƛ
+         (_⊢_.ƛ
+          (_⊢_.`
+           (_∋_.S _∋_.Z))
+          _⊢_.·
+          (_⊢_.ƛ
+           (_⊢_.ƛ
+            (_⊢_.ƛ
+             (_⊢_.`
+              (_∋_.S _∋_.Z))
+             _⊢_.·
+             ((_⊢_.` _∋_.Z)
+              _⊢_.·
+              (_⊢_.` _∋_.Z)))
+            _⊢_.·
+            (_⊢_.ƛ
+             (_⊢_.`
+              (_∋_.S _∋_.Z))
+             _⊢_.·
+             ((_⊢_.` _∋_.Z)
+              _⊢_.·
+              (_⊢_.` _∋_.Z))))
+           _⊢_.·
+           (_⊢_.ƛ
+            (_⊢_.ƛ
+             (_⊢_.ƛ
+              (_⊢_.`
+               (_∋_.S _∋_.Z))
+              _⊢_.·
+              (_⊢_.ƛ
+               (_⊢_.ƛ
+                (_⊢_.ƛ
+                 (_⊢_.ƛ
+                  (_⊢_.`
+                   (_∋_.S _∋_.Z))
+                  _⊢_.·
+                  (_⊢_.`
+                   (_∋_.S
+                    (_∋_.S _∋_.Z))))))
+               _⊢_.·
+               ((_⊢_.`
+                 (_∋_.S
+                  (_∋_.S
+                   (_∋_.S _∋_.Z))))
+                _⊢_.·
+                (_⊢_.` _∋_.Z)
+                _⊢_.·
+                (_⊢_.`
+                 (_∋_.S _∋_.Z))))
+              _⊢_.·
+              (_⊢_.` _∋_.Z))))
+           _⊢_.·
+           (_⊢_.` _∋_.Z)
+           _⊢_.·
+           ((_⊢_.`
+             (_∋_.S
+              (_∋_.S
+               (_∋_.S _∋_.Z))))
+            _⊢_.·
+            ((_⊢_.` _∋_.Z)
+             _⊢_.·
+             (_⊢_.`
+              (_∋_.S _∋_.Z)))))
+          _⊢_.·
+          (_⊢_.` _∋_.Z))))
+       _⊢_.·
+       ((_⊢_.` _∋_.Z)
+        _⊢_.·
+        (_⊢_.` _∋_.Z)))
+      _⊢_.·
+      (_⊢_.ƛ
+       (_⊢_.ƛ
+        (_⊢_.ƛ
+         (_⊢_.ƛ
+          (_⊢_.`
+           (_∋_.S _∋_.Z))
+          _⊢_.·
+          (_⊢_.ƛ
+           (_⊢_.ƛ
+            (_⊢_.ƛ
+             (_⊢_.`
+              (_∋_.S _∋_.Z))
+             _⊢_.·
+             ((_⊢_.` _∋_.Z)
+              _⊢_.·
+              (_⊢_.` _∋_.Z)))
+            _⊢_.·
+            (_⊢_.ƛ
+             (_⊢_.`
+              (_∋_.S _∋_.Z))
+             _⊢_.·
+             ((_⊢_.` _∋_.Z)
+              _⊢_.·
+              (_⊢_.` _∋_.Z))))
+           _⊢_.·
+           (_⊢_.ƛ
+            (_⊢_.ƛ
+             (_⊢_.ƛ
+              (_⊢_.`
+               (_∋_.S _∋_.Z))
+              _⊢_.·
+              (_⊢_.ƛ
+               (_⊢_.ƛ
+                (_⊢_.ƛ
+                 (_⊢_.ƛ
+                  (_⊢_.`
+                   (_∋_.S _∋_.Z))
+                  _⊢_.·
+                  (_⊢_.`
+                   (_∋_.S
+                    (_∋_.S _∋_.Z))))))
+               _⊢_.·
+               ((_⊢_.`
+                 (_∋_.S
+                  (_∋_.S
+                   (_∋_.S _∋_.Z))))
+                _⊢_.·
+                (_⊢_.` _∋_.Z)
+                _⊢_.·
+                (_⊢_.`
+                 (_∋_.S _∋_.Z))))
+              _⊢_.·
+              (_⊢_.` _∋_.Z))))
+           _⊢_.·
+           (_⊢_.` _∋_.Z)
+           _⊢_.·
+           ((_⊢_.`
+             (_∋_.S
+              (_∋_.S
+               (_∋_.S _∋_.Z))))
+            _⊢_.·
+            ((_⊢_.` _∋_.Z)
+             _⊢_.·
+             (_⊢_.`
+              (_∋_.S _∋_.Z)))))
+          _⊢_.·
+          (_⊢_.` _∋_.Z))))
+       _⊢_.·
+       ((_⊢_.` _∋_.Z)
+        _⊢_.·
+        (_⊢_.` _∋_.Z)))
+      _⊢_.·
+      ((_⊢_.ƛ
+        (_⊢_.ƛ
+         (_⊢_.ƛ
+          (_⊢_.`
+           (_∋_.S _∋_.Z))
+          _⊢_.·
+          (_⊢_.`
+           (_∋_.S
+            (_∋_.S _∋_.Z))))))
+       _⊢_.·
+       (_⊢_.ƛ
+        (_⊢_.ƛ
+         (_⊢_.` _∋_.Z)))
+       _⊢_.·
+       ((_⊢_.ƛ
+         (_⊢_.ƛ
+          (_⊢_.ƛ
+           (_⊢_.`
+            (_∋_.S _∋_.Z))
+           _⊢_.·
+           (_⊢_.`
+            (_∋_.S
+             (_∋_.S _∋_.Z))))))
+        _⊢_.·
+        ((_⊢_.ƛ
+          (_⊢_.ƛ
+           (_⊢_.ƛ
+            (_⊢_.`
+             (_∋_.S _∋_.Z))
+            _⊢_.·
+            (_⊢_.`
+             (_∋_.S
+              (_∋_.S _∋_.Z))))))
+         _⊢_.·
+         (_⊢_.ƛ
+          (_⊢_.ƛ
+           (_⊢_.` _∋_.Z)))))))
+     _—↠_.—→⟨
+     _—→_.ξ₁
+     (_—→_.ξ₁ _—→_.β)
      ⟩
-     (plfa.part2.Untyped._⊢_.ƛ
-      (plfa.part2.Untyped._⊢_.ƛ
-       (plfa.part2.Untyped._⊢_.`
-        (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-       plfa.part2.Untyped._⊢_.·
-       (plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.`
-            (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-           plfa.part2.Untyped._⊢_.·
-           (plfa.part2.Untyped._⊢_.`
-            (plfa.part2.Untyped._∋_.S
-             (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-        plfa.part2.Untyped._⊢_.·
-        ((plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.ƛ
-                (plfa.part2.Untyped._⊢_.ƛ
-                 (plfa.part2.Untyped._⊢_.`
-                  (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-                 plfa.part2.Untyped._⊢_.·
-                 (plfa.part2.Untyped._⊢_.`
-                  (plfa.part2.Untyped._∋_.S
-                   (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-              plfa.part2.Untyped._⊢_.·
-              ((plfa.part2.Untyped._⊢_.`
-                (plfa.part2.Untyped._∋_.S
-                 (plfa.part2.Untyped._∋_.S
-                  (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-               plfa.part2.Untyped._⊢_.·
-               (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-               plfa.part2.Untyped._⊢_.·
-               (plfa.part2.Untyped._⊢_.`
-                (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-          plfa.part2.Untyped._⊢_.·
-          ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-           plfa.part2.Untyped._⊢_.·
-           (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-         plfa.part2.Untyped._⊢_.·
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.ƛ
-                (plfa.part2.Untyped._⊢_.ƛ
-                 (plfa.part2.Untyped._⊢_.`
-                  (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-                 plfa.part2.Untyped._⊢_.·
-                 (plfa.part2.Untyped._⊢_.`
-                  (plfa.part2.Untyped._∋_.S
-                   (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-              plfa.part2.Untyped._⊢_.·
-              ((plfa.part2.Untyped._⊢_.`
-                (plfa.part2.Untyped._∋_.S
-                 (plfa.part2.Untyped._∋_.S
-                  (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-               plfa.part2.Untyped._⊢_.·
-               (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-               plfa.part2.Untyped._⊢_.·
-               (plfa.part2.Untyped._⊢_.`
-                (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-          plfa.part2.Untyped._⊢_.·
-          ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-           plfa.part2.Untyped._⊢_.·
-           (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-         plfa.part2.Untyped._⊢_.·
-         (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-         plfa.part2.Untyped._⊢_.·
-         (plfa.part2.Untyped._⊢_.`
-          (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-       plfa.part2.Untyped._⊢_.·
-       (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-     plfa.part2.Untyped._⊢_.·
-     ((plfa.part2.Untyped._⊢_.ƛ
-       (plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.`
-          (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-         plfa.part2.Untyped._⊢_.·
-         (plfa.part2.Untyped._⊢_.`
-          (plfa.part2.Untyped._∋_.S
-           (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-      plfa.part2.Untyped._⊢_.·
-      (plfa.part2.Untyped._⊢_.ƛ
-       (plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-     plfa.part2.Untyped._⊢_.·
-     ((plfa.part2.Untyped._⊢_.ƛ
-       (plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.`
-           (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-          plfa.part2.Untyped._⊢_.·
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-             plfa.part2.Untyped._⊢_.·
-             ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-             plfa.part2.Untyped._⊢_.·
-             ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-           plfa.part2.Untyped._⊢_.·
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.`
-               (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.ƛ
-                (plfa.part2.Untyped._⊢_.ƛ
-                 (plfa.part2.Untyped._⊢_.ƛ
-                  (plfa.part2.Untyped._⊢_.`
-                   (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-                  plfa.part2.Untyped._⊢_.·
-                  (plfa.part2.Untyped._⊢_.`
-                   (plfa.part2.Untyped._∋_.S
-                    (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-               plfa.part2.Untyped._⊢_.·
-               ((plfa.part2.Untyped._⊢_.`
-                 (plfa.part2.Untyped._∋_.S
-                  (plfa.part2.Untyped._∋_.S
-                   (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.`
-                 (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-           plfa.part2.Untyped._⊢_.·
-           (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-           plfa.part2.Untyped._⊢_.·
-           ((plfa.part2.Untyped._⊢_.`
-             (plfa.part2.Untyped._∋_.S
-              (plfa.part2.Untyped._∋_.S
-               (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-            plfa.part2.Untyped._⊢_.·
-            ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z)))))
-          plfa.part2.Untyped._⊢_.·
-          (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-       plfa.part2.Untyped._⊢_.·
-       ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-        plfa.part2.Untyped._⊢_.·
-        (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-      plfa.part2.Untyped._⊢_.·
-      (plfa.part2.Untyped._⊢_.ƛ
-       (plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.`
-           (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-          plfa.part2.Untyped._⊢_.·
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-             plfa.part2.Untyped._⊢_.·
-             ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-             plfa.part2.Untyped._⊢_.·
-             ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-           plfa.part2.Untyped._⊢_.·
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.`
-               (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.ƛ
-                (plfa.part2.Untyped._⊢_.ƛ
-                 (plfa.part2.Untyped._⊢_.ƛ
-                  (plfa.part2.Untyped._⊢_.`
-                   (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-                  plfa.part2.Untyped._⊢_.·
-                  (plfa.part2.Untyped._⊢_.`
-                   (plfa.part2.Untyped._∋_.S
-                    (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-               plfa.part2.Untyped._⊢_.·
-               ((plfa.part2.Untyped._⊢_.`
-                 (plfa.part2.Untyped._∋_.S
-                  (plfa.part2.Untyped._∋_.S
-                   (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.`
-                 (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-           plfa.part2.Untyped._⊢_.·
-           (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-           plfa.part2.Untyped._⊢_.·
-           ((plfa.part2.Untyped._⊢_.`
-             (plfa.part2.Untyped._∋_.S
-              (plfa.part2.Untyped._∋_.S
-               (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-            plfa.part2.Untyped._⊢_.·
-            ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z)))))
-          plfa.part2.Untyped._⊢_.·
-          (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-       plfa.part2.Untyped._⊢_.·
-       ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-        plfa.part2.Untyped._⊢_.·
-        (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-      plfa.part2.Untyped._⊢_.·
-      ((plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.`
-           (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-          plfa.part2.Untyped._⊢_.·
-          (plfa.part2.Untyped._⊢_.`
-           (plfa.part2.Untyped._∋_.S
-            (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-       plfa.part2.Untyped._⊢_.·
-       (plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-       plfa.part2.Untyped._⊢_.·
-       ((plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.`
-            (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-           plfa.part2.Untyped._⊢_.·
-           (plfa.part2.Untyped._⊢_.`
-            (plfa.part2.Untyped._∋_.S
-             (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-        plfa.part2.Untyped._⊢_.·
-        ((plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.`
-             (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.`
-             (plfa.part2.Untyped._∋_.S
-              (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-         plfa.part2.Untyped._⊢_.·
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))))))
-     plfa.part2.Untyped._—↠_.—→⟨
-     plfa.part2.Untyped._—→_.ξ₁ plfa.part2.Untyped._—→_.β ⟩
-     (plfa.part2.Untyped._⊢_.ƛ
-      (plfa.part2.Untyped._⊢_.ƛ
-       (plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.`
-          (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-         plfa.part2.Untyped._⊢_.·
-         (plfa.part2.Untyped._⊢_.`
-          (plfa.part2.Untyped._∋_.S
-           (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-      plfa.part2.Untyped._⊢_.·
-      (plfa.part2.Untyped._⊢_.ƛ
-       (plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-      plfa.part2.Untyped._⊢_.·
-      (plfa.part2.Untyped._⊢_.ƛ
-       (plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.`
-           (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-          plfa.part2.Untyped._⊢_.·
-          (plfa.part2.Untyped._⊢_.`
-           (plfa.part2.Untyped._∋_.S
-            (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-       plfa.part2.Untyped._⊢_.·
-       ((plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.`
-             (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.ƛ
-                (plfa.part2.Untyped._⊢_.`
-                 (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.`
-                 (plfa.part2.Untyped._∋_.S
-                  (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-             plfa.part2.Untyped._⊢_.·
-             ((plfa.part2.Untyped._⊢_.`
-               (plfa.part2.Untyped._∋_.S
-                (plfa.part2.Untyped._∋_.S
-                 (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.`
-               (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-         plfa.part2.Untyped._⊢_.·
-         ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-          plfa.part2.Untyped._⊢_.·
-          (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-        plfa.part2.Untyped._⊢_.·
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.`
-             (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.ƛ
-                (plfa.part2.Untyped._⊢_.`
-                 (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.`
-                 (plfa.part2.Untyped._∋_.S
-                  (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-             plfa.part2.Untyped._⊢_.·
-             ((plfa.part2.Untyped._⊢_.`
-               (plfa.part2.Untyped._∋_.S
-                (plfa.part2.Untyped._∋_.S
-                 (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.`
-               (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-         plfa.part2.Untyped._⊢_.·
-         ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-          plfa.part2.Untyped._⊢_.·
-          (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-        plfa.part2.Untyped._⊢_.·
-        (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-        plfa.part2.Untyped._⊢_.·
-        (plfa.part2.Untyped._⊢_.`
-         (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-      plfa.part2.Untyped._⊢_.·
-      (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))
-     plfa.part2.Untyped._⊢_.·
-     ((plfa.part2.Untyped._⊢_.ƛ
-       (plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.`
-           (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-          plfa.part2.Untyped._⊢_.·
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-             plfa.part2.Untyped._⊢_.·
-             ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-             plfa.part2.Untyped._⊢_.·
-             ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-           plfa.part2.Untyped._⊢_.·
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.`
-               (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.ƛ
-                (plfa.part2.Untyped._⊢_.ƛ
-                 (plfa.part2.Untyped._⊢_.ƛ
-                  (plfa.part2.Untyped._⊢_.`
-                   (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-                  plfa.part2.Untyped._⊢_.·
-                  (plfa.part2.Untyped._⊢_.`
-                   (plfa.part2.Untyped._∋_.S
-                    (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-               plfa.part2.Untyped._⊢_.·
-               ((plfa.part2.Untyped._⊢_.`
-                 (plfa.part2.Untyped._∋_.S
-                  (plfa.part2.Untyped._∋_.S
-                   (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.`
-                 (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-           plfa.part2.Untyped._⊢_.·
-           (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-           plfa.part2.Untyped._⊢_.·
-           ((plfa.part2.Untyped._⊢_.`
-             (plfa.part2.Untyped._∋_.S
-              (plfa.part2.Untyped._∋_.S
-               (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-            plfa.part2.Untyped._⊢_.·
-            ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z)))))
-          plfa.part2.Untyped._⊢_.·
-          (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-       plfa.part2.Untyped._⊢_.·
-       ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-        plfa.part2.Untyped._⊢_.·
-        (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-      plfa.part2.Untyped._⊢_.·
-      (plfa.part2.Untyped._⊢_.ƛ
-       (plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.`
-           (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-          plfa.part2.Untyped._⊢_.·
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-             plfa.part2.Untyped._⊢_.·
-             ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-             plfa.part2.Untyped._⊢_.·
-             ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-           plfa.part2.Untyped._⊢_.·
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.`
-               (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.ƛ
-                (plfa.part2.Untyped._⊢_.ƛ
-                 (plfa.part2.Untyped._⊢_.ƛ
-                  (plfa.part2.Untyped._⊢_.`
-                   (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-                  plfa.part2.Untyped._⊢_.·
-                  (plfa.part2.Untyped._⊢_.`
-                   (plfa.part2.Untyped._∋_.S
-                    (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-               plfa.part2.Untyped._⊢_.·
-               ((plfa.part2.Untyped._⊢_.`
-                 (plfa.part2.Untyped._∋_.S
-                  (plfa.part2.Untyped._∋_.S
-                   (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.`
-                 (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-           plfa.part2.Untyped._⊢_.·
-           (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-           plfa.part2.Untyped._⊢_.·
-           ((plfa.part2.Untyped._⊢_.`
-             (plfa.part2.Untyped._∋_.S
-              (plfa.part2.Untyped._∋_.S
-               (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-            plfa.part2.Untyped._⊢_.·
-            ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z)))))
-          plfa.part2.Untyped._⊢_.·
-          (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-       plfa.part2.Untyped._⊢_.·
-       ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-        plfa.part2.Untyped._⊢_.·
-        (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-      plfa.part2.Untyped._⊢_.·
-      ((plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.`
-           (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-          plfa.part2.Untyped._⊢_.·
-          (plfa.part2.Untyped._⊢_.`
-           (plfa.part2.Untyped._∋_.S
-            (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-       plfa.part2.Untyped._⊢_.·
-       (plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-       plfa.part2.Untyped._⊢_.·
-       ((plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.`
-            (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-           plfa.part2.Untyped._⊢_.·
-           (plfa.part2.Untyped._⊢_.`
-            (plfa.part2.Untyped._∋_.S
-             (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-        plfa.part2.Untyped._⊢_.·
-        ((plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.`
-             (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.`
-             (plfa.part2.Untyped._∋_.S
-              (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-         plfa.part2.Untyped._⊢_.·
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))))))
-     plfa.part2.Untyped._—↠_.—→⟨ plfa.part2.Untyped._—→_.β ⟩
-     (plfa.part2.Untyped._⊢_.ƛ
-      (plfa.part2.Untyped._⊢_.ƛ
-       (plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.`
-         (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-        plfa.part2.Untyped._⊢_.·
-        (plfa.part2.Untyped._⊢_.`
-         (plfa.part2.Untyped._∋_.S
-          (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-     plfa.part2.Untyped._⊢_.·
-     (plfa.part2.Untyped._⊢_.ƛ
-      (plfa.part2.Untyped._⊢_.ƛ
-       (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-     plfa.part2.Untyped._⊢_.·
-     (plfa.part2.Untyped._⊢_.ƛ
-      (plfa.part2.Untyped._⊢_.ƛ
-       (plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.`
-          (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-         plfa.part2.Untyped._⊢_.·
-         (plfa.part2.Untyped._⊢_.`
-          (plfa.part2.Untyped._∋_.S
-           (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-      plfa.part2.Untyped._⊢_.·
-      ((plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.`
-            (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-           plfa.part2.Untyped._⊢_.·
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.`
-                (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-               plfa.part2.Untyped._⊢_.·
-               (plfa.part2.Untyped._⊢_.`
-                (plfa.part2.Untyped._∋_.S
-                 (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-            plfa.part2.Untyped._⊢_.·
-            ((plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S
-               (plfa.part2.Untyped._∋_.S
-                (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-           plfa.part2.Untyped._⊢_.·
-           (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-        plfa.part2.Untyped._⊢_.·
-        ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-         plfa.part2.Untyped._⊢_.·
-         (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-       plfa.part2.Untyped._⊢_.·
-       (plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.`
-            (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-           plfa.part2.Untyped._⊢_.·
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.`
-                (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-               plfa.part2.Untyped._⊢_.·
-               (plfa.part2.Untyped._⊢_.`
-                (plfa.part2.Untyped._∋_.S
-                 (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-            plfa.part2.Untyped._⊢_.·
-            ((plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S
-               (plfa.part2.Untyped._∋_.S
-                (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-           plfa.part2.Untyped._⊢_.·
-           (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-        plfa.part2.Untyped._⊢_.·
-        ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-         plfa.part2.Untyped._⊢_.·
-         (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-       plfa.part2.Untyped._⊢_.·
-       (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-       plfa.part2.Untyped._⊢_.·
-       ((plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.`
-             (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.`
-                (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-               plfa.part2.Untyped._⊢_.·
-               ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.`
-                (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-               plfa.part2.Untyped._⊢_.·
-               ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.ƛ
-                (plfa.part2.Untyped._⊢_.`
-                 (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.ƛ
-                 (plfa.part2.Untyped._⊢_.ƛ
-                  (plfa.part2.Untyped._⊢_.ƛ
-                   (plfa.part2.Untyped._⊢_.ƛ
-                    (plfa.part2.Untyped._⊢_.`
-                     (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-                    plfa.part2.Untyped._⊢_.·
-                    (plfa.part2.Untyped._⊢_.`
-                     (plfa.part2.Untyped._∋_.S
-                      (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-                 plfa.part2.Untyped._⊢_.·
-                 ((plfa.part2.Untyped._⊢_.`
-                   (plfa.part2.Untyped._∋_.S
-                    (plfa.part2.Untyped._∋_.S
-                     (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-                  plfa.part2.Untyped._⊢_.·
-                  (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                  plfa.part2.Untyped._⊢_.·
-                  (plfa.part2.Untyped._⊢_.`
-                   (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-             plfa.part2.Untyped._⊢_.·
-             ((plfa.part2.Untyped._⊢_.`
-               (plfa.part2.Untyped._∋_.S
-                (plfa.part2.Untyped._∋_.S
-                 (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-              plfa.part2.Untyped._⊢_.·
-              ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-               plfa.part2.Untyped._⊢_.·
-               (plfa.part2.Untyped._⊢_.`
-                (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z)))))
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-         plfa.part2.Untyped._⊢_.·
-         ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-          plfa.part2.Untyped._⊢_.·
-          (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-        plfa.part2.Untyped._⊢_.·
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.`
-             (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.`
-                (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-               plfa.part2.Untyped._⊢_.·
-               ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.`
-                (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-               plfa.part2.Untyped._⊢_.·
-               ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.ƛ
-                (plfa.part2.Untyped._⊢_.`
-                 (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.ƛ
-                 (plfa.part2.Untyped._⊢_.ƛ
-                  (plfa.part2.Untyped._⊢_.ƛ
-                   (plfa.part2.Untyped._⊢_.ƛ
-                    (plfa.part2.Untyped._⊢_.`
-                     (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-                    plfa.part2.Untyped._⊢_.·
-                    (plfa.part2.Untyped._⊢_.`
-                     (plfa.part2.Untyped._∋_.S
-                      (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-                 plfa.part2.Untyped._⊢_.·
-                 ((plfa.part2.Untyped._⊢_.`
-                   (plfa.part2.Untyped._∋_.S
-                    (plfa.part2.Untyped._∋_.S
-                     (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-                  plfa.part2.Untyped._⊢_.·
-                  (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                  plfa.part2.Untyped._⊢_.·
-                  (plfa.part2.Untyped._⊢_.`
-                   (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-             plfa.part2.Untyped._⊢_.·
-             ((plfa.part2.Untyped._⊢_.`
-               (plfa.part2.Untyped._∋_.S
-                (plfa.part2.Untyped._∋_.S
-                 (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-              plfa.part2.Untyped._⊢_.·
-              ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-               plfa.part2.Untyped._⊢_.·
-               (plfa.part2.Untyped._⊢_.`
-                (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z)))))
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-         plfa.part2.Untyped._⊢_.·
-         ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-          plfa.part2.Untyped._⊢_.·
-          (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-        plfa.part2.Untyped._⊢_.·
-        ((plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.`
-             (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.`
-             (plfa.part2.Untyped._∋_.S
-              (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-         plfa.part2.Untyped._⊢_.·
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-         plfa.part2.Untyped._⊢_.·
-         ((plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S
-               (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-          plfa.part2.Untyped._⊢_.·
-          ((plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.`
-               (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.`
-               (plfa.part2.Untyped._∋_.S
-                (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-           plfa.part2.Untyped._⊢_.·
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))))))))
-     plfa.part2.Untyped._⊢_.·
-     ((plfa.part2.Untyped._⊢_.ƛ
-       (plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.`
-           (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-          plfa.part2.Untyped._⊢_.·
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-             plfa.part2.Untyped._⊢_.·
-             ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-             plfa.part2.Untyped._⊢_.·
-             ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-           plfa.part2.Untyped._⊢_.·
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.`
-               (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.ƛ
-                (plfa.part2.Untyped._⊢_.ƛ
-                 (plfa.part2.Untyped._⊢_.ƛ
-                  (plfa.part2.Untyped._⊢_.`
-                   (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-                  plfa.part2.Untyped._⊢_.·
-                  (plfa.part2.Untyped._⊢_.`
-                   (plfa.part2.Untyped._∋_.S
-                    (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-               plfa.part2.Untyped._⊢_.·
-               ((plfa.part2.Untyped._⊢_.`
-                 (plfa.part2.Untyped._∋_.S
-                  (plfa.part2.Untyped._∋_.S
-                   (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.`
-                 (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-           plfa.part2.Untyped._⊢_.·
-           (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-           plfa.part2.Untyped._⊢_.·
-           ((plfa.part2.Untyped._⊢_.`
-             (plfa.part2.Untyped._∋_.S
-              (plfa.part2.Untyped._∋_.S
-               (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-            plfa.part2.Untyped._⊢_.·
-            ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z)))))
-          plfa.part2.Untyped._⊢_.·
-          (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-       plfa.part2.Untyped._⊢_.·
-       ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-        plfa.part2.Untyped._⊢_.·
-        (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-      plfa.part2.Untyped._⊢_.·
-      (plfa.part2.Untyped._⊢_.ƛ
-       (plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.`
-           (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-          plfa.part2.Untyped._⊢_.·
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-             plfa.part2.Untyped._⊢_.·
-             ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-             plfa.part2.Untyped._⊢_.·
-             ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-           plfa.part2.Untyped._⊢_.·
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.`
-               (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.ƛ
-                (plfa.part2.Untyped._⊢_.ƛ
-                 (plfa.part2.Untyped._⊢_.ƛ
-                  (plfa.part2.Untyped._⊢_.`
-                   (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-                  plfa.part2.Untyped._⊢_.·
-                  (plfa.part2.Untyped._⊢_.`
-                   (plfa.part2.Untyped._∋_.S
-                    (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-               plfa.part2.Untyped._⊢_.·
-               ((plfa.part2.Untyped._⊢_.`
-                 (plfa.part2.Untyped._∋_.S
-                  (plfa.part2.Untyped._∋_.S
-                   (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.`
-                 (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-           plfa.part2.Untyped._⊢_.·
-           (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-           plfa.part2.Untyped._⊢_.·
-           ((plfa.part2.Untyped._⊢_.`
-             (plfa.part2.Untyped._∋_.S
-              (plfa.part2.Untyped._∋_.S
-               (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-            plfa.part2.Untyped._⊢_.·
-            ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z)))))
-          plfa.part2.Untyped._⊢_.·
-          (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-       plfa.part2.Untyped._⊢_.·
-       ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-        plfa.part2.Untyped._⊢_.·
-        (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-      plfa.part2.Untyped._⊢_.·
-      ((plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.`
-           (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-          plfa.part2.Untyped._⊢_.·
-          (plfa.part2.Untyped._⊢_.`
-           (plfa.part2.Untyped._∋_.S
-            (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-       plfa.part2.Untyped._⊢_.·
-       (plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-       plfa.part2.Untyped._⊢_.·
-       ((plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.`
-            (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-           plfa.part2.Untyped._⊢_.·
-           (plfa.part2.Untyped._⊢_.`
-            (plfa.part2.Untyped._∋_.S
-             (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-        plfa.part2.Untyped._⊢_.·
-        ((plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.`
-             (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.`
-             (plfa.part2.Untyped._∋_.S
-              (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-         plfa.part2.Untyped._⊢_.·
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))))))
-     plfa.part2.Untyped._—↠_.—→⟨
-     plfa.part2.Untyped._—→_.ξ₁
-     (plfa.part2.Untyped._—→_.ξ₁ plfa.part2.Untyped._—→_.β)
+     (_⊢_.ƛ
+      (_⊢_.ƛ
+       (_⊢_.`
+        (_∋_.S _∋_.Z))
+       _⊢_.·
+       (_⊢_.ƛ
+        (_⊢_.ƛ
+         (_⊢_.ƛ
+          (_⊢_.ƛ
+           (_⊢_.`
+            (_∋_.S _∋_.Z))
+           _⊢_.·
+           (_⊢_.`
+            (_∋_.S
+             (_∋_.S _∋_.Z))))))
+        _⊢_.·
+        ((_⊢_.ƛ
+          (_⊢_.ƛ
+           (_⊢_.ƛ
+            (_⊢_.ƛ
+             (_⊢_.`
+              (_∋_.S _∋_.Z))
+             _⊢_.·
+             (_⊢_.ƛ
+              (_⊢_.ƛ
+               (_⊢_.ƛ
+                (_⊢_.ƛ
+                 (_⊢_.`
+                  (_∋_.S _∋_.Z))
+                 _⊢_.·
+                 (_⊢_.`
+                  (_∋_.S
+                   (_∋_.S _∋_.Z))))))
+              _⊢_.·
+              ((_⊢_.`
+                (_∋_.S
+                 (_∋_.S
+                  (_∋_.S _∋_.Z))))
+               _⊢_.·
+               (_⊢_.` _∋_.Z)
+               _⊢_.·
+               (_⊢_.`
+                (_∋_.S _∋_.Z))))
+             _⊢_.·
+             (_⊢_.` _∋_.Z))))
+          _⊢_.·
+          ((_⊢_.` _∋_.Z)
+           _⊢_.·
+           (_⊢_.` _∋_.Z)))
+         _⊢_.·
+         (_⊢_.ƛ
+          (_⊢_.ƛ
+           (_⊢_.ƛ
+            (_⊢_.ƛ
+             (_⊢_.`
+              (_∋_.S _∋_.Z))
+             _⊢_.·
+             (_⊢_.ƛ
+              (_⊢_.ƛ
+               (_⊢_.ƛ
+                (_⊢_.ƛ
+                 (_⊢_.`
+                  (_∋_.S _∋_.Z))
+                 _⊢_.·
+                 (_⊢_.`
+                  (_∋_.S
+                   (_∋_.S _∋_.Z))))))
+              _⊢_.·
+              ((_⊢_.`
+                (_∋_.S
+                 (_∋_.S
+                  (_∋_.S _∋_.Z))))
+               _⊢_.·
+               (_⊢_.` _∋_.Z)
+               _⊢_.·
+               (_⊢_.`
+                (_∋_.S _∋_.Z))))
+             _⊢_.·
+             (_⊢_.` _∋_.Z))))
+          _⊢_.·
+          ((_⊢_.` _∋_.Z)
+           _⊢_.·
+           (_⊢_.` _∋_.Z)))
+         _⊢_.·
+         (_⊢_.` _∋_.Z)
+         _⊢_.·
+         (_⊢_.`
+          (_∋_.S _∋_.Z))))
+       _⊢_.·
+       (_⊢_.` _∋_.Z)))
+     _⊢_.·
+     ((_⊢_.ƛ
+       (_⊢_.ƛ
+        (_⊢_.ƛ
+         (_⊢_.`
+          (_∋_.S _∋_.Z))
+         _⊢_.·
+         (_⊢_.`
+          (_∋_.S
+           (_∋_.S _∋_.Z))))))
+      _⊢_.·
+      (_⊢_.ƛ
+       (_⊢_.ƛ
+        (_⊢_.` _∋_.Z))))
+     _⊢_.·
+     ((_⊢_.ƛ
+       (_⊢_.ƛ
+        (_⊢_.ƛ
+         (_⊢_.ƛ
+          (_⊢_.`
+           (_∋_.S _∋_.Z))
+          _⊢_.·
+          (_⊢_.ƛ
+           (_⊢_.ƛ
+            (_⊢_.ƛ
+             (_⊢_.`
+              (_∋_.S _∋_.Z))
+             _⊢_.·
+             ((_⊢_.` _∋_.Z)
+              _⊢_.·
+              (_⊢_.` _∋_.Z)))
+            _⊢_.·
+            (_⊢_.ƛ
+             (_⊢_.`
+              (_∋_.S _∋_.Z))
+             _⊢_.·
+             ((_⊢_.` _∋_.Z)
+              _⊢_.·
+              (_⊢_.` _∋_.Z))))
+           _⊢_.·
+           (_⊢_.ƛ
+            (_⊢_.ƛ
+             (_⊢_.ƛ
+              (_⊢_.`
+               (_∋_.S _∋_.Z))
+              _⊢_.·
+              (_⊢_.ƛ
+               (_⊢_.ƛ
+                (_⊢_.ƛ
+                 (_⊢_.ƛ
+                  (_⊢_.`
+                   (_∋_.S _∋_.Z))
+                  _⊢_.·
+                  (_⊢_.`
+                   (_∋_.S
+                    (_∋_.S _∋_.Z))))))
+               _⊢_.·
+               ((_⊢_.`
+                 (_∋_.S
+                  (_∋_.S
+                   (_∋_.S _∋_.Z))))
+                _⊢_.·
+                (_⊢_.` _∋_.Z)
+                _⊢_.·
+                (_⊢_.`
+                 (_∋_.S _∋_.Z))))
+              _⊢_.·
+              (_⊢_.` _∋_.Z))))
+           _⊢_.·
+           (_⊢_.` _∋_.Z)
+           _⊢_.·
+           ((_⊢_.`
+             (_∋_.S
+              (_∋_.S
+               (_∋_.S _∋_.Z))))
+            _⊢_.·
+            ((_⊢_.` _∋_.Z)
+             _⊢_.·
+             (_⊢_.`
+              (_∋_.S _∋_.Z)))))
+          _⊢_.·
+          (_⊢_.` _∋_.Z))))
+       _⊢_.·
+       ((_⊢_.` _∋_.Z)
+        _⊢_.·
+        (_⊢_.` _∋_.Z)))
+      _⊢_.·
+      (_⊢_.ƛ
+       (_⊢_.ƛ
+        (_⊢_.ƛ
+         (_⊢_.ƛ
+          (_⊢_.`
+           (_∋_.S _∋_.Z))
+          _⊢_.·
+          (_⊢_.ƛ
+           (_⊢_.ƛ
+            (_⊢_.ƛ
+             (_⊢_.`
+              (_∋_.S _∋_.Z))
+             _⊢_.·
+             ((_⊢_.` _∋_.Z)
+              _⊢_.·
+              (_⊢_.` _∋_.Z)))
+            _⊢_.·
+            (_⊢_.ƛ
+             (_⊢_.`
+              (_∋_.S _∋_.Z))
+             _⊢_.·
+             ((_⊢_.` _∋_.Z)
+              _⊢_.·
+              (_⊢_.` _∋_.Z))))
+           _⊢_.·
+           (_⊢_.ƛ
+            (_⊢_.ƛ
+             (_⊢_.ƛ
+              (_⊢_.`
+               (_∋_.S _∋_.Z))
+              _⊢_.·
+              (_⊢_.ƛ
+               (_⊢_.ƛ
+                (_⊢_.ƛ
+                 (_⊢_.ƛ
+                  (_⊢_.`
+                   (_∋_.S _∋_.Z))
+                  _⊢_.·
+                  (_⊢_.`
+                   (_∋_.S
+                    (_∋_.S _∋_.Z))))))
+               _⊢_.·
+               ((_⊢_.`
+                 (_∋_.S
+                  (_∋_.S
+                   (_∋_.S _∋_.Z))))
+                _⊢_.·
+                (_⊢_.` _∋_.Z)
+                _⊢_.·
+                (_⊢_.`
+                 (_∋_.S _∋_.Z))))
+              _⊢_.·
+              (_⊢_.` _∋_.Z))))
+           _⊢_.·
+           (_⊢_.` _∋_.Z)
+           _⊢_.·
+           ((_⊢_.`
+             (_∋_.S
+              (_∋_.S
+               (_∋_.S _∋_.Z))))
+            _⊢_.·
+            ((_⊢_.` _∋_.Z)
+             _⊢_.·
+             (_⊢_.`
+              (_∋_.S _∋_.Z)))))
+          _⊢_.·
+          (_⊢_.` _∋_.Z))))
+       _⊢_.·
+       ((_⊢_.` _∋_.Z)
+        _⊢_.·
+        (_⊢_.` _∋_.Z)))
+      _⊢_.·
+      ((_⊢_.ƛ
+        (_⊢_.ƛ
+         (_⊢_.ƛ
+          (_⊢_.`
+           (_∋_.S _∋_.Z))
+          _⊢_.·
+          (_⊢_.`
+           (_∋_.S
+            (_∋_.S _∋_.Z))))))
+       _⊢_.·
+       (_⊢_.ƛ
+        (_⊢_.ƛ
+         (_⊢_.` _∋_.Z)))
+       _⊢_.·
+       ((_⊢_.ƛ
+         (_⊢_.ƛ
+          (_⊢_.ƛ
+           (_⊢_.`
+            (_∋_.S _∋_.Z))
+           _⊢_.·
+           (_⊢_.`
+            (_∋_.S
+             (_∋_.S _∋_.Z))))))
+        _⊢_.·
+        ((_⊢_.ƛ
+          (_⊢_.ƛ
+           (_⊢_.ƛ
+            (_⊢_.`
+             (_∋_.S _∋_.Z))
+            _⊢_.·
+            (_⊢_.`
+             (_∋_.S
+              (_∋_.S _∋_.Z))))))
+         _⊢_.·
+         (_⊢_.ƛ
+          (_⊢_.ƛ
+           (_⊢_.` _∋_.Z)))))))
+     _—↠_.—→⟨
+     _—→_.ξ₁ _—→_.β ⟩
+     (_⊢_.ƛ
+      (_⊢_.ƛ
+       (_⊢_.ƛ
+        (_⊢_.ƛ
+         (_⊢_.`
+          (_∋_.S _∋_.Z))
+         _⊢_.·
+         (_⊢_.`
+          (_∋_.S
+           (_∋_.S _∋_.Z))))))
+      _⊢_.·
+      (_⊢_.ƛ
+       (_⊢_.ƛ
+        (_⊢_.` _∋_.Z)))
+      _⊢_.·
+      (_⊢_.ƛ
+       (_⊢_.ƛ
+        (_⊢_.ƛ
+         (_⊢_.ƛ
+          (_⊢_.`
+           (_∋_.S _∋_.Z))
+          _⊢_.·
+          (_⊢_.`
+           (_∋_.S
+            (_∋_.S _∋_.Z))))))
+       _⊢_.·
+       ((_⊢_.ƛ
+         (_⊢_.ƛ
+          (_⊢_.ƛ
+           (_⊢_.ƛ
+            (_⊢_.`
+             (_∋_.S _∋_.Z))
+            _⊢_.·
+            (_⊢_.ƛ
+             (_⊢_.ƛ
+              (_⊢_.ƛ
+               (_⊢_.ƛ
+                (_⊢_.`
+                 (_∋_.S _∋_.Z))
+                _⊢_.·
+                (_⊢_.`
+                 (_∋_.S
+                  (_∋_.S _∋_.Z))))))
+             _⊢_.·
+             ((_⊢_.`
+               (_∋_.S
+                (_∋_.S
+                 (_∋_.S _∋_.Z))))
+              _⊢_.·
+              (_⊢_.` _∋_.Z)
+              _⊢_.·
+              (_⊢_.`
+               (_∋_.S _∋_.Z))))
+            _⊢_.·
+            (_⊢_.` _∋_.Z))))
+         _⊢_.·
+         ((_⊢_.` _∋_.Z)
+          _⊢_.·
+          (_⊢_.` _∋_.Z)))
+        _⊢_.·
+        (_⊢_.ƛ
+         (_⊢_.ƛ
+          (_⊢_.ƛ
+           (_⊢_.ƛ
+            (_⊢_.`
+             (_∋_.S _∋_.Z))
+            _⊢_.·
+            (_⊢_.ƛ
+             (_⊢_.ƛ
+              (_⊢_.ƛ
+               (_⊢_.ƛ
+                (_⊢_.`
+                 (_∋_.S _∋_.Z))
+                _⊢_.·
+                (_⊢_.`
+                 (_∋_.S
+                  (_∋_.S _∋_.Z))))))
+             _⊢_.·
+             ((_⊢_.`
+               (_∋_.S
+                (_∋_.S
+                 (_∋_.S _∋_.Z))))
+              _⊢_.·
+              (_⊢_.` _∋_.Z)
+              _⊢_.·
+              (_⊢_.`
+               (_∋_.S _∋_.Z))))
+            _⊢_.·
+            (_⊢_.` _∋_.Z))))
+         _⊢_.·
+         ((_⊢_.` _∋_.Z)
+          _⊢_.·
+          (_⊢_.` _∋_.Z)))
+        _⊢_.·
+        (_⊢_.` _∋_.Z)
+        _⊢_.·
+        (_⊢_.`
+         (_∋_.S _∋_.Z))))
+      _⊢_.·
+      (_⊢_.` _∋_.Z))
+     _⊢_.·
+     ((_⊢_.ƛ
+       (_⊢_.ƛ
+        (_⊢_.ƛ
+         (_⊢_.ƛ
+          (_⊢_.`
+           (_∋_.S _∋_.Z))
+          _⊢_.·
+          (_⊢_.ƛ
+           (_⊢_.ƛ
+            (_⊢_.ƛ
+             (_⊢_.`
+              (_∋_.S _∋_.Z))
+             _⊢_.·
+             ((_⊢_.` _∋_.Z)
+              _⊢_.·
+              (_⊢_.` _∋_.Z)))
+            _⊢_.·
+            (_⊢_.ƛ
+             (_⊢_.`
+              (_∋_.S _∋_.Z))
+             _⊢_.·
+             ((_⊢_.` _∋_.Z)
+              _⊢_.·
+              (_⊢_.` _∋_.Z))))
+           _⊢_.·
+           (_⊢_.ƛ
+            (_⊢_.ƛ
+             (_⊢_.ƛ
+              (_⊢_.`
+               (_∋_.S _∋_.Z))
+              _⊢_.·
+              (_⊢_.ƛ
+               (_⊢_.ƛ
+                (_⊢_.ƛ
+                 (_⊢_.ƛ
+                  (_⊢_.`
+                   (_∋_.S _∋_.Z))
+                  _⊢_.·
+                  (_⊢_.`
+                   (_∋_.S
+                    (_∋_.S _∋_.Z))))))
+               _⊢_.·
+               ((_⊢_.`
+                 (_∋_.S
+                  (_∋_.S
+                   (_∋_.S _∋_.Z))))
+                _⊢_.·
+                (_⊢_.` _∋_.Z)
+                _⊢_.·
+                (_⊢_.`
+                 (_∋_.S _∋_.Z))))
+              _⊢_.·
+              (_⊢_.` _∋_.Z))))
+           _⊢_.·
+           (_⊢_.` _∋_.Z)
+           _⊢_.·
+           ((_⊢_.`
+             (_∋_.S
+              (_∋_.S
+               (_∋_.S _∋_.Z))))
+            _⊢_.·
+            ((_⊢_.` _∋_.Z)
+             _⊢_.·
+             (_⊢_.`
+              (_∋_.S _∋_.Z)))))
+          _⊢_.·
+          (_⊢_.` _∋_.Z))))
+       _⊢_.·
+       ((_⊢_.` _∋_.Z)
+        _⊢_.·
+        (_⊢_.` _∋_.Z)))
+      _⊢_.·
+      (_⊢_.ƛ
+       (_⊢_.ƛ
+        (_⊢_.ƛ
+         (_⊢_.ƛ
+          (_⊢_.`
+           (_∋_.S _∋_.Z))
+          _⊢_.·
+          (_⊢_.ƛ
+           (_⊢_.ƛ
+            (_⊢_.ƛ
+             (_⊢_.`
+              (_∋_.S _∋_.Z))
+             _⊢_.·
+             ((_⊢_.` _∋_.Z)
+              _⊢_.·
+              (_⊢_.` _∋_.Z)))
+            _⊢_.·
+            (_⊢_.ƛ
+             (_⊢_.`
+              (_∋_.S _∋_.Z))
+             _⊢_.·
+             ((_⊢_.` _∋_.Z)
+              _⊢_.·
+              (_⊢_.` _∋_.Z))))
+           _⊢_.·
+           (_⊢_.ƛ
+            (_⊢_.ƛ
+             (_⊢_.ƛ
+              (_⊢_.`
+               (_∋_.S _∋_.Z))
+              _⊢_.·
+              (_⊢_.ƛ
+               (_⊢_.ƛ
+                (_⊢_.ƛ
+                 (_⊢_.ƛ
+                  (_⊢_.`
+                   (_∋_.S _∋_.Z))
+                  _⊢_.·
+                  (_⊢_.`
+                   (_∋_.S
+                    (_∋_.S _∋_.Z))))))
+               _⊢_.·
+               ((_⊢_.`
+                 (_∋_.S
+                  (_∋_.S
+                   (_∋_.S _∋_.Z))))
+                _⊢_.·
+                (_⊢_.` _∋_.Z)
+                _⊢_.·
+                (_⊢_.`
+                 (_∋_.S _∋_.Z))))
+              _⊢_.·
+              (_⊢_.` _∋_.Z))))
+           _⊢_.·
+           (_⊢_.` _∋_.Z)
+           _⊢_.·
+           ((_⊢_.`
+             (_∋_.S
+              (_∋_.S
+               (_∋_.S _∋_.Z))))
+            _⊢_.·
+            ((_⊢_.` _∋_.Z)
+             _⊢_.·
+             (_⊢_.`
+              (_∋_.S _∋_.Z)))))
+          _⊢_.·
+          (_⊢_.` _∋_.Z))))
+       _⊢_.·
+       ((_⊢_.` _∋_.Z)
+        _⊢_.·
+        (_⊢_.` _∋_.Z)))
+      _⊢_.·
+      ((_⊢_.ƛ
+        (_⊢_.ƛ
+         (_⊢_.ƛ
+          (_⊢_.`
+           (_∋_.S _∋_.Z))
+          _⊢_.·
+          (_⊢_.`
+           (_∋_.S
+            (_∋_.S _∋_.Z))))))
+       _⊢_.·
+       (_⊢_.ƛ
+        (_⊢_.ƛ
+         (_⊢_.` _∋_.Z)))
+       _⊢_.·
+       ((_⊢_.ƛ
+         (_⊢_.ƛ
+          (_⊢_.ƛ
+           (_⊢_.`
+            (_∋_.S _∋_.Z))
+           _⊢_.·
+           (_⊢_.`
+            (_∋_.S
+             (_∋_.S _∋_.Z))))))
+        _⊢_.·
+        ((_⊢_.ƛ
+          (_⊢_.ƛ
+           (_⊢_.ƛ
+            (_⊢_.`
+             (_∋_.S _∋_.Z))
+            _⊢_.·
+            (_⊢_.`
+             (_∋_.S
+              (_∋_.S _∋_.Z))))))
+         _⊢_.·
+         (_⊢_.ƛ
+          (_⊢_.ƛ
+           (_⊢_.` _∋_.Z)))))))
+     _—↠_.—→⟨ _—→_.β ⟩
+     (_⊢_.ƛ
+      (_⊢_.ƛ
+       (_⊢_.ƛ
+        (_⊢_.`
+         (_∋_.S _∋_.Z))
+        _⊢_.·
+        (_⊢_.`
+         (_∋_.S
+          (_∋_.S _∋_.Z))))))
+     _⊢_.·
+     (_⊢_.ƛ
+      (_⊢_.ƛ
+       (_⊢_.` _∋_.Z)))
+     _⊢_.·
+     (_⊢_.ƛ
+      (_⊢_.ƛ
+       (_⊢_.ƛ
+        (_⊢_.ƛ
+         (_⊢_.`
+          (_∋_.S _∋_.Z))
+         _⊢_.·
+         (_⊢_.`
+          (_∋_.S
+           (_∋_.S _∋_.Z))))))
+      _⊢_.·
+      ((_⊢_.ƛ
+        (_⊢_.ƛ
+         (_⊢_.ƛ
+          (_⊢_.ƛ
+           (_⊢_.`
+            (_∋_.S _∋_.Z))
+           _⊢_.·
+           (_⊢_.ƛ
+            (_⊢_.ƛ
+             (_⊢_.ƛ
+              (_⊢_.ƛ
+               (_⊢_.`
+                (_∋_.S _∋_.Z))
+               _⊢_.·
+               (_⊢_.`
+                (_∋_.S
+                 (_∋_.S _∋_.Z))))))
+            _⊢_.·
+            ((_⊢_.`
+              (_∋_.S
+               (_∋_.S
+                (_∋_.S _∋_.Z))))
+             _⊢_.·
+             (_⊢_.` _∋_.Z)
+             _⊢_.·
+             (_⊢_.`
+              (_∋_.S _∋_.Z))))
+           _⊢_.·
+           (_⊢_.` _∋_.Z))))
+        _⊢_.·
+        ((_⊢_.` _∋_.Z)
+         _⊢_.·
+         (_⊢_.` _∋_.Z)))
+       _⊢_.·
+       (_⊢_.ƛ
+        (_⊢_.ƛ
+         (_⊢_.ƛ
+          (_⊢_.ƛ
+           (_⊢_.`
+            (_∋_.S _∋_.Z))
+           _⊢_.·
+           (_⊢_.ƛ
+            (_⊢_.ƛ
+             (_⊢_.ƛ
+              (_⊢_.ƛ
+               (_⊢_.`
+                (_∋_.S _∋_.Z))
+               _⊢_.·
+               (_⊢_.`
+                (_∋_.S
+                 (_∋_.S _∋_.Z))))))
+            _⊢_.·
+            ((_⊢_.`
+              (_∋_.S
+               (_∋_.S
+                (_∋_.S _∋_.Z))))
+             _⊢_.·
+             (_⊢_.` _∋_.Z)
+             _⊢_.·
+             (_⊢_.`
+              (_∋_.S _∋_.Z))))
+           _⊢_.·
+           (_⊢_.` _∋_.Z))))
+        _⊢_.·
+        ((_⊢_.` _∋_.Z)
+         _⊢_.·
+         (_⊢_.` _∋_.Z)))
+       _⊢_.·
+       (_⊢_.` _∋_.Z)
+       _⊢_.·
+       ((_⊢_.ƛ
+         (_⊢_.ƛ
+          (_⊢_.ƛ
+           (_⊢_.ƛ
+            (_⊢_.`
+             (_∋_.S _∋_.Z))
+            _⊢_.·
+            (_⊢_.ƛ
+             (_⊢_.ƛ
+              (_⊢_.ƛ
+               (_⊢_.`
+                (_∋_.S _∋_.Z))
+               _⊢_.·
+               ((_⊢_.` _∋_.Z)
+                _⊢_.·
+                (_⊢_.` _∋_.Z)))
+              _⊢_.·
+              (_⊢_.ƛ
+               (_⊢_.`
+                (_∋_.S _∋_.Z))
+               _⊢_.·
+               ((_⊢_.` _∋_.Z)
+                _⊢_.·
+                (_⊢_.` _∋_.Z))))
+             _⊢_.·
+             (_⊢_.ƛ
+              (_⊢_.ƛ
+               (_⊢_.ƛ
+                (_⊢_.`
+                 (_∋_.S _∋_.Z))
+                _⊢_.·
+                (_⊢_.ƛ
+                 (_⊢_.ƛ
+                  (_⊢_.ƛ
+                   (_⊢_.ƛ
+                    (_⊢_.`
+                     (_∋_.S _∋_.Z))
+                    _⊢_.·
+                    (_⊢_.`
+                     (_∋_.S
+                      (_∋_.S _∋_.Z))))))
+                 _⊢_.·
+                 ((_⊢_.`
+                   (_∋_.S
+                    (_∋_.S
+                     (_∋_.S _∋_.Z))))
+                  _⊢_.·
+                  (_⊢_.` _∋_.Z)
+                  _⊢_.·
+                  (_⊢_.`
+                   (_∋_.S _∋_.Z))))
+                _⊢_.·
+                (_⊢_.` _∋_.Z))))
+             _⊢_.·
+             (_⊢_.` _∋_.Z)
+             _⊢_.·
+             ((_⊢_.`
+               (_∋_.S
+                (_∋_.S
+                 (_∋_.S _∋_.Z))))
+              _⊢_.·
+              ((_⊢_.` _∋_.Z)
+               _⊢_.·
+               (_⊢_.`
+                (_∋_.S _∋_.Z)))))
+            _⊢_.·
+            (_⊢_.` _∋_.Z))))
+         _⊢_.·
+         ((_⊢_.` _∋_.Z)
+          _⊢_.·
+          (_⊢_.` _∋_.Z)))
+        _⊢_.·
+        (_⊢_.ƛ
+         (_⊢_.ƛ
+          (_⊢_.ƛ
+           (_⊢_.ƛ
+            (_⊢_.`
+             (_∋_.S _∋_.Z))
+            _⊢_.·
+            (_⊢_.ƛ
+             (_⊢_.ƛ
+              (_⊢_.ƛ
+               (_⊢_.`
+                (_∋_.S _∋_.Z))
+               _⊢_.·
+               ((_⊢_.` _∋_.Z)
+                _⊢_.·
+                (_⊢_.` _∋_.Z)))
+              _⊢_.·
+              (_⊢_.ƛ
+               (_⊢_.`
+                (_∋_.S _∋_.Z))
+               _⊢_.·
+               ((_⊢_.` _∋_.Z)
+                _⊢_.·
+                (_⊢_.` _∋_.Z))))
+             _⊢_.·
+             (_⊢_.ƛ
+              (_⊢_.ƛ
+               (_⊢_.ƛ
+                (_⊢_.`
+                 (_∋_.S _∋_.Z))
+                _⊢_.·
+                (_⊢_.ƛ
+                 (_⊢_.ƛ
+                  (_⊢_.ƛ
+                   (_⊢_.ƛ
+                    (_⊢_.`
+                     (_∋_.S _∋_.Z))
+                    _⊢_.·
+                    (_⊢_.`
+                     (_∋_.S
+                      (_∋_.S _∋_.Z))))))
+                 _⊢_.·
+                 ((_⊢_.`
+                   (_∋_.S
+                    (_∋_.S
+                     (_∋_.S _∋_.Z))))
+                  _⊢_.·
+                  (_⊢_.` _∋_.Z)
+                  _⊢_.·
+                  (_⊢_.`
+                   (_∋_.S _∋_.Z))))
+                _⊢_.·
+                (_⊢_.` _∋_.Z))))
+             _⊢_.·
+             (_⊢_.` _∋_.Z)
+             _⊢_.·
+             ((_⊢_.`
+               (_∋_.S
+                (_∋_.S
+                 (_∋_.S _∋_.Z))))
+              _⊢_.·
+              ((_⊢_.` _∋_.Z)
+               _⊢_.·
+               (_⊢_.`
+                (_∋_.S _∋_.Z)))))
+            _⊢_.·
+            (_⊢_.` _∋_.Z))))
+         _⊢_.·
+         ((_⊢_.` _∋_.Z)
+          _⊢_.·
+          (_⊢_.` _∋_.Z)))
+        _⊢_.·
+        ((_⊢_.ƛ
+          (_⊢_.ƛ
+           (_⊢_.ƛ
+            (_⊢_.`
+             (_∋_.S _∋_.Z))
+            _⊢_.·
+            (_⊢_.`
+             (_∋_.S
+              (_∋_.S _∋_.Z))))))
+         _⊢_.·
+         (_⊢_.ƛ
+          (_⊢_.ƛ
+           (_⊢_.` _∋_.Z)))
+         _⊢_.·
+         ((_⊢_.ƛ
+           (_⊢_.ƛ
+            (_⊢_.ƛ
+             (_⊢_.`
+              (_∋_.S _∋_.Z))
+             _⊢_.·
+             (_⊢_.`
+              (_∋_.S
+               (_∋_.S _∋_.Z))))))
+          _⊢_.·
+          ((_⊢_.ƛ
+            (_⊢_.ƛ
+             (_⊢_.ƛ
+              (_⊢_.`
+               (_∋_.S _∋_.Z))
+              _⊢_.·
+              (_⊢_.`
+               (_∋_.S
+                (_∋_.S _∋_.Z))))))
+           _⊢_.·
+           (_⊢_.ƛ
+            (_⊢_.ƛ
+             (_⊢_.` _∋_.Z)))))))))
+     _⊢_.·
+     ((_⊢_.ƛ
+       (_⊢_.ƛ
+        (_⊢_.ƛ
+         (_⊢_.ƛ
+          (_⊢_.`
+           (_∋_.S _∋_.Z))
+          _⊢_.·
+          (_⊢_.ƛ
+           (_⊢_.ƛ
+            (_⊢_.ƛ
+             (_⊢_.`
+              (_∋_.S _∋_.Z))
+             _⊢_.·
+             ((_⊢_.` _∋_.Z)
+              _⊢_.·
+              (_⊢_.` _∋_.Z)))
+            _⊢_.·
+            (_⊢_.ƛ
+             (_⊢_.`
+              (_∋_.S _∋_.Z))
+             _⊢_.·
+             ((_⊢_.` _∋_.Z)
+              _⊢_.·
+              (_⊢_.` _∋_.Z))))
+           _⊢_.·
+           (_⊢_.ƛ
+            (_⊢_.ƛ
+             (_⊢_.ƛ
+              (_⊢_.`
+               (_∋_.S _∋_.Z))
+              _⊢_.·
+              (_⊢_.ƛ
+               (_⊢_.ƛ
+                (_⊢_.ƛ
+                 (_⊢_.ƛ
+                  (_⊢_.`
+                   (_∋_.S _∋_.Z))
+                  _⊢_.·
+                  (_⊢_.`
+                   (_∋_.S
+                    (_∋_.S _∋_.Z))))))
+               _⊢_.·
+               ((_⊢_.`
+                 (_∋_.S
+                  (_∋_.S
+                   (_∋_.S _∋_.Z))))
+                _⊢_.·
+                (_⊢_.` _∋_.Z)
+                _⊢_.·
+                (_⊢_.`
+                 (_∋_.S _∋_.Z))))
+              _⊢_.·
+              (_⊢_.` _∋_.Z))))
+           _⊢_.·
+           (_⊢_.` _∋_.Z)
+           _⊢_.·
+           ((_⊢_.`
+             (_∋_.S
+              (_∋_.S
+               (_∋_.S _∋_.Z))))
+            _⊢_.·
+            ((_⊢_.` _∋_.Z)
+             _⊢_.·
+             (_⊢_.`
+              (_∋_.S _∋_.Z)))))
+          _⊢_.·
+          (_⊢_.` _∋_.Z))))
+       _⊢_.·
+       ((_⊢_.` _∋_.Z)
+        _⊢_.·
+        (_⊢_.` _∋_.Z)))
+      _⊢_.·
+      (_⊢_.ƛ
+       (_⊢_.ƛ
+        (_⊢_.ƛ
+         (_⊢_.ƛ
+          (_⊢_.`
+           (_∋_.S _∋_.Z))
+          _⊢_.·
+          (_⊢_.ƛ
+           (_⊢_.ƛ
+            (_⊢_.ƛ
+             (_⊢_.`
+              (_∋_.S _∋_.Z))
+             _⊢_.·
+             ((_⊢_.` _∋_.Z)
+              _⊢_.·
+              (_⊢_.` _∋_.Z)))
+            _⊢_.·
+            (_⊢_.ƛ
+             (_⊢_.`
+              (_∋_.S _∋_.Z))
+             _⊢_.·
+             ((_⊢_.` _∋_.Z)
+              _⊢_.·
+              (_⊢_.` _∋_.Z))))
+           _⊢_.·
+           (_⊢_.ƛ
+            (_⊢_.ƛ
+             (_⊢_.ƛ
+              (_⊢_.`
+               (_∋_.S _∋_.Z))
+              _⊢_.·
+              (_⊢_.ƛ
+               (_⊢_.ƛ
+                (_⊢_.ƛ
+                 (_⊢_.ƛ
+                  (_⊢_.`
+                   (_∋_.S _∋_.Z))
+                  _⊢_.·
+                  (_⊢_.`
+                   (_∋_.S
+                    (_∋_.S _∋_.Z))))))
+               _⊢_.·
+               ((_⊢_.`
+                 (_∋_.S
+                  (_∋_.S
+                   (_∋_.S _∋_.Z))))
+                _⊢_.·
+                (_⊢_.` _∋_.Z)
+                _⊢_.·
+                (_⊢_.`
+                 (_∋_.S _∋_.Z))))
+              _⊢_.·
+              (_⊢_.` _∋_.Z))))
+           _⊢_.·
+           (_⊢_.` _∋_.Z)
+           _⊢_.·
+           ((_⊢_.`
+             (_∋_.S
+              (_∋_.S
+               (_∋_.S _∋_.Z))))
+            _⊢_.·
+            ((_⊢_.` _∋_.Z)
+             _⊢_.·
+             (_⊢_.`
+              (_∋_.S _∋_.Z)))))
+          _⊢_.·
+          (_⊢_.` _∋_.Z))))
+       _⊢_.·
+       ((_⊢_.` _∋_.Z)
+        _⊢_.·
+        (_⊢_.` _∋_.Z)))
+      _⊢_.·
+      ((_⊢_.ƛ
+        (_⊢_.ƛ
+         (_⊢_.ƛ
+          (_⊢_.`
+           (_∋_.S _∋_.Z))
+          _⊢_.·
+          (_⊢_.`
+           (_∋_.S
+            (_∋_.S _∋_.Z))))))
+       _⊢_.·
+       (_⊢_.ƛ
+        (_⊢_.ƛ
+         (_⊢_.` _∋_.Z)))
+       _⊢_.·
+       ((_⊢_.ƛ
+         (_⊢_.ƛ
+          (_⊢_.ƛ
+           (_⊢_.`
+            (_∋_.S _∋_.Z))
+           _⊢_.·
+           (_⊢_.`
+            (_∋_.S
+             (_∋_.S _∋_.Z))))))
+        _⊢_.·
+        ((_⊢_.ƛ
+          (_⊢_.ƛ
+           (_⊢_.ƛ
+            (_⊢_.`
+             (_∋_.S _∋_.Z))
+            _⊢_.·
+            (_⊢_.`
+             (_∋_.S
+              (_∋_.S _∋_.Z))))))
+         _⊢_.·
+         (_⊢_.ƛ
+          (_⊢_.ƛ
+           (_⊢_.` _∋_.Z)))))))
+     _—↠_.—→⟨
+     _—→_.ξ₁
+     (_—→_.ξ₁ _—→_.β)
      ⟩
-     (plfa.part2.Untyped._⊢_.ƛ
-      (plfa.part2.Untyped._⊢_.ƛ
-       (plfa.part2.Untyped._⊢_.`
-        (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-       plfa.part2.Untyped._⊢_.·
-       (plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))))
-     plfa.part2.Untyped._⊢_.·
-     (plfa.part2.Untyped._⊢_.ƛ
-      (plfa.part2.Untyped._⊢_.ƛ
-       (plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.`
-          (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-         plfa.part2.Untyped._⊢_.·
-         (plfa.part2.Untyped._⊢_.`
-          (plfa.part2.Untyped._∋_.S
-           (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-      plfa.part2.Untyped._⊢_.·
-      ((plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.`
-            (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-           plfa.part2.Untyped._⊢_.·
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.`
-                (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-               plfa.part2.Untyped._⊢_.·
-               (plfa.part2.Untyped._⊢_.`
-                (plfa.part2.Untyped._∋_.S
-                 (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-            plfa.part2.Untyped._⊢_.·
-            ((plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S
-               (plfa.part2.Untyped._∋_.S
-                (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-           plfa.part2.Untyped._⊢_.·
-           (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-        plfa.part2.Untyped._⊢_.·
-        ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-         plfa.part2.Untyped._⊢_.·
-         (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-       plfa.part2.Untyped._⊢_.·
-       (plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.`
-            (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-           plfa.part2.Untyped._⊢_.·
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.`
-                (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-               plfa.part2.Untyped._⊢_.·
-               (plfa.part2.Untyped._⊢_.`
-                (plfa.part2.Untyped._∋_.S
-                 (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-            plfa.part2.Untyped._⊢_.·
-            ((plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S
-               (plfa.part2.Untyped._∋_.S
-                (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-           plfa.part2.Untyped._⊢_.·
-           (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-        plfa.part2.Untyped._⊢_.·
-        ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-         plfa.part2.Untyped._⊢_.·
-         (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-       plfa.part2.Untyped._⊢_.·
-       (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-       plfa.part2.Untyped._⊢_.·
-       ((plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.`
-             (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.`
-                (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-               plfa.part2.Untyped._⊢_.·
-               ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.`
-                (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-               plfa.part2.Untyped._⊢_.·
-               ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.ƛ
-                (plfa.part2.Untyped._⊢_.`
-                 (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.ƛ
-                 (plfa.part2.Untyped._⊢_.ƛ
-                  (plfa.part2.Untyped._⊢_.ƛ
-                   (plfa.part2.Untyped._⊢_.ƛ
-                    (plfa.part2.Untyped._⊢_.`
-                     (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-                    plfa.part2.Untyped._⊢_.·
-                    (plfa.part2.Untyped._⊢_.`
-                     (plfa.part2.Untyped._∋_.S
-                      (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-                 plfa.part2.Untyped._⊢_.·
-                 ((plfa.part2.Untyped._⊢_.`
-                   (plfa.part2.Untyped._∋_.S
-                    (plfa.part2.Untyped._∋_.S
-                     (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-                  plfa.part2.Untyped._⊢_.·
-                  (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                  plfa.part2.Untyped._⊢_.·
-                  (plfa.part2.Untyped._⊢_.`
-                   (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-             plfa.part2.Untyped._⊢_.·
-             ((plfa.part2.Untyped._⊢_.`
-               (plfa.part2.Untyped._∋_.S
-                (plfa.part2.Untyped._∋_.S
-                 (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-              plfa.part2.Untyped._⊢_.·
-              ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-               plfa.part2.Untyped._⊢_.·
-               (plfa.part2.Untyped._⊢_.`
-                (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z)))))
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-         plfa.part2.Untyped._⊢_.·
-         ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-          plfa.part2.Untyped._⊢_.·
-          (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-        plfa.part2.Untyped._⊢_.·
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.`
-             (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.`
-                (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-               plfa.part2.Untyped._⊢_.·
-               ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.`
-                (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-               plfa.part2.Untyped._⊢_.·
-               ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.ƛ
-                (plfa.part2.Untyped._⊢_.`
-                 (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.ƛ
-                 (plfa.part2.Untyped._⊢_.ƛ
-                  (plfa.part2.Untyped._⊢_.ƛ
-                   (plfa.part2.Untyped._⊢_.ƛ
-                    (plfa.part2.Untyped._⊢_.`
-                     (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-                    plfa.part2.Untyped._⊢_.·
-                    (plfa.part2.Untyped._⊢_.`
-                     (plfa.part2.Untyped._∋_.S
-                      (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-                 plfa.part2.Untyped._⊢_.·
-                 ((plfa.part2.Untyped._⊢_.`
-                   (plfa.part2.Untyped._∋_.S
-                    (plfa.part2.Untyped._∋_.S
-                     (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-                  plfa.part2.Untyped._⊢_.·
-                  (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                  plfa.part2.Untyped._⊢_.·
-                  (plfa.part2.Untyped._⊢_.`
-                   (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-             plfa.part2.Untyped._⊢_.·
-             ((plfa.part2.Untyped._⊢_.`
-               (plfa.part2.Untyped._∋_.S
-                (plfa.part2.Untyped._∋_.S
-                 (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-              plfa.part2.Untyped._⊢_.·
-              ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-               plfa.part2.Untyped._⊢_.·
-               (plfa.part2.Untyped._⊢_.`
-                (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z)))))
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-         plfa.part2.Untyped._⊢_.·
-         ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-          plfa.part2.Untyped._⊢_.·
-          (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-        plfa.part2.Untyped._⊢_.·
-        ((plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.`
-             (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.`
-             (plfa.part2.Untyped._∋_.S
-              (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-         plfa.part2.Untyped._⊢_.·
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-         plfa.part2.Untyped._⊢_.·
-         ((plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S
-               (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-          plfa.part2.Untyped._⊢_.·
-          ((plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.`
-               (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.`
-               (plfa.part2.Untyped._∋_.S
-                (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-           plfa.part2.Untyped._⊢_.·
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))))))))
-     plfa.part2.Untyped._⊢_.·
-     ((plfa.part2.Untyped._⊢_.ƛ
-       (plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.`
-           (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-          plfa.part2.Untyped._⊢_.·
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-             plfa.part2.Untyped._⊢_.·
-             ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-             plfa.part2.Untyped._⊢_.·
-             ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-           plfa.part2.Untyped._⊢_.·
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.`
-               (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.ƛ
-                (plfa.part2.Untyped._⊢_.ƛ
-                 (plfa.part2.Untyped._⊢_.ƛ
-                  (plfa.part2.Untyped._⊢_.`
-                   (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-                  plfa.part2.Untyped._⊢_.·
-                  (plfa.part2.Untyped._⊢_.`
-                   (plfa.part2.Untyped._∋_.S
-                    (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-               plfa.part2.Untyped._⊢_.·
-               ((plfa.part2.Untyped._⊢_.`
-                 (plfa.part2.Untyped._∋_.S
-                  (plfa.part2.Untyped._∋_.S
-                   (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.`
-                 (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-           plfa.part2.Untyped._⊢_.·
-           (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-           plfa.part2.Untyped._⊢_.·
-           ((plfa.part2.Untyped._⊢_.`
-             (plfa.part2.Untyped._∋_.S
-              (plfa.part2.Untyped._∋_.S
-               (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-            plfa.part2.Untyped._⊢_.·
-            ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z)))))
-          plfa.part2.Untyped._⊢_.·
-          (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-       plfa.part2.Untyped._⊢_.·
-       ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-        plfa.part2.Untyped._⊢_.·
-        (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-      plfa.part2.Untyped._⊢_.·
-      (plfa.part2.Untyped._⊢_.ƛ
-       (plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.`
-           (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-          plfa.part2.Untyped._⊢_.·
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-             plfa.part2.Untyped._⊢_.·
-             ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-             plfa.part2.Untyped._⊢_.·
-             ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-           plfa.part2.Untyped._⊢_.·
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.`
-               (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.ƛ
-                (plfa.part2.Untyped._⊢_.ƛ
-                 (plfa.part2.Untyped._⊢_.ƛ
-                  (plfa.part2.Untyped._⊢_.`
-                   (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-                  plfa.part2.Untyped._⊢_.·
-                  (plfa.part2.Untyped._⊢_.`
-                   (plfa.part2.Untyped._∋_.S
-                    (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-               plfa.part2.Untyped._⊢_.·
-               ((plfa.part2.Untyped._⊢_.`
-                 (plfa.part2.Untyped._∋_.S
-                  (plfa.part2.Untyped._∋_.S
-                   (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.`
-                 (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-           plfa.part2.Untyped._⊢_.·
-           (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-           plfa.part2.Untyped._⊢_.·
-           ((plfa.part2.Untyped._⊢_.`
-             (plfa.part2.Untyped._∋_.S
-              (plfa.part2.Untyped._∋_.S
-               (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-            plfa.part2.Untyped._⊢_.·
-            ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z)))))
-          plfa.part2.Untyped._⊢_.·
-          (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-       plfa.part2.Untyped._⊢_.·
-       ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-        plfa.part2.Untyped._⊢_.·
-        (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-      plfa.part2.Untyped._⊢_.·
-      ((plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.`
-           (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-          plfa.part2.Untyped._⊢_.·
-          (plfa.part2.Untyped._⊢_.`
-           (plfa.part2.Untyped._∋_.S
-            (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-       plfa.part2.Untyped._⊢_.·
-       (plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-       plfa.part2.Untyped._⊢_.·
-       ((plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.`
-            (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-           plfa.part2.Untyped._⊢_.·
-           (plfa.part2.Untyped._⊢_.`
-            (plfa.part2.Untyped._∋_.S
-             (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-        plfa.part2.Untyped._⊢_.·
-        ((plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.`
-             (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.`
-             (plfa.part2.Untyped._∋_.S
-              (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-         plfa.part2.Untyped._⊢_.·
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))))))
-     plfa.part2.Untyped._—↠_.—→⟨
-     plfa.part2.Untyped._—→_.ξ₁ plfa.part2.Untyped._—→_.β ⟩
-     (plfa.part2.Untyped._⊢_.ƛ
-      (plfa.part2.Untyped._⊢_.ƛ
-       (plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.`
-           (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-          plfa.part2.Untyped._⊢_.·
-          (plfa.part2.Untyped._⊢_.`
-           (plfa.part2.Untyped._∋_.S
-            (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-       plfa.part2.Untyped._⊢_.·
-       ((plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.`
-             (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.ƛ
-                (plfa.part2.Untyped._⊢_.`
-                 (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.`
-                 (plfa.part2.Untyped._∋_.S
-                  (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-             plfa.part2.Untyped._⊢_.·
-             ((plfa.part2.Untyped._⊢_.`
-               (plfa.part2.Untyped._∋_.S
-                (plfa.part2.Untyped._∋_.S
-                 (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.`
-               (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-         plfa.part2.Untyped._⊢_.·
-         ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-          plfa.part2.Untyped._⊢_.·
-          (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-        plfa.part2.Untyped._⊢_.·
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.`
-             (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.ƛ
-                (plfa.part2.Untyped._⊢_.`
-                 (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.`
-                 (plfa.part2.Untyped._∋_.S
-                  (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-             plfa.part2.Untyped._⊢_.·
-             ((plfa.part2.Untyped._⊢_.`
-               (plfa.part2.Untyped._∋_.S
-                (plfa.part2.Untyped._∋_.S
-                 (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.`
-               (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-         plfa.part2.Untyped._⊢_.·
-         ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-          plfa.part2.Untyped._⊢_.·
-          (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-        plfa.part2.Untyped._⊢_.·
-        (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-        plfa.part2.Untyped._⊢_.·
-        ((plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.ƛ
-                (plfa.part2.Untyped._⊢_.`
-                 (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-                plfa.part2.Untyped._⊢_.·
-                ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                 plfa.part2.Untyped._⊢_.·
-                 (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-               plfa.part2.Untyped._⊢_.·
-               (plfa.part2.Untyped._⊢_.ƛ
-                (plfa.part2.Untyped._⊢_.`
-                 (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-                plfa.part2.Untyped._⊢_.·
-                ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                 plfa.part2.Untyped._⊢_.·
-                 (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.ƛ
-                (plfa.part2.Untyped._⊢_.ƛ
-                 (plfa.part2.Untyped._⊢_.`
-                  (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-                 plfa.part2.Untyped._⊢_.·
-                 (plfa.part2.Untyped._⊢_.ƛ
-                  (plfa.part2.Untyped._⊢_.ƛ
-                   (plfa.part2.Untyped._⊢_.ƛ
-                    (plfa.part2.Untyped._⊢_.ƛ
-                     (plfa.part2.Untyped._⊢_.`
-                      (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-                     plfa.part2.Untyped._⊢_.·
-                     (plfa.part2.Untyped._⊢_.`
-                      (plfa.part2.Untyped._∋_.S
-                       (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-                  plfa.part2.Untyped._⊢_.·
-                  ((plfa.part2.Untyped._⊢_.`
-                    (plfa.part2.Untyped._∋_.S
-                     (plfa.part2.Untyped._∋_.S
-                      (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-                   plfa.part2.Untyped._⊢_.·
-                   (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                   plfa.part2.Untyped._⊢_.·
-                   (plfa.part2.Untyped._⊢_.`
-                    (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-                 plfa.part2.Untyped._⊢_.·
-                 (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-              plfa.part2.Untyped._⊢_.·
-              ((plfa.part2.Untyped._⊢_.`
-                (plfa.part2.Untyped._∋_.S
-                 (plfa.part2.Untyped._∋_.S
-                  (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-               plfa.part2.Untyped._⊢_.·
-               ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.`
-                 (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z)))))
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-          plfa.part2.Untyped._⊢_.·
-          ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-           plfa.part2.Untyped._⊢_.·
-           (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-         plfa.part2.Untyped._⊢_.·
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.ƛ
-                (plfa.part2.Untyped._⊢_.`
-                 (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-                plfa.part2.Untyped._⊢_.·
-                ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                 plfa.part2.Untyped._⊢_.·
-                 (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-               plfa.part2.Untyped._⊢_.·
-               (plfa.part2.Untyped._⊢_.ƛ
-                (plfa.part2.Untyped._⊢_.`
-                 (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-                plfa.part2.Untyped._⊢_.·
-                ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                 plfa.part2.Untyped._⊢_.·
-                 (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.ƛ
-                (plfa.part2.Untyped._⊢_.ƛ
-                 (plfa.part2.Untyped._⊢_.`
-                  (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-                 plfa.part2.Untyped._⊢_.·
-                 (plfa.part2.Untyped._⊢_.ƛ
-                  (plfa.part2.Untyped._⊢_.ƛ
-                   (plfa.part2.Untyped._⊢_.ƛ
-                    (plfa.part2.Untyped._⊢_.ƛ
-                     (plfa.part2.Untyped._⊢_.`
-                      (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-                     plfa.part2.Untyped._⊢_.·
-                     (plfa.part2.Untyped._⊢_.`
-                      (plfa.part2.Untyped._∋_.S
-                       (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-                  plfa.part2.Untyped._⊢_.·
-                  ((plfa.part2.Untyped._⊢_.`
-                    (plfa.part2.Untyped._∋_.S
-                     (plfa.part2.Untyped._∋_.S
-                      (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-                   plfa.part2.Untyped._⊢_.·
-                   (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                   plfa.part2.Untyped._⊢_.·
-                   (plfa.part2.Untyped._⊢_.`
-                    (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-                 plfa.part2.Untyped._⊢_.·
-                 (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-              plfa.part2.Untyped._⊢_.·
-              ((plfa.part2.Untyped._⊢_.`
-                (plfa.part2.Untyped._∋_.S
-                 (plfa.part2.Untyped._∋_.S
-                  (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-               plfa.part2.Untyped._⊢_.·
-               ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.`
-                 (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z)))))
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-          plfa.part2.Untyped._⊢_.·
-          ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-           plfa.part2.Untyped._⊢_.·
-           (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-         plfa.part2.Untyped._⊢_.·
-         ((plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S
-               (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-          plfa.part2.Untyped._⊢_.·
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-          plfa.part2.Untyped._⊢_.·
-          ((plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.`
-               (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.`
-               (plfa.part2.Untyped._∋_.S
-                (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-           plfa.part2.Untyped._⊢_.·
-           ((plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.`
-                (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-               plfa.part2.Untyped._⊢_.·
-               (plfa.part2.Untyped._⊢_.`
-                (plfa.part2.Untyped._∋_.S
-                 (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))))))))
-      plfa.part2.Untyped._⊢_.·
-      (plfa.part2.Untyped._⊢_.ƛ
-       (plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-     plfa.part2.Untyped._⊢_.·
-     ((plfa.part2.Untyped._⊢_.ƛ
-       (plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.`
-           (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-          plfa.part2.Untyped._⊢_.·
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-             plfa.part2.Untyped._⊢_.·
-             ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-             plfa.part2.Untyped._⊢_.·
-             ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-           plfa.part2.Untyped._⊢_.·
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.`
-               (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.ƛ
-                (plfa.part2.Untyped._⊢_.ƛ
-                 (plfa.part2.Untyped._⊢_.ƛ
-                  (plfa.part2.Untyped._⊢_.`
-                   (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-                  plfa.part2.Untyped._⊢_.·
-                  (plfa.part2.Untyped._⊢_.`
-                   (plfa.part2.Untyped._∋_.S
-                    (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-               plfa.part2.Untyped._⊢_.·
-               ((plfa.part2.Untyped._⊢_.`
-                 (plfa.part2.Untyped._∋_.S
-                  (plfa.part2.Untyped._∋_.S
-                   (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.`
-                 (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-           plfa.part2.Untyped._⊢_.·
-           (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-           plfa.part2.Untyped._⊢_.·
-           ((plfa.part2.Untyped._⊢_.`
-             (plfa.part2.Untyped._∋_.S
-              (plfa.part2.Untyped._∋_.S
-               (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-            plfa.part2.Untyped._⊢_.·
-            ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z)))))
-          plfa.part2.Untyped._⊢_.·
-          (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-       plfa.part2.Untyped._⊢_.·
-       ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-        plfa.part2.Untyped._⊢_.·
-        (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-      plfa.part2.Untyped._⊢_.·
-      (plfa.part2.Untyped._⊢_.ƛ
-       (plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.`
-           (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-          plfa.part2.Untyped._⊢_.·
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-             plfa.part2.Untyped._⊢_.·
-             ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-             plfa.part2.Untyped._⊢_.·
-             ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-           plfa.part2.Untyped._⊢_.·
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.`
-               (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.ƛ
-                (plfa.part2.Untyped._⊢_.ƛ
-                 (plfa.part2.Untyped._⊢_.ƛ
-                  (plfa.part2.Untyped._⊢_.`
-                   (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-                  plfa.part2.Untyped._⊢_.·
-                  (plfa.part2.Untyped._⊢_.`
-                   (plfa.part2.Untyped._∋_.S
-                    (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-               plfa.part2.Untyped._⊢_.·
-               ((plfa.part2.Untyped._⊢_.`
-                 (plfa.part2.Untyped._∋_.S
-                  (plfa.part2.Untyped._∋_.S
-                   (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.`
-                 (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-           plfa.part2.Untyped._⊢_.·
-           (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-           plfa.part2.Untyped._⊢_.·
-           ((plfa.part2.Untyped._⊢_.`
-             (plfa.part2.Untyped._∋_.S
-              (plfa.part2.Untyped._∋_.S
-               (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-            plfa.part2.Untyped._⊢_.·
-            ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z)))))
-          plfa.part2.Untyped._⊢_.·
-          (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-       plfa.part2.Untyped._⊢_.·
-       ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-        plfa.part2.Untyped._⊢_.·
-        (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-      plfa.part2.Untyped._⊢_.·
-      ((plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.`
-           (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-          plfa.part2.Untyped._⊢_.·
-          (plfa.part2.Untyped._⊢_.`
-           (plfa.part2.Untyped._∋_.S
-            (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-       plfa.part2.Untyped._⊢_.·
-       (plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-       plfa.part2.Untyped._⊢_.·
-       ((plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.`
-            (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-           plfa.part2.Untyped._⊢_.·
-           (plfa.part2.Untyped._⊢_.`
-            (plfa.part2.Untyped._∋_.S
-             (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-        plfa.part2.Untyped._⊢_.·
-        ((plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.`
-             (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.`
-             (plfa.part2.Untyped._∋_.S
-              (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-         plfa.part2.Untyped._⊢_.·
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))))))
-     plfa.part2.Untyped._—↠_.—→⟨ plfa.part2.Untyped._—→_.β ⟩
-     (plfa.part2.Untyped._⊢_.ƛ
-      (plfa.part2.Untyped._⊢_.ƛ
-       (plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.`
-          (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-         plfa.part2.Untyped._⊢_.·
-         (plfa.part2.Untyped._⊢_.`
-          (plfa.part2.Untyped._∋_.S
-           (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-      plfa.part2.Untyped._⊢_.·
-      ((plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.`
-            (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-           plfa.part2.Untyped._⊢_.·
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.`
-                (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-               plfa.part2.Untyped._⊢_.·
-               (plfa.part2.Untyped._⊢_.`
-                (plfa.part2.Untyped._∋_.S
-                 (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-            plfa.part2.Untyped._⊢_.·
-            ((plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S
-               (plfa.part2.Untyped._∋_.S
-                (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-           plfa.part2.Untyped._⊢_.·
-           (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-        plfa.part2.Untyped._⊢_.·
-        ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-         plfa.part2.Untyped._⊢_.·
-         (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-       plfa.part2.Untyped._⊢_.·
-       (plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.`
-            (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-           plfa.part2.Untyped._⊢_.·
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.`
-                (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-               plfa.part2.Untyped._⊢_.·
-               (plfa.part2.Untyped._⊢_.`
-                (plfa.part2.Untyped._∋_.S
-                 (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-            plfa.part2.Untyped._⊢_.·
-            ((plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S
-               (plfa.part2.Untyped._∋_.S
-                (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-           plfa.part2.Untyped._⊢_.·
-           (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-        plfa.part2.Untyped._⊢_.·
-        ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-         plfa.part2.Untyped._⊢_.·
-         (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-       plfa.part2.Untyped._⊢_.·
-       (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-       plfa.part2.Untyped._⊢_.·
-       ((plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.`
-             (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.`
-                (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-               plfa.part2.Untyped._⊢_.·
-               ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.`
-                (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-               plfa.part2.Untyped._⊢_.·
-               ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.ƛ
-                (plfa.part2.Untyped._⊢_.`
-                 (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.ƛ
-                 (plfa.part2.Untyped._⊢_.ƛ
-                  (plfa.part2.Untyped._⊢_.ƛ
-                   (plfa.part2.Untyped._⊢_.ƛ
-                    (plfa.part2.Untyped._⊢_.`
-                     (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-                    plfa.part2.Untyped._⊢_.·
-                    (plfa.part2.Untyped._⊢_.`
-                     (plfa.part2.Untyped._∋_.S
-                      (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-                 plfa.part2.Untyped._⊢_.·
-                 ((plfa.part2.Untyped._⊢_.`
-                   (plfa.part2.Untyped._∋_.S
-                    (plfa.part2.Untyped._∋_.S
-                     (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-                  plfa.part2.Untyped._⊢_.·
-                  (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                  plfa.part2.Untyped._⊢_.·
-                  (plfa.part2.Untyped._⊢_.`
-                   (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-             plfa.part2.Untyped._⊢_.·
-             ((plfa.part2.Untyped._⊢_.`
-               (plfa.part2.Untyped._∋_.S
-                (plfa.part2.Untyped._∋_.S
-                 (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-              plfa.part2.Untyped._⊢_.·
-              ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-               plfa.part2.Untyped._⊢_.·
-               (plfa.part2.Untyped._⊢_.`
-                (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z)))))
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-         plfa.part2.Untyped._⊢_.·
-         ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-          plfa.part2.Untyped._⊢_.·
-          (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-        plfa.part2.Untyped._⊢_.·
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.`
-             (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.`
-                (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-               plfa.part2.Untyped._⊢_.·
-               ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.`
-                (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-               plfa.part2.Untyped._⊢_.·
-               ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.ƛ
-                (plfa.part2.Untyped._⊢_.`
-                 (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.ƛ
-                 (plfa.part2.Untyped._⊢_.ƛ
-                  (plfa.part2.Untyped._⊢_.ƛ
-                   (plfa.part2.Untyped._⊢_.ƛ
-                    (plfa.part2.Untyped._⊢_.`
-                     (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-                    plfa.part2.Untyped._⊢_.·
-                    (plfa.part2.Untyped._⊢_.`
-                     (plfa.part2.Untyped._∋_.S
-                      (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-                 plfa.part2.Untyped._⊢_.·
-                 ((plfa.part2.Untyped._⊢_.`
-                   (plfa.part2.Untyped._∋_.S
-                    (plfa.part2.Untyped._∋_.S
-                     (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-                  plfa.part2.Untyped._⊢_.·
-                  (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                  plfa.part2.Untyped._⊢_.·
-                  (plfa.part2.Untyped._⊢_.`
-                   (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-             plfa.part2.Untyped._⊢_.·
-             ((plfa.part2.Untyped._⊢_.`
-               (plfa.part2.Untyped._∋_.S
-                (plfa.part2.Untyped._∋_.S
-                 (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-              plfa.part2.Untyped._⊢_.·
-              ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-               plfa.part2.Untyped._⊢_.·
-               (plfa.part2.Untyped._⊢_.`
-                (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z)))))
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-         plfa.part2.Untyped._⊢_.·
-         ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-          plfa.part2.Untyped._⊢_.·
-          (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-        plfa.part2.Untyped._⊢_.·
-        ((plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.`
-             (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.`
-             (plfa.part2.Untyped._∋_.S
-              (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-         plfa.part2.Untyped._⊢_.·
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-         plfa.part2.Untyped._⊢_.·
-         ((plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S
-               (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-          plfa.part2.Untyped._⊢_.·
-          ((plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.`
-               (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.`
-               (plfa.part2.Untyped._∋_.S
-                (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-           plfa.part2.Untyped._⊢_.·
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))))))))
-     plfa.part2.Untyped._⊢_.·
-     (plfa.part2.Untyped._⊢_.ƛ
-      (plfa.part2.Untyped._⊢_.ƛ
-       (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-     plfa.part2.Untyped._—↠_.—→⟨ plfa.part2.Untyped._—→_.β ⟩
-     (plfa.part2.Untyped._⊢_.ƛ
-      (plfa.part2.Untyped._⊢_.ƛ
-       (plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.`
-         (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-        plfa.part2.Untyped._⊢_.·
-        (plfa.part2.Untyped._⊢_.`
-         (plfa.part2.Untyped._∋_.S
-          (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-     plfa.part2.Untyped._⊢_.·
-     ((plfa.part2.Untyped._⊢_.ƛ
-       (plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.`
-           (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-          plfa.part2.Untyped._⊢_.·
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.`
-               (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.`
-               (plfa.part2.Untyped._∋_.S
-                (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-           plfa.part2.Untyped._⊢_.·
-           ((plfa.part2.Untyped._⊢_.`
-             (plfa.part2.Untyped._∋_.S
-              (plfa.part2.Untyped._∋_.S
-               (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.`
-             (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-          plfa.part2.Untyped._⊢_.·
-          (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-       plfa.part2.Untyped._⊢_.·
-       ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-        plfa.part2.Untyped._⊢_.·
-        (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-      plfa.part2.Untyped._⊢_.·
-      (plfa.part2.Untyped._⊢_.ƛ
-       (plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.`
-           (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-          plfa.part2.Untyped._⊢_.·
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.`
-               (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.`
-               (plfa.part2.Untyped._∋_.S
-                (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-           plfa.part2.Untyped._⊢_.·
-           ((plfa.part2.Untyped._⊢_.`
-             (plfa.part2.Untyped._∋_.S
-              (plfa.part2.Untyped._∋_.S
-               (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.`
-             (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-          plfa.part2.Untyped._⊢_.·
-          (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-       plfa.part2.Untyped._⊢_.·
-       ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-        plfa.part2.Untyped._⊢_.·
-        (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-      plfa.part2.Untyped._⊢_.·
-      (plfa.part2.Untyped._⊢_.ƛ
-       (plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-      plfa.part2.Untyped._⊢_.·
-      ((plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.`
-            (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-           plfa.part2.Untyped._⊢_.·
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.`
-               (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-              plfa.part2.Untyped._⊢_.·
-              ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-               plfa.part2.Untyped._⊢_.·
-               (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.`
-               (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-              plfa.part2.Untyped._⊢_.·
-              ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-               plfa.part2.Untyped._⊢_.·
-               (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.`
-                (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-               plfa.part2.Untyped._⊢_.·
-               (plfa.part2.Untyped._⊢_.ƛ
-                (plfa.part2.Untyped._⊢_.ƛ
-                 (plfa.part2.Untyped._⊢_.ƛ
-                  (plfa.part2.Untyped._⊢_.ƛ
-                   (plfa.part2.Untyped._⊢_.`
-                    (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-                   plfa.part2.Untyped._⊢_.·
-                   (plfa.part2.Untyped._⊢_.`
-                    (plfa.part2.Untyped._∋_.S
-                     (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-                plfa.part2.Untyped._⊢_.·
-                ((plfa.part2.Untyped._⊢_.`
-                  (plfa.part2.Untyped._∋_.S
-                   (plfa.part2.Untyped._∋_.S
-                    (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-                 plfa.part2.Untyped._⊢_.·
-                 (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                 plfa.part2.Untyped._⊢_.·
-                 (plfa.part2.Untyped._⊢_.`
-                  (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-               plfa.part2.Untyped._⊢_.·
-               (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-            plfa.part2.Untyped._⊢_.·
-            ((plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S
-               (plfa.part2.Untyped._∋_.S
-                (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-             plfa.part2.Untyped._⊢_.·
-             ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.`
-               (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z)))))
-           plfa.part2.Untyped._⊢_.·
-           (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-        plfa.part2.Untyped._⊢_.·
-        ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-         plfa.part2.Untyped._⊢_.·
-         (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-       plfa.part2.Untyped._⊢_.·
-       (plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.`
-            (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-           plfa.part2.Untyped._⊢_.·
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.`
-               (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-              plfa.part2.Untyped._⊢_.·
-              ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-               plfa.part2.Untyped._⊢_.·
-               (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.`
-               (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-              plfa.part2.Untyped._⊢_.·
-              ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-               plfa.part2.Untyped._⊢_.·
-               (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.`
-                (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-               plfa.part2.Untyped._⊢_.·
-               (plfa.part2.Untyped._⊢_.ƛ
-                (plfa.part2.Untyped._⊢_.ƛ
-                 (plfa.part2.Untyped._⊢_.ƛ
-                  (plfa.part2.Untyped._⊢_.ƛ
-                   (plfa.part2.Untyped._⊢_.`
-                    (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-                   plfa.part2.Untyped._⊢_.·
-                   (plfa.part2.Untyped._⊢_.`
-                    (plfa.part2.Untyped._∋_.S
-                     (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-                plfa.part2.Untyped._⊢_.·
-                ((plfa.part2.Untyped._⊢_.`
-                  (plfa.part2.Untyped._∋_.S
-                   (plfa.part2.Untyped._∋_.S
-                    (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-                 plfa.part2.Untyped._⊢_.·
-                 (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                 plfa.part2.Untyped._⊢_.·
-                 (plfa.part2.Untyped._⊢_.`
-                  (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-               plfa.part2.Untyped._⊢_.·
-               (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-            plfa.part2.Untyped._⊢_.·
-            ((plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S
-               (plfa.part2.Untyped._∋_.S
-                (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-             plfa.part2.Untyped._⊢_.·
-             ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.`
-               (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z)))))
-           plfa.part2.Untyped._⊢_.·
-           (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-        plfa.part2.Untyped._⊢_.·
-        ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-         plfa.part2.Untyped._⊢_.·
-         (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-       plfa.part2.Untyped._⊢_.·
-       ((plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.`
-            (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-           plfa.part2.Untyped._⊢_.·
-           (plfa.part2.Untyped._⊢_.`
-            (plfa.part2.Untyped._∋_.S
-             (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-        plfa.part2.Untyped._⊢_.·
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-        plfa.part2.Untyped._⊢_.·
-        ((plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.`
-             (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.`
-             (plfa.part2.Untyped._∋_.S
-              (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-         plfa.part2.Untyped._⊢_.·
-         ((plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S
-               (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-          plfa.part2.Untyped._⊢_.·
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))))))
-     plfa.part2.Untyped._—↠_.—→⟨ plfa.part2.Untyped._—→_.β ⟩
-     plfa.part2.Untyped._⊢_.ƛ
-     (plfa.part2.Untyped._⊢_.ƛ
-      (plfa.part2.Untyped._⊢_.`
-       (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-      plfa.part2.Untyped._⊢_.·
-      ((plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.`
-            (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-           plfa.part2.Untyped._⊢_.·
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.`
-                (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-               plfa.part2.Untyped._⊢_.·
-               (plfa.part2.Untyped._⊢_.`
-                (plfa.part2.Untyped._∋_.S
-                 (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-            plfa.part2.Untyped._⊢_.·
-            ((plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S
-               (plfa.part2.Untyped._∋_.S
-                (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-           plfa.part2.Untyped._⊢_.·
-           (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-        plfa.part2.Untyped._⊢_.·
-        ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-         plfa.part2.Untyped._⊢_.·
-         (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-       plfa.part2.Untyped._⊢_.·
-       (plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.`
-            (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-           plfa.part2.Untyped._⊢_.·
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.`
-                (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-               plfa.part2.Untyped._⊢_.·
-               (plfa.part2.Untyped._⊢_.`
-                (plfa.part2.Untyped._∋_.S
-                 (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-            plfa.part2.Untyped._⊢_.·
-            ((plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S
-               (plfa.part2.Untyped._∋_.S
-                (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-           plfa.part2.Untyped._⊢_.·
-           (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-        plfa.part2.Untyped._⊢_.·
-        ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-         plfa.part2.Untyped._⊢_.·
-         (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-       plfa.part2.Untyped._⊢_.·
-       (plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-       plfa.part2.Untyped._⊢_.·
-       ((plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.`
-             (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.`
-                (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-               plfa.part2.Untyped._⊢_.·
-               ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.`
-                (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-               plfa.part2.Untyped._⊢_.·
-               ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.ƛ
-                (plfa.part2.Untyped._⊢_.`
-                 (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.ƛ
-                 (plfa.part2.Untyped._⊢_.ƛ
-                  (plfa.part2.Untyped._⊢_.ƛ
-                   (plfa.part2.Untyped._⊢_.ƛ
-                    (plfa.part2.Untyped._⊢_.`
-                     (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-                    plfa.part2.Untyped._⊢_.·
-                    (plfa.part2.Untyped._⊢_.`
-                     (plfa.part2.Untyped._∋_.S
-                      (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-                 plfa.part2.Untyped._⊢_.·
-                 ((plfa.part2.Untyped._⊢_.`
-                   (plfa.part2.Untyped._∋_.S
-                    (plfa.part2.Untyped._∋_.S
-                     (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-                  plfa.part2.Untyped._⊢_.·
-                  (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                  plfa.part2.Untyped._⊢_.·
-                  (plfa.part2.Untyped._⊢_.`
-                   (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-             plfa.part2.Untyped._⊢_.·
-             ((plfa.part2.Untyped._⊢_.`
-               (plfa.part2.Untyped._∋_.S
-                (plfa.part2.Untyped._∋_.S
-                 (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-              plfa.part2.Untyped._⊢_.·
-              ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-               plfa.part2.Untyped._⊢_.·
-               (plfa.part2.Untyped._⊢_.`
-                (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z)))))
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-         plfa.part2.Untyped._⊢_.·
-         ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-          plfa.part2.Untyped._⊢_.·
-          (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-        plfa.part2.Untyped._⊢_.·
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.`
-             (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.`
-                (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-               plfa.part2.Untyped._⊢_.·
-               ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.`
-                (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-               plfa.part2.Untyped._⊢_.·
-               ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.ƛ
-                (plfa.part2.Untyped._⊢_.`
-                 (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.ƛ
-                 (plfa.part2.Untyped._⊢_.ƛ
-                  (plfa.part2.Untyped._⊢_.ƛ
-                   (plfa.part2.Untyped._⊢_.ƛ
-                    (plfa.part2.Untyped._⊢_.`
-                     (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-                    plfa.part2.Untyped._⊢_.·
-                    (plfa.part2.Untyped._⊢_.`
-                     (plfa.part2.Untyped._∋_.S
-                      (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-                 plfa.part2.Untyped._⊢_.·
-                 ((plfa.part2.Untyped._⊢_.`
-                   (plfa.part2.Untyped._∋_.S
-                    (plfa.part2.Untyped._∋_.S
-                     (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-                  plfa.part2.Untyped._⊢_.·
-                  (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                  plfa.part2.Untyped._⊢_.·
-                  (plfa.part2.Untyped._⊢_.`
-                   (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-             plfa.part2.Untyped._⊢_.·
-             ((plfa.part2.Untyped._⊢_.`
-               (plfa.part2.Untyped._∋_.S
-                (plfa.part2.Untyped._∋_.S
-                 (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-              plfa.part2.Untyped._⊢_.·
-              ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-               plfa.part2.Untyped._⊢_.·
-               (plfa.part2.Untyped._⊢_.`
-                (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z)))))
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-         plfa.part2.Untyped._⊢_.·
-         ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-          plfa.part2.Untyped._⊢_.·
-          (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-        plfa.part2.Untyped._⊢_.·
-        ((plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.`
-             (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.`
-             (plfa.part2.Untyped._∋_.S
-              (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-         plfa.part2.Untyped._⊢_.·
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-         plfa.part2.Untyped._⊢_.·
-         ((plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S
-               (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-          plfa.part2.Untyped._⊢_.·
-          ((plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.`
-               (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.`
-               (plfa.part2.Untyped._∋_.S
-                (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-           plfa.part2.Untyped._⊢_.·
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))))))))
-     plfa.part2.Untyped._—↠_.—→⟨
-     plfa.part2.Untyped._—→_.ζ
-     (plfa.part2.Untyped._—→_.ζ
-      (plfa.part2.Untyped._—→_.ξ₂
-       (plfa.part2.Untyped._—→_.ξ₁
-        (plfa.part2.Untyped._—→_.ξ₁ plfa.part2.Untyped._—→_.β))))
+     (_⊢_.ƛ
+      (_⊢_.ƛ
+       (_⊢_.`
+        (_∋_.S _∋_.Z))
+       _⊢_.·
+       (_⊢_.ƛ
+        (_⊢_.ƛ
+         (_⊢_.` _∋_.Z)))))
+     _⊢_.·
+     (_⊢_.ƛ
+      (_⊢_.ƛ
+       (_⊢_.ƛ
+        (_⊢_.ƛ
+         (_⊢_.`
+          (_∋_.S _∋_.Z))
+         _⊢_.·
+         (_⊢_.`
+          (_∋_.S
+           (_∋_.S _∋_.Z))))))
+      _⊢_.·
+      ((_⊢_.ƛ
+        (_⊢_.ƛ
+         (_⊢_.ƛ
+          (_⊢_.ƛ
+           (_⊢_.`
+            (_∋_.S _∋_.Z))
+           _⊢_.·
+           (_⊢_.ƛ
+            (_⊢_.ƛ
+             (_⊢_.ƛ
+              (_⊢_.ƛ
+               (_⊢_.`
+                (_∋_.S _∋_.Z))
+               _⊢_.·
+               (_⊢_.`
+                (_∋_.S
+                 (_∋_.S _∋_.Z))))))
+            _⊢_.·
+            ((_⊢_.`
+              (_∋_.S
+               (_∋_.S
+                (_∋_.S _∋_.Z))))
+             _⊢_.·
+             (_⊢_.` _∋_.Z)
+             _⊢_.·
+             (_⊢_.`
+              (_∋_.S _∋_.Z))))
+           _⊢_.·
+           (_⊢_.` _∋_.Z))))
+        _⊢_.·
+        ((_⊢_.` _∋_.Z)
+         _⊢_.·
+         (_⊢_.` _∋_.Z)))
+       _⊢_.·
+       (_⊢_.ƛ
+        (_⊢_.ƛ
+         (_⊢_.ƛ
+          (_⊢_.ƛ
+           (_⊢_.`
+            (_∋_.S _∋_.Z))
+           _⊢_.·
+           (_⊢_.ƛ
+            (_⊢_.ƛ
+             (_⊢_.ƛ
+              (_⊢_.ƛ
+               (_⊢_.`
+                (_∋_.S _∋_.Z))
+               _⊢_.·
+               (_⊢_.`
+                (_∋_.S
+                 (_∋_.S _∋_.Z))))))
+            _⊢_.·
+            ((_⊢_.`
+              (_∋_.S
+               (_∋_.S
+                (_∋_.S _∋_.Z))))
+             _⊢_.·
+             (_⊢_.` _∋_.Z)
+             _⊢_.·
+             (_⊢_.`
+              (_∋_.S _∋_.Z))))
+           _⊢_.·
+           (_⊢_.` _∋_.Z))))
+        _⊢_.·
+        ((_⊢_.` _∋_.Z)
+         _⊢_.·
+         (_⊢_.` _∋_.Z)))
+       _⊢_.·
+       (_⊢_.` _∋_.Z)
+       _⊢_.·
+       ((_⊢_.ƛ
+         (_⊢_.ƛ
+          (_⊢_.ƛ
+           (_⊢_.ƛ
+            (_⊢_.`
+             (_∋_.S _∋_.Z))
+            _⊢_.·
+            (_⊢_.ƛ
+             (_⊢_.ƛ
+              (_⊢_.ƛ
+               (_⊢_.`
+                (_∋_.S _∋_.Z))
+               _⊢_.·
+               ((_⊢_.` _∋_.Z)
+                _⊢_.·
+                (_⊢_.` _∋_.Z)))
+              _⊢_.·
+              (_⊢_.ƛ
+               (_⊢_.`
+                (_∋_.S _∋_.Z))
+               _⊢_.·
+               ((_⊢_.` _∋_.Z)
+                _⊢_.·
+                (_⊢_.` _∋_.Z))))
+             _⊢_.·
+             (_⊢_.ƛ
+              (_⊢_.ƛ
+               (_⊢_.ƛ
+                (_⊢_.`
+                 (_∋_.S _∋_.Z))
+                _⊢_.·
+                (_⊢_.ƛ
+                 (_⊢_.ƛ
+                  (_⊢_.ƛ
+                   (_⊢_.ƛ
+                    (_⊢_.`
+                     (_∋_.S _∋_.Z))
+                    _⊢_.·
+                    (_⊢_.`
+                     (_∋_.S
+                      (_∋_.S _∋_.Z))))))
+                 _⊢_.·
+                 ((_⊢_.`
+                   (_∋_.S
+                    (_∋_.S
+                     (_∋_.S _∋_.Z))))
+                  _⊢_.·
+                  (_⊢_.` _∋_.Z)
+                  _⊢_.·
+                  (_⊢_.`
+                   (_∋_.S _∋_.Z))))
+                _⊢_.·
+                (_⊢_.` _∋_.Z))))
+             _⊢_.·
+             (_⊢_.` _∋_.Z)
+             _⊢_.·
+             ((_⊢_.`
+               (_∋_.S
+                (_∋_.S
+                 (_∋_.S _∋_.Z))))
+              _⊢_.·
+              ((_⊢_.` _∋_.Z)
+               _⊢_.·
+               (_⊢_.`
+                (_∋_.S _∋_.Z)))))
+            _⊢_.·
+            (_⊢_.` _∋_.Z))))
+         _⊢_.·
+         ((_⊢_.` _∋_.Z)
+          _⊢_.·
+          (_⊢_.` _∋_.Z)))
+        _⊢_.·
+        (_⊢_.ƛ
+         (_⊢_.ƛ
+          (_⊢_.ƛ
+           (_⊢_.ƛ
+            (_⊢_.`
+             (_∋_.S _∋_.Z))
+            _⊢_.·
+            (_⊢_.ƛ
+             (_⊢_.ƛ
+              (_⊢_.ƛ
+               (_⊢_.`
+                (_∋_.S _∋_.Z))
+               _⊢_.·
+               ((_⊢_.` _∋_.Z)
+                _⊢_.·
+                (_⊢_.` _∋_.Z)))
+              _⊢_.·
+              (_⊢_.ƛ
+               (_⊢_.`
+                (_∋_.S _∋_.Z))
+               _⊢_.·
+               ((_⊢_.` _∋_.Z)
+                _⊢_.·
+                (_⊢_.` _∋_.Z))))
+             _⊢_.·
+             (_⊢_.ƛ
+              (_⊢_.ƛ
+               (_⊢_.ƛ
+                (_⊢_.`
+                 (_∋_.S _∋_.Z))
+                _⊢_.·
+                (_⊢_.ƛ
+                 (_⊢_.ƛ
+                  (_⊢_.ƛ
+                   (_⊢_.ƛ
+                    (_⊢_.`
+                     (_∋_.S _∋_.Z))
+                    _⊢_.·
+                    (_⊢_.`
+                     (_∋_.S
+                      (_∋_.S _∋_.Z))))))
+                 _⊢_.·
+                 ((_⊢_.`
+                   (_∋_.S
+                    (_∋_.S
+                     (_∋_.S _∋_.Z))))
+                  _⊢_.·
+                  (_⊢_.` _∋_.Z)
+                  _⊢_.·
+                  (_⊢_.`
+                   (_∋_.S _∋_.Z))))
+                _⊢_.·
+                (_⊢_.` _∋_.Z))))
+             _⊢_.·
+             (_⊢_.` _∋_.Z)
+             _⊢_.·
+             ((_⊢_.`
+               (_∋_.S
+                (_∋_.S
+                 (_∋_.S _∋_.Z))))
+              _⊢_.·
+              ((_⊢_.` _∋_.Z)
+               _⊢_.·
+               (_⊢_.`
+                (_∋_.S _∋_.Z)))))
+            _⊢_.·
+            (_⊢_.` _∋_.Z))))
+         _⊢_.·
+         ((_⊢_.` _∋_.Z)
+          _⊢_.·
+          (_⊢_.` _∋_.Z)))
+        _⊢_.·
+        ((_⊢_.ƛ
+          (_⊢_.ƛ
+           (_⊢_.ƛ
+            (_⊢_.`
+             (_∋_.S _∋_.Z))
+            _⊢_.·
+            (_⊢_.`
+             (_∋_.S
+              (_∋_.S _∋_.Z))))))
+         _⊢_.·
+         (_⊢_.ƛ
+          (_⊢_.ƛ
+           (_⊢_.` _∋_.Z)))
+         _⊢_.·
+         ((_⊢_.ƛ
+           (_⊢_.ƛ
+            (_⊢_.ƛ
+             (_⊢_.`
+              (_∋_.S _∋_.Z))
+             _⊢_.·
+             (_⊢_.`
+              (_∋_.S
+               (_∋_.S _∋_.Z))))))
+          _⊢_.·
+          ((_⊢_.ƛ
+            (_⊢_.ƛ
+             (_⊢_.ƛ
+              (_⊢_.`
+               (_∋_.S _∋_.Z))
+              _⊢_.·
+              (_⊢_.`
+               (_∋_.S
+                (_∋_.S _∋_.Z))))))
+           _⊢_.·
+           (_⊢_.ƛ
+            (_⊢_.ƛ
+             (_⊢_.` _∋_.Z)))))))))
+     _⊢_.·
+     ((_⊢_.ƛ
+       (_⊢_.ƛ
+        (_⊢_.ƛ
+         (_⊢_.ƛ
+          (_⊢_.`
+           (_∋_.S _∋_.Z))
+          _⊢_.·
+          (_⊢_.ƛ
+           (_⊢_.ƛ
+            (_⊢_.ƛ
+             (_⊢_.`
+              (_∋_.S _∋_.Z))
+             _⊢_.·
+             ((_⊢_.` _∋_.Z)
+              _⊢_.·
+              (_⊢_.` _∋_.Z)))
+            _⊢_.·
+            (_⊢_.ƛ
+             (_⊢_.`
+              (_∋_.S _∋_.Z))
+             _⊢_.·
+             ((_⊢_.` _∋_.Z)
+              _⊢_.·
+              (_⊢_.` _∋_.Z))))
+           _⊢_.·
+           (_⊢_.ƛ
+            (_⊢_.ƛ
+             (_⊢_.ƛ
+              (_⊢_.`
+               (_∋_.S _∋_.Z))
+              _⊢_.·
+              (_⊢_.ƛ
+               (_⊢_.ƛ
+                (_⊢_.ƛ
+                 (_⊢_.ƛ
+                  (_⊢_.`
+                   (_∋_.S _∋_.Z))
+                  _⊢_.·
+                  (_⊢_.`
+                   (_∋_.S
+                    (_∋_.S _∋_.Z))))))
+               _⊢_.·
+               ((_⊢_.`
+                 (_∋_.S
+                  (_∋_.S
+                   (_∋_.S _∋_.Z))))
+                _⊢_.·
+                (_⊢_.` _∋_.Z)
+                _⊢_.·
+                (_⊢_.`
+                 (_∋_.S _∋_.Z))))
+              _⊢_.·
+              (_⊢_.` _∋_.Z))))
+           _⊢_.·
+           (_⊢_.` _∋_.Z)
+           _⊢_.·
+           ((_⊢_.`
+             (_∋_.S
+              (_∋_.S
+               (_∋_.S _∋_.Z))))
+            _⊢_.·
+            ((_⊢_.` _∋_.Z)
+             _⊢_.·
+             (_⊢_.`
+              (_∋_.S _∋_.Z)))))
+          _⊢_.·
+          (_⊢_.` _∋_.Z))))
+       _⊢_.·
+       ((_⊢_.` _∋_.Z)
+        _⊢_.·
+        (_⊢_.` _∋_.Z)))
+      _⊢_.·
+      (_⊢_.ƛ
+       (_⊢_.ƛ
+        (_⊢_.ƛ
+         (_⊢_.ƛ
+          (_⊢_.`
+           (_∋_.S _∋_.Z))
+          _⊢_.·
+          (_⊢_.ƛ
+           (_⊢_.ƛ
+            (_⊢_.ƛ
+             (_⊢_.`
+              (_∋_.S _∋_.Z))
+             _⊢_.·
+             ((_⊢_.` _∋_.Z)
+              _⊢_.·
+              (_⊢_.` _∋_.Z)))
+            _⊢_.·
+            (_⊢_.ƛ
+             (_⊢_.`
+              (_∋_.S _∋_.Z))
+             _⊢_.·
+             ((_⊢_.` _∋_.Z)
+              _⊢_.·
+              (_⊢_.` _∋_.Z))))
+           _⊢_.·
+           (_⊢_.ƛ
+            (_⊢_.ƛ
+             (_⊢_.ƛ
+              (_⊢_.`
+               (_∋_.S _∋_.Z))
+              _⊢_.·
+              (_⊢_.ƛ
+               (_⊢_.ƛ
+                (_⊢_.ƛ
+                 (_⊢_.ƛ
+                  (_⊢_.`
+                   (_∋_.S _∋_.Z))
+                  _⊢_.·
+                  (_⊢_.`
+                   (_∋_.S
+                    (_∋_.S _∋_.Z))))))
+               _⊢_.·
+               ((_⊢_.`
+                 (_∋_.S
+                  (_∋_.S
+                   (_∋_.S _∋_.Z))))
+                _⊢_.·
+                (_⊢_.` _∋_.Z)
+                _⊢_.·
+                (_⊢_.`
+                 (_∋_.S _∋_.Z))))
+              _⊢_.·
+              (_⊢_.` _∋_.Z))))
+           _⊢_.·
+           (_⊢_.` _∋_.Z)
+           _⊢_.·
+           ((_⊢_.`
+             (_∋_.S
+              (_∋_.S
+               (_∋_.S _∋_.Z))))
+            _⊢_.·
+            ((_⊢_.` _∋_.Z)
+             _⊢_.·
+             (_⊢_.`
+              (_∋_.S _∋_.Z)))))
+          _⊢_.·
+          (_⊢_.` _∋_.Z))))
+       _⊢_.·
+       ((_⊢_.` _∋_.Z)
+        _⊢_.·
+        (_⊢_.` _∋_.Z)))
+      _⊢_.·
+      ((_⊢_.ƛ
+        (_⊢_.ƛ
+         (_⊢_.ƛ
+          (_⊢_.`
+           (_∋_.S _∋_.Z))
+          _⊢_.·
+          (_⊢_.`
+           (_∋_.S
+            (_∋_.S _∋_.Z))))))
+       _⊢_.·
+       (_⊢_.ƛ
+        (_⊢_.ƛ
+         (_⊢_.` _∋_.Z)))
+       _⊢_.·
+       ((_⊢_.ƛ
+         (_⊢_.ƛ
+          (_⊢_.ƛ
+           (_⊢_.`
+            (_∋_.S _∋_.Z))
+           _⊢_.·
+           (_⊢_.`
+            (_∋_.S
+             (_∋_.S _∋_.Z))))))
+        _⊢_.·
+        ((_⊢_.ƛ
+          (_⊢_.ƛ
+           (_⊢_.ƛ
+            (_⊢_.`
+             (_∋_.S _∋_.Z))
+            _⊢_.·
+            (_⊢_.`
+             (_∋_.S
+              (_∋_.S _∋_.Z))))))
+         _⊢_.·
+         (_⊢_.ƛ
+          (_⊢_.ƛ
+           (_⊢_.` _∋_.Z)))))))
+     _—↠_.—→⟨
+     _—→_.ξ₁ _—→_.β ⟩
+     (_⊢_.ƛ
+      (_⊢_.ƛ
+       (_⊢_.ƛ
+        (_⊢_.ƛ
+         (_⊢_.ƛ
+          (_⊢_.`
+           (_∋_.S _∋_.Z))
+          _⊢_.·
+          (_⊢_.`
+           (_∋_.S
+            (_∋_.S _∋_.Z))))))
+       _⊢_.·
+       ((_⊢_.ƛ
+         (_⊢_.ƛ
+          (_⊢_.ƛ
+           (_⊢_.ƛ
+            (_⊢_.`
+             (_∋_.S _∋_.Z))
+            _⊢_.·
+            (_⊢_.ƛ
+             (_⊢_.ƛ
+              (_⊢_.ƛ
+               (_⊢_.ƛ
+                (_⊢_.`
+                 (_∋_.S _∋_.Z))
+                _⊢_.·
+                (_⊢_.`
+                 (_∋_.S
+                  (_∋_.S _∋_.Z))))))
+             _⊢_.·
+             ((_⊢_.`
+               (_∋_.S
+                (_∋_.S
+                 (_∋_.S _∋_.Z))))
+              _⊢_.·
+              (_⊢_.` _∋_.Z)
+              _⊢_.·
+              (_⊢_.`
+               (_∋_.S _∋_.Z))))
+            _⊢_.·
+            (_⊢_.` _∋_.Z))))
+         _⊢_.·
+         ((_⊢_.` _∋_.Z)
+          _⊢_.·
+          (_⊢_.` _∋_.Z)))
+        _⊢_.·
+        (_⊢_.ƛ
+         (_⊢_.ƛ
+          (_⊢_.ƛ
+           (_⊢_.ƛ
+            (_⊢_.`
+             (_∋_.S _∋_.Z))
+            _⊢_.·
+            (_⊢_.ƛ
+             (_⊢_.ƛ
+              (_⊢_.ƛ
+               (_⊢_.ƛ
+                (_⊢_.`
+                 (_∋_.S _∋_.Z))
+                _⊢_.·
+                (_⊢_.`
+                 (_∋_.S
+                  (_∋_.S _∋_.Z))))))
+             _⊢_.·
+             ((_⊢_.`
+               (_∋_.S
+                (_∋_.S
+                 (_∋_.S _∋_.Z))))
+              _⊢_.·
+              (_⊢_.` _∋_.Z)
+              _⊢_.·
+              (_⊢_.`
+               (_∋_.S _∋_.Z))))
+            _⊢_.·
+            (_⊢_.` _∋_.Z))))
+         _⊢_.·
+         ((_⊢_.` _∋_.Z)
+          _⊢_.·
+          (_⊢_.` _∋_.Z)))
+        _⊢_.·
+        (_⊢_.` _∋_.Z)
+        _⊢_.·
+        ((_⊢_.ƛ
+          (_⊢_.ƛ
+           (_⊢_.ƛ
+            (_⊢_.ƛ
+             (_⊢_.`
+              (_∋_.S _∋_.Z))
+             _⊢_.·
+             (_⊢_.ƛ
+              (_⊢_.ƛ
+               (_⊢_.ƛ
+                (_⊢_.`
+                 (_∋_.S _∋_.Z))
+                _⊢_.·
+                ((_⊢_.` _∋_.Z)
+                 _⊢_.·
+                 (_⊢_.` _∋_.Z)))
+               _⊢_.·
+               (_⊢_.ƛ
+                (_⊢_.`
+                 (_∋_.S _∋_.Z))
+                _⊢_.·
+                ((_⊢_.` _∋_.Z)
+                 _⊢_.·
+                 (_⊢_.` _∋_.Z))))
+              _⊢_.·
+              (_⊢_.ƛ
+               (_⊢_.ƛ
+                (_⊢_.ƛ
+                 (_⊢_.`
+                  (_∋_.S _∋_.Z))
+                 _⊢_.·
+                 (_⊢_.ƛ
+                  (_⊢_.ƛ
+                   (_⊢_.ƛ
+                    (_⊢_.ƛ
+                     (_⊢_.`
+                      (_∋_.S _∋_.Z))
+                     _⊢_.·
+                     (_⊢_.`
+                      (_∋_.S
+                       (_∋_.S _∋_.Z))))))
+                  _⊢_.·
+                  ((_⊢_.`
+                    (_∋_.S
+                     (_∋_.S
+                      (_∋_.S _∋_.Z))))
+                   _⊢_.·
+                   (_⊢_.` _∋_.Z)
+                   _⊢_.·
+                   (_⊢_.`
+                    (_∋_.S _∋_.Z))))
+                 _⊢_.·
+                 (_⊢_.` _∋_.Z))))
+              _⊢_.·
+              (_⊢_.` _∋_.Z)
+              _⊢_.·
+              ((_⊢_.`
+                (_∋_.S
+                 (_∋_.S
+                  (_∋_.S _∋_.Z))))
+               _⊢_.·
+               ((_⊢_.` _∋_.Z)
+                _⊢_.·
+                (_⊢_.`
+                 (_∋_.S _∋_.Z)))))
+             _⊢_.·
+             (_⊢_.` _∋_.Z))))
+          _⊢_.·
+          ((_⊢_.` _∋_.Z)
+           _⊢_.·
+           (_⊢_.` _∋_.Z)))
+         _⊢_.·
+         (_⊢_.ƛ
+          (_⊢_.ƛ
+           (_⊢_.ƛ
+            (_⊢_.ƛ
+             (_⊢_.`
+              (_∋_.S _∋_.Z))
+             _⊢_.·
+             (_⊢_.ƛ
+              (_⊢_.ƛ
+               (_⊢_.ƛ
+                (_⊢_.`
+                 (_∋_.S _∋_.Z))
+                _⊢_.·
+                ((_⊢_.` _∋_.Z)
+                 _⊢_.·
+                 (_⊢_.` _∋_.Z)))
+               _⊢_.·
+               (_⊢_.ƛ
+                (_⊢_.`
+                 (_∋_.S _∋_.Z))
+                _⊢_.·
+                ((_⊢_.` _∋_.Z)
+                 _⊢_.·
+                 (_⊢_.` _∋_.Z))))
+              _⊢_.·
+              (_⊢_.ƛ
+               (_⊢_.ƛ
+                (_⊢_.ƛ
+                 (_⊢_.`
+                  (_∋_.S _∋_.Z))
+                 _⊢_.·
+                 (_⊢_.ƛ
+                  (_⊢_.ƛ
+                   (_⊢_.ƛ
+                    (_⊢_.ƛ
+                     (_⊢_.`
+                      (_∋_.S _∋_.Z))
+                     _⊢_.·
+                     (_⊢_.`
+                      (_∋_.S
+                       (_∋_.S _∋_.Z))))))
+                  _⊢_.·
+                  ((_⊢_.`
+                    (_∋_.S
+                     (_∋_.S
+                      (_∋_.S _∋_.Z))))
+                   _⊢_.·
+                   (_⊢_.` _∋_.Z)
+                   _⊢_.·
+                   (_⊢_.`
+                    (_∋_.S _∋_.Z))))
+                 _⊢_.·
+                 (_⊢_.` _∋_.Z))))
+              _⊢_.·
+              (_⊢_.` _∋_.Z)
+              _⊢_.·
+              ((_⊢_.`
+                (_∋_.S
+                 (_∋_.S
+                  (_∋_.S _∋_.Z))))
+               _⊢_.·
+               ((_⊢_.` _∋_.Z)
+                _⊢_.·
+                (_⊢_.`
+                 (_∋_.S _∋_.Z)))))
+             _⊢_.·
+             (_⊢_.` _∋_.Z))))
+          _⊢_.·
+          ((_⊢_.` _∋_.Z)
+           _⊢_.·
+           (_⊢_.` _∋_.Z)))
+         _⊢_.·
+         ((_⊢_.ƛ
+           (_⊢_.ƛ
+            (_⊢_.ƛ
+             (_⊢_.`
+              (_∋_.S _∋_.Z))
+             _⊢_.·
+             (_⊢_.`
+              (_∋_.S
+               (_∋_.S _∋_.Z))))))
+          _⊢_.·
+          (_⊢_.ƛ
+           (_⊢_.ƛ
+            (_⊢_.` _∋_.Z)))
+          _⊢_.·
+          ((_⊢_.ƛ
+            (_⊢_.ƛ
+             (_⊢_.ƛ
+              (_⊢_.`
+               (_∋_.S _∋_.Z))
+              _⊢_.·
+              (_⊢_.`
+               (_∋_.S
+                (_∋_.S _∋_.Z))))))
+           _⊢_.·
+           ((_⊢_.ƛ
+             (_⊢_.ƛ
+              (_⊢_.ƛ
+               (_⊢_.`
+                (_∋_.S _∋_.Z))
+               _⊢_.·
+               (_⊢_.`
+                (_∋_.S
+                 (_∋_.S _∋_.Z))))))
+            _⊢_.·
+            (_⊢_.ƛ
+             (_⊢_.ƛ
+              (_⊢_.` _∋_.Z)))))))))
+      _⊢_.·
+      (_⊢_.ƛ
+       (_⊢_.ƛ
+        (_⊢_.` _∋_.Z))))
+     _⊢_.·
+     ((_⊢_.ƛ
+       (_⊢_.ƛ
+        (_⊢_.ƛ
+         (_⊢_.ƛ
+          (_⊢_.`
+           (_∋_.S _∋_.Z))
+          _⊢_.·
+          (_⊢_.ƛ
+           (_⊢_.ƛ
+            (_⊢_.ƛ
+             (_⊢_.`
+              (_∋_.S _∋_.Z))
+             _⊢_.·
+             ((_⊢_.` _∋_.Z)
+              _⊢_.·
+              (_⊢_.` _∋_.Z)))
+            _⊢_.·
+            (_⊢_.ƛ
+             (_⊢_.`
+              (_∋_.S _∋_.Z))
+             _⊢_.·
+             ((_⊢_.` _∋_.Z)
+              _⊢_.·
+              (_⊢_.` _∋_.Z))))
+           _⊢_.·
+           (_⊢_.ƛ
+            (_⊢_.ƛ
+             (_⊢_.ƛ
+              (_⊢_.`
+               (_∋_.S _∋_.Z))
+              _⊢_.·
+              (_⊢_.ƛ
+               (_⊢_.ƛ
+                (_⊢_.ƛ
+                 (_⊢_.ƛ
+                  (_⊢_.`
+                   (_∋_.S _∋_.Z))
+                  _⊢_.·
+                  (_⊢_.`
+                   (_∋_.S
+                    (_∋_.S _∋_.Z))))))
+               _⊢_.·
+               ((_⊢_.`
+                 (_∋_.S
+                  (_∋_.S
+                   (_∋_.S _∋_.Z))))
+                _⊢_.·
+                (_⊢_.` _∋_.Z)
+                _⊢_.·
+                (_⊢_.`
+                 (_∋_.S _∋_.Z))))
+              _⊢_.·
+              (_⊢_.` _∋_.Z))))
+           _⊢_.·
+           (_⊢_.` _∋_.Z)
+           _⊢_.·
+           ((_⊢_.`
+             (_∋_.S
+              (_∋_.S
+               (_∋_.S _∋_.Z))))
+            _⊢_.·
+            ((_⊢_.` _∋_.Z)
+             _⊢_.·
+             (_⊢_.`
+              (_∋_.S _∋_.Z)))))
+          _⊢_.·
+          (_⊢_.` _∋_.Z))))
+       _⊢_.·
+       ((_⊢_.` _∋_.Z)
+        _⊢_.·
+        (_⊢_.` _∋_.Z)))
+      _⊢_.·
+      (_⊢_.ƛ
+       (_⊢_.ƛ
+        (_⊢_.ƛ
+         (_⊢_.ƛ
+          (_⊢_.`
+           (_∋_.S _∋_.Z))
+          _⊢_.·
+          (_⊢_.ƛ
+           (_⊢_.ƛ
+            (_⊢_.ƛ
+             (_⊢_.`
+              (_∋_.S _∋_.Z))
+             _⊢_.·
+             ((_⊢_.` _∋_.Z)
+              _⊢_.·
+              (_⊢_.` _∋_.Z)))
+            _⊢_.·
+            (_⊢_.ƛ
+             (_⊢_.`
+              (_∋_.S _∋_.Z))
+             _⊢_.·
+             ((_⊢_.` _∋_.Z)
+              _⊢_.·
+              (_⊢_.` _∋_.Z))))
+           _⊢_.·
+           (_⊢_.ƛ
+            (_⊢_.ƛ
+             (_⊢_.ƛ
+              (_⊢_.`
+               (_∋_.S _∋_.Z))
+              _⊢_.·
+              (_⊢_.ƛ
+               (_⊢_.ƛ
+                (_⊢_.ƛ
+                 (_⊢_.ƛ
+                  (_⊢_.`
+                   (_∋_.S _∋_.Z))
+                  _⊢_.·
+                  (_⊢_.`
+                   (_∋_.S
+                    (_∋_.S _∋_.Z))))))
+               _⊢_.·
+               ((_⊢_.`
+                 (_∋_.S
+                  (_∋_.S
+                   (_∋_.S _∋_.Z))))
+                _⊢_.·
+                (_⊢_.` _∋_.Z)
+                _⊢_.·
+                (_⊢_.`
+                 (_∋_.S _∋_.Z))))
+              _⊢_.·
+              (_⊢_.` _∋_.Z))))
+           _⊢_.·
+           (_⊢_.` _∋_.Z)
+           _⊢_.·
+           ((_⊢_.`
+             (_∋_.S
+              (_∋_.S
+               (_∋_.S _∋_.Z))))
+            _⊢_.·
+            ((_⊢_.` _∋_.Z)
+             _⊢_.·
+             (_⊢_.`
+              (_∋_.S _∋_.Z)))))
+          _⊢_.·
+          (_⊢_.` _∋_.Z))))
+       _⊢_.·
+       ((_⊢_.` _∋_.Z)
+        _⊢_.·
+        (_⊢_.` _∋_.Z)))
+      _⊢_.·
+      ((_⊢_.ƛ
+        (_⊢_.ƛ
+         (_⊢_.ƛ
+          (_⊢_.`
+           (_∋_.S _∋_.Z))
+          _⊢_.·
+          (_⊢_.`
+           (_∋_.S
+            (_∋_.S _∋_.Z))))))
+       _⊢_.·
+       (_⊢_.ƛ
+        (_⊢_.ƛ
+         (_⊢_.` _∋_.Z)))
+       _⊢_.·
+       ((_⊢_.ƛ
+         (_⊢_.ƛ
+          (_⊢_.ƛ
+           (_⊢_.`
+            (_∋_.S _∋_.Z))
+           _⊢_.·
+           (_⊢_.`
+            (_∋_.S
+             (_∋_.S _∋_.Z))))))
+        _⊢_.·
+        ((_⊢_.ƛ
+          (_⊢_.ƛ
+           (_⊢_.ƛ
+            (_⊢_.`
+             (_∋_.S _∋_.Z))
+            _⊢_.·
+            (_⊢_.`
+             (_∋_.S
+              (_∋_.S _∋_.Z))))))
+         _⊢_.·
+         (_⊢_.ƛ
+          (_⊢_.ƛ
+           (_⊢_.` _∋_.Z)))))))
+     _—↠_.—→⟨ _—→_.β ⟩
+     (_⊢_.ƛ
+      (_⊢_.ƛ
+       (_⊢_.ƛ
+        (_⊢_.ƛ
+         (_⊢_.`
+          (_∋_.S _∋_.Z))
+         _⊢_.·
+         (_⊢_.`
+          (_∋_.S
+           (_∋_.S _∋_.Z))))))
+      _⊢_.·
+      ((_⊢_.ƛ
+        (_⊢_.ƛ
+         (_⊢_.ƛ
+          (_⊢_.ƛ
+           (_⊢_.`
+            (_∋_.S _∋_.Z))
+           _⊢_.·
+           (_⊢_.ƛ
+            (_⊢_.ƛ
+             (_⊢_.ƛ
+              (_⊢_.ƛ
+               (_⊢_.`
+                (_∋_.S _∋_.Z))
+               _⊢_.·
+               (_⊢_.`
+                (_∋_.S
+                 (_∋_.S _∋_.Z))))))
+            _⊢_.·
+            ((_⊢_.`
+              (_∋_.S
+               (_∋_.S
+                (_∋_.S _∋_.Z))))
+             _⊢_.·
+             (_⊢_.` _∋_.Z)
+             _⊢_.·
+             (_⊢_.`
+              (_∋_.S _∋_.Z))))
+           _⊢_.·
+           (_⊢_.` _∋_.Z))))
+        _⊢_.·
+        ((_⊢_.` _∋_.Z)
+         _⊢_.·
+         (_⊢_.` _∋_.Z)))
+       _⊢_.·
+       (_⊢_.ƛ
+        (_⊢_.ƛ
+         (_⊢_.ƛ
+          (_⊢_.ƛ
+           (_⊢_.`
+            (_∋_.S _∋_.Z))
+           _⊢_.·
+           (_⊢_.ƛ
+            (_⊢_.ƛ
+             (_⊢_.ƛ
+              (_⊢_.ƛ
+               (_⊢_.`
+                (_∋_.S _∋_.Z))
+               _⊢_.·
+               (_⊢_.`
+                (_∋_.S
+                 (_∋_.S _∋_.Z))))))
+            _⊢_.·
+            ((_⊢_.`
+              (_∋_.S
+               (_∋_.S
+                (_∋_.S _∋_.Z))))
+             _⊢_.·
+             (_⊢_.` _∋_.Z)
+             _⊢_.·
+             (_⊢_.`
+              (_∋_.S _∋_.Z))))
+           _⊢_.·
+           (_⊢_.` _∋_.Z))))
+        _⊢_.·
+        ((_⊢_.` _∋_.Z)
+         _⊢_.·
+         (_⊢_.` _∋_.Z)))
+       _⊢_.·
+       (_⊢_.` _∋_.Z)
+       _⊢_.·
+       ((_⊢_.ƛ
+         (_⊢_.ƛ
+          (_⊢_.ƛ
+           (_⊢_.ƛ
+            (_⊢_.`
+             (_∋_.S _∋_.Z))
+            _⊢_.·
+            (_⊢_.ƛ
+             (_⊢_.ƛ
+              (_⊢_.ƛ
+               (_⊢_.`
+                (_∋_.S _∋_.Z))
+               _⊢_.·
+               ((_⊢_.` _∋_.Z)
+                _⊢_.·
+                (_⊢_.` _∋_.Z)))
+              _⊢_.·
+              (_⊢_.ƛ
+               (_⊢_.`
+                (_∋_.S _∋_.Z))
+               _⊢_.·
+               ((_⊢_.` _∋_.Z)
+                _⊢_.·
+                (_⊢_.` _∋_.Z))))
+             _⊢_.·
+             (_⊢_.ƛ
+              (_⊢_.ƛ
+               (_⊢_.ƛ
+                (_⊢_.`
+                 (_∋_.S _∋_.Z))
+                _⊢_.·
+                (_⊢_.ƛ
+                 (_⊢_.ƛ
+                  (_⊢_.ƛ
+                   (_⊢_.ƛ
+                    (_⊢_.`
+                     (_∋_.S _∋_.Z))
+                    _⊢_.·
+                    (_⊢_.`
+                     (_∋_.S
+                      (_∋_.S _∋_.Z))))))
+                 _⊢_.·
+                 ((_⊢_.`
+                   (_∋_.S
+                    (_∋_.S
+                     (_∋_.S _∋_.Z))))
+                  _⊢_.·
+                  (_⊢_.` _∋_.Z)
+                  _⊢_.·
+                  (_⊢_.`
+                   (_∋_.S _∋_.Z))))
+                _⊢_.·
+                (_⊢_.` _∋_.Z))))
+             _⊢_.·
+             (_⊢_.` _∋_.Z)
+             _⊢_.·
+             ((_⊢_.`
+               (_∋_.S
+                (_∋_.S
+                 (_∋_.S _∋_.Z))))
+              _⊢_.·
+              ((_⊢_.` _∋_.Z)
+               _⊢_.·
+               (_⊢_.`
+                (_∋_.S _∋_.Z)))))
+            _⊢_.·
+            (_⊢_.` _∋_.Z))))
+         _⊢_.·
+         ((_⊢_.` _∋_.Z)
+          _⊢_.·
+          (_⊢_.` _∋_.Z)))
+        _⊢_.·
+        (_⊢_.ƛ
+         (_⊢_.ƛ
+          (_⊢_.ƛ
+           (_⊢_.ƛ
+            (_⊢_.`
+             (_∋_.S _∋_.Z))
+            _⊢_.·
+            (_⊢_.ƛ
+             (_⊢_.ƛ
+              (_⊢_.ƛ
+               (_⊢_.`
+                (_∋_.S _∋_.Z))
+               _⊢_.·
+               ((_⊢_.` _∋_.Z)
+                _⊢_.·
+                (_⊢_.` _∋_.Z)))
+              _⊢_.·
+              (_⊢_.ƛ
+               (_⊢_.`
+                (_∋_.S _∋_.Z))
+               _⊢_.·
+               ((_⊢_.` _∋_.Z)
+                _⊢_.·
+                (_⊢_.` _∋_.Z))))
+             _⊢_.·
+             (_⊢_.ƛ
+              (_⊢_.ƛ
+               (_⊢_.ƛ
+                (_⊢_.`
+                 (_∋_.S _∋_.Z))
+                _⊢_.·
+                (_⊢_.ƛ
+                 (_⊢_.ƛ
+                  (_⊢_.ƛ
+                   (_⊢_.ƛ
+                    (_⊢_.`
+                     (_∋_.S _∋_.Z))
+                    _⊢_.·
+                    (_⊢_.`
+                     (_∋_.S
+                      (_∋_.S _∋_.Z))))))
+                 _⊢_.·
+                 ((_⊢_.`
+                   (_∋_.S
+                    (_∋_.S
+                     (_∋_.S _∋_.Z))))
+                  _⊢_.·
+                  (_⊢_.` _∋_.Z)
+                  _⊢_.·
+                  (_⊢_.`
+                   (_∋_.S _∋_.Z))))
+                _⊢_.·
+                (_⊢_.` _∋_.Z))))
+             _⊢_.·
+             (_⊢_.` _∋_.Z)
+             _⊢_.·
+             ((_⊢_.`
+               (_∋_.S
+                (_∋_.S
+                 (_∋_.S _∋_.Z))))
+              _⊢_.·
+              ((_⊢_.` _∋_.Z)
+               _⊢_.·
+               (_⊢_.`
+                (_∋_.S _∋_.Z)))))
+            _⊢_.·
+            (_⊢_.` _∋_.Z))))
+         _⊢_.·
+         ((_⊢_.` _∋_.Z)
+          _⊢_.·
+          (_⊢_.` _∋_.Z)))
+        _⊢_.·
+        ((_⊢_.ƛ
+          (_⊢_.ƛ
+           (_⊢_.ƛ
+            (_⊢_.`
+             (_∋_.S _∋_.Z))
+            _⊢_.·
+            (_⊢_.`
+             (_∋_.S
+              (_∋_.S _∋_.Z))))))
+         _⊢_.·
+         (_⊢_.ƛ
+          (_⊢_.ƛ
+           (_⊢_.` _∋_.Z)))
+         _⊢_.·
+         ((_⊢_.ƛ
+           (_⊢_.ƛ
+            (_⊢_.ƛ
+             (_⊢_.`
+              (_∋_.S _∋_.Z))
+             _⊢_.·
+             (_⊢_.`
+              (_∋_.S
+               (_∋_.S _∋_.Z))))))
+          _⊢_.·
+          ((_⊢_.ƛ
+            (_⊢_.ƛ
+             (_⊢_.ƛ
+              (_⊢_.`
+               (_∋_.S _∋_.Z))
+              _⊢_.·
+              (_⊢_.`
+               (_∋_.S
+                (_∋_.S _∋_.Z))))))
+           _⊢_.·
+           (_⊢_.ƛ
+            (_⊢_.ƛ
+             (_⊢_.` _∋_.Z)))))))))
+     _⊢_.·
+     (_⊢_.ƛ
+      (_⊢_.ƛ
+       (_⊢_.` _∋_.Z)))
+     _—↠_.—→⟨ _—→_.β ⟩
+     (_⊢_.ƛ
+      (_⊢_.ƛ
+       (_⊢_.ƛ
+        (_⊢_.`
+         (_∋_.S _∋_.Z))
+        _⊢_.·
+        (_⊢_.`
+         (_∋_.S
+          (_∋_.S _∋_.Z))))))
+     _⊢_.·
+     ((_⊢_.ƛ
+       (_⊢_.ƛ
+        (_⊢_.ƛ
+         (_⊢_.ƛ
+          (_⊢_.`
+           (_∋_.S _∋_.Z))
+          _⊢_.·
+          (_⊢_.ƛ
+           (_⊢_.ƛ
+            (_⊢_.ƛ
+             (_⊢_.ƛ
+              (_⊢_.`
+               (_∋_.S _∋_.Z))
+              _⊢_.·
+              (_⊢_.`
+               (_∋_.S
+                (_∋_.S _∋_.Z))))))
+           _⊢_.·
+           ((_⊢_.`
+             (_∋_.S
+              (_∋_.S
+               (_∋_.S _∋_.Z))))
+            _⊢_.·
+            (_⊢_.` _∋_.Z)
+            _⊢_.·
+            (_⊢_.`
+             (_∋_.S _∋_.Z))))
+          _⊢_.·
+          (_⊢_.` _∋_.Z))))
+       _⊢_.·
+       ((_⊢_.` _∋_.Z)
+        _⊢_.·
+        (_⊢_.` _∋_.Z)))
+      _⊢_.·
+      (_⊢_.ƛ
+       (_⊢_.ƛ
+        (_⊢_.ƛ
+         (_⊢_.ƛ
+          (_⊢_.`
+           (_∋_.S _∋_.Z))
+          _⊢_.·
+          (_⊢_.ƛ
+           (_⊢_.ƛ
+            (_⊢_.ƛ
+             (_⊢_.ƛ
+              (_⊢_.`
+               (_∋_.S _∋_.Z))
+              _⊢_.·
+              (_⊢_.`
+               (_∋_.S
+                (_∋_.S _∋_.Z))))))
+           _⊢_.·
+           ((_⊢_.`
+             (_∋_.S
+              (_∋_.S
+               (_∋_.S _∋_.Z))))
+            _⊢_.·
+            (_⊢_.` _∋_.Z)
+            _⊢_.·
+            (_⊢_.`
+             (_∋_.S _∋_.Z))))
+          _⊢_.·
+          (_⊢_.` _∋_.Z))))
+       _⊢_.·
+       ((_⊢_.` _∋_.Z)
+        _⊢_.·
+        (_⊢_.` _∋_.Z)))
+      _⊢_.·
+      (_⊢_.ƛ
+       (_⊢_.ƛ
+        (_⊢_.` _∋_.Z)))
+      _⊢_.·
+      ((_⊢_.ƛ
+        (_⊢_.ƛ
+         (_⊢_.ƛ
+          (_⊢_.ƛ
+           (_⊢_.`
+            (_∋_.S _∋_.Z))
+           _⊢_.·
+           (_⊢_.ƛ
+            (_⊢_.ƛ
+             (_⊢_.ƛ
+              (_⊢_.`
+               (_∋_.S _∋_.Z))
+              _⊢_.·
+              ((_⊢_.` _∋_.Z)
+               _⊢_.·
+               (_⊢_.` _∋_.Z)))
+             _⊢_.·
+             (_⊢_.ƛ
+              (_⊢_.`
+               (_∋_.S _∋_.Z))
+              _⊢_.·
+              ((_⊢_.` _∋_.Z)
+               _⊢_.·
+               (_⊢_.` _∋_.Z))))
+            _⊢_.·
+            (_⊢_.ƛ
+             (_⊢_.ƛ
+              (_⊢_.ƛ
+               (_⊢_.`
+                (_∋_.S _∋_.Z))
+               _⊢_.·
+               (_⊢_.ƛ
+                (_⊢_.ƛ
+                 (_⊢_.ƛ
+                  (_⊢_.ƛ
+                   (_⊢_.`
+                    (_∋_.S _∋_.Z))
+                   _⊢_.·
+                   (_⊢_.`
+                    (_∋_.S
+                     (_∋_.S _∋_.Z))))))
+                _⊢_.·
+                ((_⊢_.`
+                  (_∋_.S
+                   (_∋_.S
+                    (_∋_.S _∋_.Z))))
+                 _⊢_.·
+                 (_⊢_.` _∋_.Z)
+                 _⊢_.·
+                 (_⊢_.`
+                  (_∋_.S _∋_.Z))))
+               _⊢_.·
+               (_⊢_.` _∋_.Z))))
+            _⊢_.·
+            (_⊢_.` _∋_.Z)
+            _⊢_.·
+            ((_⊢_.`
+              (_∋_.S
+               (_∋_.S
+                (_∋_.S _∋_.Z))))
+             _⊢_.·
+             ((_⊢_.` _∋_.Z)
+              _⊢_.·
+              (_⊢_.`
+               (_∋_.S _∋_.Z)))))
+           _⊢_.·
+           (_⊢_.` _∋_.Z))))
+        _⊢_.·
+        ((_⊢_.` _∋_.Z)
+         _⊢_.·
+         (_⊢_.` _∋_.Z)))
+       _⊢_.·
+       (_⊢_.ƛ
+        (_⊢_.ƛ
+         (_⊢_.ƛ
+          (_⊢_.ƛ
+           (_⊢_.`
+            (_∋_.S _∋_.Z))
+           _⊢_.·
+           (_⊢_.ƛ
+            (_⊢_.ƛ
+             (_⊢_.ƛ
+              (_⊢_.`
+               (_∋_.S _∋_.Z))
+              _⊢_.·
+              ((_⊢_.` _∋_.Z)
+               _⊢_.·
+               (_⊢_.` _∋_.Z)))
+             _⊢_.·
+             (_⊢_.ƛ
+              (_⊢_.`
+               (_∋_.S _∋_.Z))
+              _⊢_.·
+              ((_⊢_.` _∋_.Z)
+               _⊢_.·
+               (_⊢_.` _∋_.Z))))
+            _⊢_.·
+            (_⊢_.ƛ
+             (_⊢_.ƛ
+              (_⊢_.ƛ
+               (_⊢_.`
+                (_∋_.S _∋_.Z))
+               _⊢_.·
+               (_⊢_.ƛ
+                (_⊢_.ƛ
+                 (_⊢_.ƛ
+                  (_⊢_.ƛ
+                   (_⊢_.`
+                    (_∋_.S _∋_.Z))
+                   _⊢_.·
+                   (_⊢_.`
+                    (_∋_.S
+                     (_∋_.S _∋_.Z))))))
+                _⊢_.·
+                ((_⊢_.`
+                  (_∋_.S
+                   (_∋_.S
+                    (_∋_.S _∋_.Z))))
+                 _⊢_.·
+                 (_⊢_.` _∋_.Z)
+                 _⊢_.·
+                 (_⊢_.`
+                  (_∋_.S _∋_.Z))))
+               _⊢_.·
+               (_⊢_.` _∋_.Z))))
+            _⊢_.·
+            (_⊢_.` _∋_.Z)
+            _⊢_.·
+            ((_⊢_.`
+              (_∋_.S
+               (_∋_.S
+                (_∋_.S _∋_.Z))))
+             _⊢_.·
+             ((_⊢_.` _∋_.Z)
+              _⊢_.·
+              (_⊢_.`
+               (_∋_.S _∋_.Z)))))
+           _⊢_.·
+           (_⊢_.` _∋_.Z))))
+        _⊢_.·
+        ((_⊢_.` _∋_.Z)
+         _⊢_.·
+         (_⊢_.` _∋_.Z)))
+       _⊢_.·
+       ((_⊢_.ƛ
+         (_⊢_.ƛ
+          (_⊢_.ƛ
+           (_⊢_.`
+            (_∋_.S _∋_.Z))
+           _⊢_.·
+           (_⊢_.`
+            (_∋_.S
+             (_∋_.S _∋_.Z))))))
+        _⊢_.·
+        (_⊢_.ƛ
+         (_⊢_.ƛ
+          (_⊢_.` _∋_.Z)))
+        _⊢_.·
+        ((_⊢_.ƛ
+          (_⊢_.ƛ
+           (_⊢_.ƛ
+            (_⊢_.`
+             (_∋_.S _∋_.Z))
+            _⊢_.·
+            (_⊢_.`
+             (_∋_.S
+              (_∋_.S _∋_.Z))))))
+         _⊢_.·
+         ((_⊢_.ƛ
+           (_⊢_.ƛ
+            (_⊢_.ƛ
+             (_⊢_.`
+              (_∋_.S _∋_.Z))
+             _⊢_.·
+             (_⊢_.`
+              (_∋_.S
+               (_∋_.S _∋_.Z))))))
+          _⊢_.·
+          (_⊢_.ƛ
+           (_⊢_.ƛ
+            (_⊢_.` _∋_.Z))))))))
+     _—↠_.—→⟨ _—→_.β ⟩
+     _⊢_.ƛ
+     (_⊢_.ƛ
+      (_⊢_.`
+       (_∋_.S _∋_.Z))
+      _⊢_.·
+      ((_⊢_.ƛ
+        (_⊢_.ƛ
+         (_⊢_.ƛ
+          (_⊢_.ƛ
+           (_⊢_.`
+            (_∋_.S _∋_.Z))
+           _⊢_.·
+           (_⊢_.ƛ
+            (_⊢_.ƛ
+             (_⊢_.ƛ
+              (_⊢_.ƛ
+               (_⊢_.`
+                (_∋_.S _∋_.Z))
+               _⊢_.·
+               (_⊢_.`
+                (_∋_.S
+                 (_∋_.S _∋_.Z))))))
+            _⊢_.·
+            ((_⊢_.`
+              (_∋_.S
+               (_∋_.S
+                (_∋_.S _∋_.Z))))
+             _⊢_.·
+             (_⊢_.` _∋_.Z)
+             _⊢_.·
+             (_⊢_.`
+              (_∋_.S _∋_.Z))))
+           _⊢_.·
+           (_⊢_.` _∋_.Z))))
+        _⊢_.·
+        ((_⊢_.` _∋_.Z)
+         _⊢_.·
+         (_⊢_.` _∋_.Z)))
+       _⊢_.·
+       (_⊢_.ƛ
+        (_⊢_.ƛ
+         (_⊢_.ƛ
+          (_⊢_.ƛ
+           (_⊢_.`
+            (_∋_.S _∋_.Z))
+           _⊢_.·
+           (_⊢_.ƛ
+            (_⊢_.ƛ
+             (_⊢_.ƛ
+              (_⊢_.ƛ
+               (_⊢_.`
+                (_∋_.S _∋_.Z))
+               _⊢_.·
+               (_⊢_.`
+                (_∋_.S
+                 (_∋_.S _∋_.Z))))))
+            _⊢_.·
+            ((_⊢_.`
+              (_∋_.S
+               (_∋_.S
+                (_∋_.S _∋_.Z))))
+             _⊢_.·
+             (_⊢_.` _∋_.Z)
+             _⊢_.·
+             (_⊢_.`
+              (_∋_.S _∋_.Z))))
+           _⊢_.·
+           (_⊢_.` _∋_.Z))))
+        _⊢_.·
+        ((_⊢_.` _∋_.Z)
+         _⊢_.·
+         (_⊢_.` _∋_.Z)))
+       _⊢_.·
+       (_⊢_.ƛ
+        (_⊢_.ƛ
+         (_⊢_.` _∋_.Z)))
+       _⊢_.·
+       ((_⊢_.ƛ
+         (_⊢_.ƛ
+          (_⊢_.ƛ
+           (_⊢_.ƛ
+            (_⊢_.`
+             (_∋_.S _∋_.Z))
+            _⊢_.·
+            (_⊢_.ƛ
+             (_⊢_.ƛ
+              (_⊢_.ƛ
+               (_⊢_.`
+                (_∋_.S _∋_.Z))
+               _⊢_.·
+               ((_⊢_.` _∋_.Z)
+                _⊢_.·
+                (_⊢_.` _∋_.Z)))
+              _⊢_.·
+              (_⊢_.ƛ
+               (_⊢_.`
+                (_∋_.S _∋_.Z))
+               _⊢_.·
+               ((_⊢_.` _∋_.Z)
+                _⊢_.·
+                (_⊢_.` _∋_.Z))))
+             _⊢_.·
+             (_⊢_.ƛ
+              (_⊢_.ƛ
+               (_⊢_.ƛ
+                (_⊢_.`
+                 (_∋_.S _∋_.Z))
+                _⊢_.·
+                (_⊢_.ƛ
+                 (_⊢_.ƛ
+                  (_⊢_.ƛ
+                   (_⊢_.ƛ
+                    (_⊢_.`
+                     (_∋_.S _∋_.Z))
+                    _⊢_.·
+                    (_⊢_.`
+                     (_∋_.S
+                      (_∋_.S _∋_.Z))))))
+                 _⊢_.·
+                 ((_⊢_.`
+                   (_∋_.S
+                    (_∋_.S
+                     (_∋_.S _∋_.Z))))
+                  _⊢_.·
+                  (_⊢_.` _∋_.Z)
+                  _⊢_.·
+                  (_⊢_.`
+                   (_∋_.S _∋_.Z))))
+                _⊢_.·
+                (_⊢_.` _∋_.Z))))
+             _⊢_.·
+             (_⊢_.` _∋_.Z)
+             _⊢_.·
+             ((_⊢_.`
+               (_∋_.S
+                (_∋_.S
+                 (_∋_.S _∋_.Z))))
+              _⊢_.·
+              ((_⊢_.` _∋_.Z)
+               _⊢_.·
+               (_⊢_.`
+                (_∋_.S _∋_.Z)))))
+            _⊢_.·
+            (_⊢_.` _∋_.Z))))
+         _⊢_.·
+         ((_⊢_.` _∋_.Z)
+          _⊢_.·
+          (_⊢_.` _∋_.Z)))
+        _⊢_.·
+        (_⊢_.ƛ
+         (_⊢_.ƛ
+          (_⊢_.ƛ
+           (_⊢_.ƛ
+            (_⊢_.`
+             (_∋_.S _∋_.Z))
+            _⊢_.·
+            (_⊢_.ƛ
+             (_⊢_.ƛ
+              (_⊢_.ƛ
+               (_⊢_.`
+                (_∋_.S _∋_.Z))
+               _⊢_.·
+               ((_⊢_.` _∋_.Z)
+                _⊢_.·
+                (_⊢_.` _∋_.Z)))
+              _⊢_.·
+              (_⊢_.ƛ
+               (_⊢_.`
+                (_∋_.S _∋_.Z))
+               _⊢_.·
+               ((_⊢_.` _∋_.Z)
+                _⊢_.·
+                (_⊢_.` _∋_.Z))))
+             _⊢_.·
+             (_⊢_.ƛ
+              (_⊢_.ƛ
+               (_⊢_.ƛ
+                (_⊢_.`
+                 (_∋_.S _∋_.Z))
+                _⊢_.·
+                (_⊢_.ƛ
+                 (_⊢_.ƛ
+                  (_⊢_.ƛ
+                   (_⊢_.ƛ
+                    (_⊢_.`
+                     (_∋_.S _∋_.Z))
+                    _⊢_.·
+                    (_⊢_.`
+                     (_∋_.S
+                      (_∋_.S _∋_.Z))))))
+                 _⊢_.·
+                 ((_⊢_.`
+                   (_∋_.S
+                    (_∋_.S
+                     (_∋_.S _∋_.Z))))
+                  _⊢_.·
+                  (_⊢_.` _∋_.Z)
+                  _⊢_.·
+                  (_⊢_.`
+                   (_∋_.S _∋_.Z))))
+                _⊢_.·
+                (_⊢_.` _∋_.Z))))
+             _⊢_.·
+             (_⊢_.` _∋_.Z)
+             _⊢_.·
+             ((_⊢_.`
+               (_∋_.S
+                (_∋_.S
+                 (_∋_.S _∋_.Z))))
+              _⊢_.·
+              ((_⊢_.` _∋_.Z)
+               _⊢_.·
+               (_⊢_.`
+                (_∋_.S _∋_.Z)))))
+            _⊢_.·
+            (_⊢_.` _∋_.Z))))
+         _⊢_.·
+         ((_⊢_.` _∋_.Z)
+          _⊢_.·
+          (_⊢_.` _∋_.Z)))
+        _⊢_.·
+        ((_⊢_.ƛ
+          (_⊢_.ƛ
+           (_⊢_.ƛ
+            (_⊢_.`
+             (_∋_.S _∋_.Z))
+            _⊢_.·
+            (_⊢_.`
+             (_∋_.S
+              (_∋_.S _∋_.Z))))))
+         _⊢_.·
+         (_⊢_.ƛ
+          (_⊢_.ƛ
+           (_⊢_.` _∋_.Z)))
+         _⊢_.·
+         ((_⊢_.ƛ
+           (_⊢_.ƛ
+            (_⊢_.ƛ
+             (_⊢_.`
+              (_∋_.S _∋_.Z))
+             _⊢_.·
+             (_⊢_.`
+              (_∋_.S
+               (_∋_.S _∋_.Z))))))
+          _⊢_.·
+          ((_⊢_.ƛ
+            (_⊢_.ƛ
+             (_⊢_.ƛ
+              (_⊢_.`
+               (_∋_.S _∋_.Z))
+              _⊢_.·
+              (_⊢_.`
+               (_∋_.S
+                (_∋_.S _∋_.Z))))))
+           _⊢_.·
+           (_⊢_.ƛ
+            (_⊢_.ƛ
+             (_⊢_.` _∋_.Z)))))))))
+     _—↠_.—→⟨
+     _—→_.ζ
+     (_—→_.ζ
+      (_—→_.ξ₂
+       (_—→_.ξ₁
+        (_—→_.ξ₁ _—→_.β))))
      ⟩
-     plfa.part2.Untyped._⊢_.ƛ
-     (plfa.part2.Untyped._⊢_.ƛ
-      (plfa.part2.Untyped._⊢_.`
-       (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-      plfa.part2.Untyped._⊢_.·
-      ((plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.`
-           (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-          plfa.part2.Untyped._⊢_.·
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.`
-               (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.`
-               (plfa.part2.Untyped._∋_.S
-                (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-           plfa.part2.Untyped._⊢_.·
-           ((plfa.part2.Untyped._⊢_.`
-             (plfa.part2.Untyped._∋_.S
-              (plfa.part2.Untyped._∋_.S
-               (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.`
-             (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-          plfa.part2.Untyped._⊢_.·
-          (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-       plfa.part2.Untyped._⊢_.·
-       ((plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.`
-             (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.ƛ
-                (plfa.part2.Untyped._⊢_.`
-                 (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.`
-                 (plfa.part2.Untyped._∋_.S
-                  (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-             plfa.part2.Untyped._⊢_.·
-             ((plfa.part2.Untyped._⊢_.`
-               (plfa.part2.Untyped._∋_.S
-                (plfa.part2.Untyped._∋_.S
-                 (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.`
-               (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-         plfa.part2.Untyped._⊢_.·
-         ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-          plfa.part2.Untyped._⊢_.·
-          (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-        plfa.part2.Untyped._⊢_.·
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.`
-             (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.ƛ
-                (plfa.part2.Untyped._⊢_.`
-                 (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.`
-                 (plfa.part2.Untyped._∋_.S
-                  (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-             plfa.part2.Untyped._⊢_.·
-             ((plfa.part2.Untyped._⊢_.`
-               (plfa.part2.Untyped._∋_.S
-                (plfa.part2.Untyped._∋_.S
-                 (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.`
-               (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-         plfa.part2.Untyped._⊢_.·
-         ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-          plfa.part2.Untyped._⊢_.·
-          (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-       plfa.part2.Untyped._⊢_.·
-       (plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-       plfa.part2.Untyped._⊢_.·
-       ((plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.`
-             (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.`
-                (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-               plfa.part2.Untyped._⊢_.·
-               ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.`
-                (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-               plfa.part2.Untyped._⊢_.·
-               ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.ƛ
-                (plfa.part2.Untyped._⊢_.`
-                 (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.ƛ
-                 (plfa.part2.Untyped._⊢_.ƛ
-                  (plfa.part2.Untyped._⊢_.ƛ
-                   (plfa.part2.Untyped._⊢_.ƛ
-                    (plfa.part2.Untyped._⊢_.`
-                     (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-                    plfa.part2.Untyped._⊢_.·
-                    (plfa.part2.Untyped._⊢_.`
-                     (plfa.part2.Untyped._∋_.S
-                      (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-                 plfa.part2.Untyped._⊢_.·
-                 ((plfa.part2.Untyped._⊢_.`
-                   (plfa.part2.Untyped._∋_.S
-                    (plfa.part2.Untyped._∋_.S
-                     (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-                  plfa.part2.Untyped._⊢_.·
-                  (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                  plfa.part2.Untyped._⊢_.·
-                  (plfa.part2.Untyped._⊢_.`
-                   (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-             plfa.part2.Untyped._⊢_.·
-             ((plfa.part2.Untyped._⊢_.`
-               (plfa.part2.Untyped._∋_.S
-                (plfa.part2.Untyped._∋_.S
-                 (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-              plfa.part2.Untyped._⊢_.·
-              ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-               plfa.part2.Untyped._⊢_.·
-               (plfa.part2.Untyped._⊢_.`
-                (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z)))))
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-         plfa.part2.Untyped._⊢_.·
-         ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-          plfa.part2.Untyped._⊢_.·
-          (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-        plfa.part2.Untyped._⊢_.·
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.`
-             (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.`
-                (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-               plfa.part2.Untyped._⊢_.·
-               ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.`
-                (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-               plfa.part2.Untyped._⊢_.·
-               ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.ƛ
-                (plfa.part2.Untyped._⊢_.`
-                 (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.ƛ
-                 (plfa.part2.Untyped._⊢_.ƛ
-                  (plfa.part2.Untyped._⊢_.ƛ
-                   (plfa.part2.Untyped._⊢_.ƛ
-                    (plfa.part2.Untyped._⊢_.`
-                     (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-                    plfa.part2.Untyped._⊢_.·
-                    (plfa.part2.Untyped._⊢_.`
-                     (plfa.part2.Untyped._∋_.S
-                      (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-                 plfa.part2.Untyped._⊢_.·
-                 ((plfa.part2.Untyped._⊢_.`
-                   (plfa.part2.Untyped._∋_.S
-                    (plfa.part2.Untyped._∋_.S
-                     (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-                  plfa.part2.Untyped._⊢_.·
-                  (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                  plfa.part2.Untyped._⊢_.·
-                  (plfa.part2.Untyped._⊢_.`
-                   (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-             plfa.part2.Untyped._⊢_.·
-             ((plfa.part2.Untyped._⊢_.`
-               (plfa.part2.Untyped._∋_.S
-                (plfa.part2.Untyped._∋_.S
-                 (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-              plfa.part2.Untyped._⊢_.·
-              ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-               plfa.part2.Untyped._⊢_.·
-               (plfa.part2.Untyped._⊢_.`
-                (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z)))))
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-         plfa.part2.Untyped._⊢_.·
-         ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-          plfa.part2.Untyped._⊢_.·
-          (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-        plfa.part2.Untyped._⊢_.·
-        ((plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.`
-             (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.`
-             (plfa.part2.Untyped._∋_.S
-              (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-         plfa.part2.Untyped._⊢_.·
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-         plfa.part2.Untyped._⊢_.·
-         ((plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S
-               (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-          plfa.part2.Untyped._⊢_.·
-          ((plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.`
-               (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.`
-               (plfa.part2.Untyped._∋_.S
-                (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-           plfa.part2.Untyped._⊢_.·
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))))))))
-     plfa.part2.Untyped._—↠_.—→⟨
-     plfa.part2.Untyped._—→_.ζ
-     (plfa.part2.Untyped._—→_.ζ
-      (plfa.part2.Untyped._—→_.ξ₂
-       (plfa.part2.Untyped._—→_.ξ₁
-        (plfa.part2.Untyped._—→_.ξ₁ plfa.part2.Untyped._—→_.β))))
+     _⊢_.ƛ
+     (_⊢_.ƛ
+      (_⊢_.`
+       (_∋_.S _∋_.Z))
+      _⊢_.·
+      ((_⊢_.ƛ
+        (_⊢_.ƛ
+         (_⊢_.ƛ
+          (_⊢_.`
+           (_∋_.S _∋_.Z))
+          _⊢_.·
+          (_⊢_.ƛ
+           (_⊢_.ƛ
+            (_⊢_.ƛ
+             (_⊢_.ƛ
+              (_⊢_.`
+               (_∋_.S _∋_.Z))
+              _⊢_.·
+              (_⊢_.`
+               (_∋_.S
+                (_∋_.S _∋_.Z))))))
+           _⊢_.·
+           ((_⊢_.`
+             (_∋_.S
+              (_∋_.S
+               (_∋_.S _∋_.Z))))
+            _⊢_.·
+            (_⊢_.` _∋_.Z)
+            _⊢_.·
+            (_⊢_.`
+             (_∋_.S _∋_.Z))))
+          _⊢_.·
+          (_⊢_.` _∋_.Z))))
+       _⊢_.·
+       ((_⊢_.ƛ
+         (_⊢_.ƛ
+          (_⊢_.ƛ
+           (_⊢_.ƛ
+            (_⊢_.`
+             (_∋_.S _∋_.Z))
+            _⊢_.·
+            (_⊢_.ƛ
+             (_⊢_.ƛ
+              (_⊢_.ƛ
+               (_⊢_.ƛ
+                (_⊢_.`
+                 (_∋_.S _∋_.Z))
+                _⊢_.·
+                (_⊢_.`
+                 (_∋_.S
+                  (_∋_.S _∋_.Z))))))
+             _⊢_.·
+             ((_⊢_.`
+               (_∋_.S
+                (_∋_.S
+                 (_∋_.S _∋_.Z))))
+              _⊢_.·
+              (_⊢_.` _∋_.Z)
+              _⊢_.·
+              (_⊢_.`
+               (_∋_.S _∋_.Z))))
+            _⊢_.·
+            (_⊢_.` _∋_.Z))))
+         _⊢_.·
+         ((_⊢_.` _∋_.Z)
+          _⊢_.·
+          (_⊢_.` _∋_.Z)))
+        _⊢_.·
+        (_⊢_.ƛ
+         (_⊢_.ƛ
+          (_⊢_.ƛ
+           (_⊢_.ƛ
+            (_⊢_.`
+             (_∋_.S _∋_.Z))
+            _⊢_.·
+            (_⊢_.ƛ
+             (_⊢_.ƛ
+              (_⊢_.ƛ
+               (_⊢_.ƛ
+                (_⊢_.`
+                 (_∋_.S _∋_.Z))
+                _⊢_.·
+                (_⊢_.`
+                 (_∋_.S
+                  (_∋_.S _∋_.Z))))))
+             _⊢_.·
+             ((_⊢_.`
+               (_∋_.S
+                (_∋_.S
+                 (_∋_.S _∋_.Z))))
+              _⊢_.·
+              (_⊢_.` _∋_.Z)
+              _⊢_.·
+              (_⊢_.`
+               (_∋_.S _∋_.Z))))
+            _⊢_.·
+            (_⊢_.` _∋_.Z))))
+         _⊢_.·
+         ((_⊢_.` _∋_.Z)
+          _⊢_.·
+          (_⊢_.` _∋_.Z))))
+       _⊢_.·
+       (_⊢_.ƛ
+        (_⊢_.ƛ
+         (_⊢_.` _∋_.Z)))
+       _⊢_.·
+       ((_⊢_.ƛ
+         (_⊢_.ƛ
+          (_⊢_.ƛ
+           (_⊢_.ƛ
+            (_⊢_.`
+             (_∋_.S _∋_.Z))
+            _⊢_.·
+            (_⊢_.ƛ
+             (_⊢_.ƛ
+              (_⊢_.ƛ
+               (_⊢_.`
+                (_∋_.S _∋_.Z))
+               _⊢_.·
+               ((_⊢_.` _∋_.Z)
+                _⊢_.·
+                (_⊢_.` _∋_.Z)))
+              _⊢_.·
+              (_⊢_.ƛ
+               (_⊢_.`
+                (_∋_.S _∋_.Z))
+               _⊢_.·
+               ((_⊢_.` _∋_.Z)
+                _⊢_.·
+                (_⊢_.` _∋_.Z))))
+             _⊢_.·
+             (_⊢_.ƛ
+              (_⊢_.ƛ
+               (_⊢_.ƛ
+                (_⊢_.`
+                 (_∋_.S _∋_.Z))
+                _⊢_.·
+                (_⊢_.ƛ
+                 (_⊢_.ƛ
+                  (_⊢_.ƛ
+                   (_⊢_.ƛ
+                    (_⊢_.`
+                     (_∋_.S _∋_.Z))
+                    _⊢_.·
+                    (_⊢_.`
+                     (_∋_.S
+                      (_∋_.S _∋_.Z))))))
+                 _⊢_.·
+                 ((_⊢_.`
+                   (_∋_.S
+                    (_∋_.S
+                     (_∋_.S _∋_.Z))))
+                  _⊢_.·
+                  (_⊢_.` _∋_.Z)
+                  _⊢_.·
+                  (_⊢_.`
+                   (_∋_.S _∋_.Z))))
+                _⊢_.·
+                (_⊢_.` _∋_.Z))))
+             _⊢_.·
+             (_⊢_.` _∋_.Z)
+             _⊢_.·
+             ((_⊢_.`
+               (_∋_.S
+                (_∋_.S
+                 (_∋_.S _∋_.Z))))
+              _⊢_.·
+              ((_⊢_.` _∋_.Z)
+               _⊢_.·
+               (_⊢_.`
+                (_∋_.S _∋_.Z)))))
+            _⊢_.·
+            (_⊢_.` _∋_.Z))))
+         _⊢_.·
+         ((_⊢_.` _∋_.Z)
+          _⊢_.·
+          (_⊢_.` _∋_.Z)))
+        _⊢_.·
+        (_⊢_.ƛ
+         (_⊢_.ƛ
+          (_⊢_.ƛ
+           (_⊢_.ƛ
+            (_⊢_.`
+             (_∋_.S _∋_.Z))
+            _⊢_.·
+            (_⊢_.ƛ
+             (_⊢_.ƛ
+              (_⊢_.ƛ
+               (_⊢_.`
+                (_∋_.S _∋_.Z))
+               _⊢_.·
+               ((_⊢_.` _∋_.Z)
+                _⊢_.·
+                (_⊢_.` _∋_.Z)))
+              _⊢_.·
+              (_⊢_.ƛ
+               (_⊢_.`
+                (_∋_.S _∋_.Z))
+               _⊢_.·
+               ((_⊢_.` _∋_.Z)
+                _⊢_.·
+                (_⊢_.` _∋_.Z))))
+             _⊢_.·
+             (_⊢_.ƛ
+              (_⊢_.ƛ
+               (_⊢_.ƛ
+                (_⊢_.`
+                 (_∋_.S _∋_.Z))
+                _⊢_.·
+                (_⊢_.ƛ
+                 (_⊢_.ƛ
+                  (_⊢_.ƛ
+                   (_⊢_.ƛ
+                    (_⊢_.`
+                     (_∋_.S _∋_.Z))
+                    _⊢_.·
+                    (_⊢_.`
+                     (_∋_.S
+                      (_∋_.S _∋_.Z))))))
+                 _⊢_.·
+                 ((_⊢_.`
+                   (_∋_.S
+                    (_∋_.S
+                     (_∋_.S _∋_.Z))))
+                  _⊢_.·
+                  (_⊢_.` _∋_.Z)
+                  _⊢_.·
+                  (_⊢_.`
+                   (_∋_.S _∋_.Z))))
+                _⊢_.·
+                (_⊢_.` _∋_.Z))))
+             _⊢_.·
+             (_⊢_.` _∋_.Z)
+             _⊢_.·
+             ((_⊢_.`
+               (_∋_.S
+                (_∋_.S
+                 (_∋_.S _∋_.Z))))
+              _⊢_.·
+              ((_⊢_.` _∋_.Z)
+               _⊢_.·
+               (_⊢_.`
+                (_∋_.S _∋_.Z)))))
+            _⊢_.·
+            (_⊢_.` _∋_.Z))))
+         _⊢_.·
+         ((_⊢_.` _∋_.Z)
+          _⊢_.·
+          (_⊢_.` _∋_.Z)))
+        _⊢_.·
+        ((_⊢_.ƛ
+          (_⊢_.ƛ
+           (_⊢_.ƛ
+            (_⊢_.`
+             (_∋_.S _∋_.Z))
+            _⊢_.·
+            (_⊢_.`
+             (_∋_.S
+              (_∋_.S _∋_.Z))))))
+         _⊢_.·
+         (_⊢_.ƛ
+          (_⊢_.ƛ
+           (_⊢_.` _∋_.Z)))
+         _⊢_.·
+         ((_⊢_.ƛ
+           (_⊢_.ƛ
+            (_⊢_.ƛ
+             (_⊢_.`
+              (_∋_.S _∋_.Z))
+             _⊢_.·
+             (_⊢_.`
+              (_∋_.S
+               (_∋_.S _∋_.Z))))))
+          _⊢_.·
+          ((_⊢_.ƛ
+            (_⊢_.ƛ
+             (_⊢_.ƛ
+              (_⊢_.`
+               (_∋_.S _∋_.Z))
+              _⊢_.·
+              (_⊢_.`
+               (_∋_.S
+                (_∋_.S _∋_.Z))))))
+           _⊢_.·
+           (_⊢_.ƛ
+            (_⊢_.ƛ
+             (_⊢_.` _∋_.Z)))))))))
+     _—↠_.—→⟨
+     _—→_.ζ
+     (_—→_.ζ
+      (_—→_.ξ₂
+       (_—→_.ξ₁
+        (_—→_.ξ₁ _—→_.β))))
      ⟩
-     plfa.part2.Untyped._⊢_.ƛ
-     (plfa.part2.Untyped._⊢_.ƛ
-      (plfa.part2.Untyped._⊢_.`
-       (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-      plfa.part2.Untyped._⊢_.·
-      ((plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.`
-          (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-         plfa.part2.Untyped._⊢_.·
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S
-               (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-          plfa.part2.Untyped._⊢_.·
-          ((plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.`
-                (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-               plfa.part2.Untyped._⊢_.·
-               (plfa.part2.Untyped._⊢_.ƛ
-                (plfa.part2.Untyped._⊢_.ƛ
-                 (plfa.part2.Untyped._⊢_.ƛ
-                  (plfa.part2.Untyped._⊢_.ƛ
-                   (plfa.part2.Untyped._⊢_.`
-                    (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-                   plfa.part2.Untyped._⊢_.·
-                   (plfa.part2.Untyped._⊢_.`
-                    (plfa.part2.Untyped._∋_.S
-                     (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-                plfa.part2.Untyped._⊢_.·
-                ((plfa.part2.Untyped._⊢_.`
-                  (plfa.part2.Untyped._∋_.S
-                   (plfa.part2.Untyped._∋_.S
-                    (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-                 plfa.part2.Untyped._⊢_.·
-                 (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                 plfa.part2.Untyped._⊢_.·
-                 (plfa.part2.Untyped._⊢_.`
-                  (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-               plfa.part2.Untyped._⊢_.·
-               (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-            plfa.part2.Untyped._⊢_.·
-            ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-           plfa.part2.Untyped._⊢_.·
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.`
-                (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-               plfa.part2.Untyped._⊢_.·
-               (plfa.part2.Untyped._⊢_.ƛ
-                (plfa.part2.Untyped._⊢_.ƛ
-                 (plfa.part2.Untyped._⊢_.ƛ
-                  (plfa.part2.Untyped._⊢_.ƛ
-                   (plfa.part2.Untyped._⊢_.`
-                    (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-                   plfa.part2.Untyped._⊢_.·
-                   (plfa.part2.Untyped._⊢_.`
-                    (plfa.part2.Untyped._∋_.S
-                     (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-                plfa.part2.Untyped._⊢_.·
-                ((plfa.part2.Untyped._⊢_.`
-                  (plfa.part2.Untyped._∋_.S
-                   (plfa.part2.Untyped._∋_.S
-                    (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-                 plfa.part2.Untyped._⊢_.·
-                 (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                 plfa.part2.Untyped._⊢_.·
-                 (plfa.part2.Untyped._⊢_.`
-                  (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-               plfa.part2.Untyped._⊢_.·
-               (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-            plfa.part2.Untyped._⊢_.·
-            ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-           plfa.part2.Untyped._⊢_.·
-           (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-           plfa.part2.Untyped._⊢_.·
-           (plfa.part2.Untyped._⊢_.`
-            (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-         plfa.part2.Untyped._⊢_.·
-         (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-       plfa.part2.Untyped._⊢_.·
-       (plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-       plfa.part2.Untyped._⊢_.·
-       ((plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.`
-             (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.`
-                (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-               plfa.part2.Untyped._⊢_.·
-               ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.`
-                (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-               plfa.part2.Untyped._⊢_.·
-               ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.ƛ
-                (plfa.part2.Untyped._⊢_.`
-                 (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.ƛ
-                 (plfa.part2.Untyped._⊢_.ƛ
-                  (plfa.part2.Untyped._⊢_.ƛ
-                   (plfa.part2.Untyped._⊢_.ƛ
-                    (plfa.part2.Untyped._⊢_.`
-                     (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-                    plfa.part2.Untyped._⊢_.·
-                    (plfa.part2.Untyped._⊢_.`
-                     (plfa.part2.Untyped._∋_.S
-                      (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-                 plfa.part2.Untyped._⊢_.·
-                 ((plfa.part2.Untyped._⊢_.`
-                   (plfa.part2.Untyped._∋_.S
-                    (plfa.part2.Untyped._∋_.S
-                     (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-                  plfa.part2.Untyped._⊢_.·
-                  (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                  plfa.part2.Untyped._⊢_.·
-                  (plfa.part2.Untyped._⊢_.`
-                   (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-             plfa.part2.Untyped._⊢_.·
-             ((plfa.part2.Untyped._⊢_.`
-               (plfa.part2.Untyped._∋_.S
-                (plfa.part2.Untyped._∋_.S
-                 (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-              plfa.part2.Untyped._⊢_.·
-              ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-               plfa.part2.Untyped._⊢_.·
-               (plfa.part2.Untyped._⊢_.`
-                (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z)))))
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-         plfa.part2.Untyped._⊢_.·
-         ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-          plfa.part2.Untyped._⊢_.·
-          (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-        plfa.part2.Untyped._⊢_.·
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.`
-             (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.`
-                (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-               plfa.part2.Untyped._⊢_.·
-               ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.`
-                (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-               plfa.part2.Untyped._⊢_.·
-               ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.ƛ
-                (plfa.part2.Untyped._⊢_.`
-                 (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.ƛ
-                 (plfa.part2.Untyped._⊢_.ƛ
-                  (plfa.part2.Untyped._⊢_.ƛ
-                   (plfa.part2.Untyped._⊢_.ƛ
-                    (plfa.part2.Untyped._⊢_.`
-                     (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-                    plfa.part2.Untyped._⊢_.·
-                    (plfa.part2.Untyped._⊢_.`
-                     (plfa.part2.Untyped._∋_.S
-                      (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-                 plfa.part2.Untyped._⊢_.·
-                 ((plfa.part2.Untyped._⊢_.`
-                   (plfa.part2.Untyped._∋_.S
-                    (plfa.part2.Untyped._∋_.S
-                     (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-                  plfa.part2.Untyped._⊢_.·
-                  (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                  plfa.part2.Untyped._⊢_.·
-                  (plfa.part2.Untyped._⊢_.`
-                   (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-             plfa.part2.Untyped._⊢_.·
-             ((plfa.part2.Untyped._⊢_.`
-               (plfa.part2.Untyped._∋_.S
-                (plfa.part2.Untyped._∋_.S
-                 (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-              plfa.part2.Untyped._⊢_.·
-              ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-               plfa.part2.Untyped._⊢_.·
-               (plfa.part2.Untyped._⊢_.`
-                (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z)))))
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-         plfa.part2.Untyped._⊢_.·
-         ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-          plfa.part2.Untyped._⊢_.·
-          (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-        plfa.part2.Untyped._⊢_.·
-        ((plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.`
-             (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.`
-             (plfa.part2.Untyped._∋_.S
-              (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-         plfa.part2.Untyped._⊢_.·
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-         plfa.part2.Untyped._⊢_.·
-         ((plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S
-               (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-          plfa.part2.Untyped._⊢_.·
-          ((plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.`
-               (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.`
-               (plfa.part2.Untyped._∋_.S
-                (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-           plfa.part2.Untyped._⊢_.·
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))))))))
-     plfa.part2.Untyped._—↠_.—→⟨
-     plfa.part2.Untyped._—→_.ζ
-     (plfa.part2.Untyped._—→_.ζ
-      (plfa.part2.Untyped._—→_.ξ₂
-       (plfa.part2.Untyped._—→_.ξ₁ plfa.part2.Untyped._—→_.β)))
+     _⊢_.ƛ
+     (_⊢_.ƛ
+      (_⊢_.`
+       (_∋_.S _∋_.Z))
+      _⊢_.·
+      ((_⊢_.ƛ
+        (_⊢_.ƛ
+         (_⊢_.`
+          (_∋_.S _∋_.Z))
+         _⊢_.·
+         (_⊢_.ƛ
+          (_⊢_.ƛ
+           (_⊢_.ƛ
+            (_⊢_.ƛ
+             (_⊢_.`
+              (_∋_.S _∋_.Z))
+             _⊢_.·
+             (_⊢_.`
+              (_∋_.S
+               (_∋_.S _∋_.Z))))))
+          _⊢_.·
+          ((_⊢_.ƛ
+            (_⊢_.ƛ
+             (_⊢_.ƛ
+              (_⊢_.ƛ
+               (_⊢_.`
+                (_∋_.S _∋_.Z))
+               _⊢_.·
+               (_⊢_.ƛ
+                (_⊢_.ƛ
+                 (_⊢_.ƛ
+                  (_⊢_.ƛ
+                   (_⊢_.`
+                    (_∋_.S _∋_.Z))
+                   _⊢_.·
+                   (_⊢_.`
+                    (_∋_.S
+                     (_∋_.S _∋_.Z))))))
+                _⊢_.·
+                ((_⊢_.`
+                  (_∋_.S
+                   (_∋_.S
+                    (_∋_.S _∋_.Z))))
+                 _⊢_.·
+                 (_⊢_.` _∋_.Z)
+                 _⊢_.·
+                 (_⊢_.`
+                  (_∋_.S _∋_.Z))))
+               _⊢_.·
+               (_⊢_.` _∋_.Z))))
+            _⊢_.·
+            ((_⊢_.` _∋_.Z)
+             _⊢_.·
+             (_⊢_.` _∋_.Z)))
+           _⊢_.·
+           (_⊢_.ƛ
+            (_⊢_.ƛ
+             (_⊢_.ƛ
+              (_⊢_.ƛ
+               (_⊢_.`
+                (_∋_.S _∋_.Z))
+               _⊢_.·
+               (_⊢_.ƛ
+                (_⊢_.ƛ
+                 (_⊢_.ƛ
+                  (_⊢_.ƛ
+                   (_⊢_.`
+                    (_∋_.S _∋_.Z))
+                   _⊢_.·
+                   (_⊢_.`
+                    (_∋_.S
+                     (_∋_.S _∋_.Z))))))
+                _⊢_.·
+                ((_⊢_.`
+                  (_∋_.S
+                   (_∋_.S
+                    (_∋_.S _∋_.Z))))
+                 _⊢_.·
+                 (_⊢_.` _∋_.Z)
+                 _⊢_.·
+                 (_⊢_.`
+                  (_∋_.S _∋_.Z))))
+               _⊢_.·
+               (_⊢_.` _∋_.Z))))
+            _⊢_.·
+            ((_⊢_.` _∋_.Z)
+             _⊢_.·
+             (_⊢_.` _∋_.Z)))
+           _⊢_.·
+           (_⊢_.` _∋_.Z)
+           _⊢_.·
+           (_⊢_.`
+            (_∋_.S _∋_.Z))))
+         _⊢_.·
+         (_⊢_.` _∋_.Z)))
+       _⊢_.·
+       (_⊢_.ƛ
+        (_⊢_.ƛ
+         (_⊢_.` _∋_.Z)))
+       _⊢_.·
+       ((_⊢_.ƛ
+         (_⊢_.ƛ
+          (_⊢_.ƛ
+           (_⊢_.ƛ
+            (_⊢_.`
+             (_∋_.S _∋_.Z))
+            _⊢_.·
+            (_⊢_.ƛ
+             (_⊢_.ƛ
+              (_⊢_.ƛ
+               (_⊢_.`
+                (_∋_.S _∋_.Z))
+               _⊢_.·
+               ((_⊢_.` _∋_.Z)
+                _⊢_.·
+                (_⊢_.` _∋_.Z)))
+              _⊢_.·
+              (_⊢_.ƛ
+               (_⊢_.`
+                (_∋_.S _∋_.Z))
+               _⊢_.·
+               ((_⊢_.` _∋_.Z)
+                _⊢_.·
+                (_⊢_.` _∋_.Z))))
+             _⊢_.·
+             (_⊢_.ƛ
+              (_⊢_.ƛ
+               (_⊢_.ƛ
+                (_⊢_.`
+                 (_∋_.S _∋_.Z))
+                _⊢_.·
+                (_⊢_.ƛ
+                 (_⊢_.ƛ
+                  (_⊢_.ƛ
+                   (_⊢_.ƛ
+                    (_⊢_.`
+                     (_∋_.S _∋_.Z))
+                    _⊢_.·
+                    (_⊢_.`
+                     (_∋_.S
+                      (_∋_.S _∋_.Z))))))
+                 _⊢_.·
+                 ((_⊢_.`
+                   (_∋_.S
+                    (_∋_.S
+                     (_∋_.S _∋_.Z))))
+                  _⊢_.·
+                  (_⊢_.` _∋_.Z)
+                  _⊢_.·
+                  (_⊢_.`
+                   (_∋_.S _∋_.Z))))
+                _⊢_.·
+                (_⊢_.` _∋_.Z))))
+             _⊢_.·
+             (_⊢_.` _∋_.Z)
+             _⊢_.·
+             ((_⊢_.`
+               (_∋_.S
+                (_∋_.S
+                 (_∋_.S _∋_.Z))))
+              _⊢_.·
+              ((_⊢_.` _∋_.Z)
+               _⊢_.·
+               (_⊢_.`
+                (_∋_.S _∋_.Z)))))
+            _⊢_.·
+            (_⊢_.` _∋_.Z))))
+         _⊢_.·
+         ((_⊢_.` _∋_.Z)
+          _⊢_.·
+          (_⊢_.` _∋_.Z)))
+        _⊢_.·
+        (_⊢_.ƛ
+         (_⊢_.ƛ
+          (_⊢_.ƛ
+           (_⊢_.ƛ
+            (_⊢_.`
+             (_∋_.S _∋_.Z))
+            _⊢_.·
+            (_⊢_.ƛ
+             (_⊢_.ƛ
+              (_⊢_.ƛ
+               (_⊢_.`
+                (_∋_.S _∋_.Z))
+               _⊢_.·
+               ((_⊢_.` _∋_.Z)
+                _⊢_.·
+                (_⊢_.` _∋_.Z)))
+              _⊢_.·
+              (_⊢_.ƛ
+               (_⊢_.`
+                (_∋_.S _∋_.Z))
+               _⊢_.·
+               ((_⊢_.` _∋_.Z)
+                _⊢_.·
+                (_⊢_.` _∋_.Z))))
+             _⊢_.·
+             (_⊢_.ƛ
+              (_⊢_.ƛ
+               (_⊢_.ƛ
+                (_⊢_.`
+                 (_∋_.S _∋_.Z))
+                _⊢_.·
+                (_⊢_.ƛ
+                 (_⊢_.ƛ
+                  (_⊢_.ƛ
+                   (_⊢_.ƛ
+                    (_⊢_.`
+                     (_∋_.S _∋_.Z))
+                    _⊢_.·
+                    (_⊢_.`
+                     (_∋_.S
+                      (_∋_.S _∋_.Z))))))
+                 _⊢_.·
+                 ((_⊢_.`
+                   (_∋_.S
+                    (_∋_.S
+                     (_∋_.S _∋_.Z))))
+                  _⊢_.·
+                  (_⊢_.` _∋_.Z)
+                  _⊢_.·
+                  (_⊢_.`
+                   (_∋_.S _∋_.Z))))
+                _⊢_.·
+                (_⊢_.` _∋_.Z))))
+             _⊢_.·
+             (_⊢_.` _∋_.Z)
+             _⊢_.·
+             ((_⊢_.`
+               (_∋_.S
+                (_∋_.S
+                 (_∋_.S _∋_.Z))))
+              _⊢_.·
+              ((_⊢_.` _∋_.Z)
+               _⊢_.·
+               (_⊢_.`
+                (_∋_.S _∋_.Z)))))
+            _⊢_.·
+            (_⊢_.` _∋_.Z))))
+         _⊢_.·
+         ((_⊢_.` _∋_.Z)
+          _⊢_.·
+          (_⊢_.` _∋_.Z)))
+        _⊢_.·
+        ((_⊢_.ƛ
+          (_⊢_.ƛ
+           (_⊢_.ƛ
+            (_⊢_.`
+             (_∋_.S _∋_.Z))
+            _⊢_.·
+            (_⊢_.`
+             (_∋_.S
+              (_∋_.S _∋_.Z))))))
+         _⊢_.·
+         (_⊢_.ƛ
+          (_⊢_.ƛ
+           (_⊢_.` _∋_.Z)))
+         _⊢_.·
+         ((_⊢_.ƛ
+           (_⊢_.ƛ
+            (_⊢_.ƛ
+             (_⊢_.`
+              (_∋_.S _∋_.Z))
+             _⊢_.·
+             (_⊢_.`
+              (_∋_.S
+               (_∋_.S _∋_.Z))))))
+          _⊢_.·
+          ((_⊢_.ƛ
+            (_⊢_.ƛ
+             (_⊢_.ƛ
+              (_⊢_.`
+               (_∋_.S _∋_.Z))
+              _⊢_.·
+              (_⊢_.`
+               (_∋_.S
+                (_∋_.S _∋_.Z))))))
+           _⊢_.·
+           (_⊢_.ƛ
+            (_⊢_.ƛ
+             (_⊢_.` _∋_.Z)))))))))
+     _—↠_.—→⟨
+     _—→_.ζ
+     (_—→_.ζ
+      (_—→_.ξ₂
+       (_—→_.ξ₁ _—→_.β)))
      ⟩
-     plfa.part2.Untyped._⊢_.ƛ
-     (plfa.part2.Untyped._⊢_.ƛ
-      (plfa.part2.Untyped._⊢_.`
-       (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-      plfa.part2.Untyped._⊢_.·
-      ((plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-        plfa.part2.Untyped._⊢_.·
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.`
-             (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.`
-             (plfa.part2.Untyped._∋_.S
-              (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-         plfa.part2.Untyped._⊢_.·
-         ((plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.`
-               (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.ƛ
-                (plfa.part2.Untyped._⊢_.ƛ
-                 (plfa.part2.Untyped._⊢_.ƛ
-                  (plfa.part2.Untyped._⊢_.`
-                   (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-                  plfa.part2.Untyped._⊢_.·
-                  (plfa.part2.Untyped._⊢_.`
-                   (plfa.part2.Untyped._∋_.S
-                    (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-               plfa.part2.Untyped._⊢_.·
-               ((plfa.part2.Untyped._⊢_.`
-                 (plfa.part2.Untyped._∋_.S
-                  (plfa.part2.Untyped._∋_.S
-                   (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.`
-                 (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-           plfa.part2.Untyped._⊢_.·
-           ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-          plfa.part2.Untyped._⊢_.·
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.`
-               (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.ƛ
-                (plfa.part2.Untyped._⊢_.ƛ
-                 (plfa.part2.Untyped._⊢_.ƛ
-                  (plfa.part2.Untyped._⊢_.`
-                   (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-                  plfa.part2.Untyped._⊢_.·
-                  (plfa.part2.Untyped._⊢_.`
-                   (plfa.part2.Untyped._∋_.S
-                    (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-               plfa.part2.Untyped._⊢_.·
-               ((plfa.part2.Untyped._⊢_.`
-                 (plfa.part2.Untyped._∋_.S
-                  (plfa.part2.Untyped._∋_.S
-                   (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.`
-                 (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-           plfa.part2.Untyped._⊢_.·
-           ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-          plfa.part2.Untyped._⊢_.·
-          (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-          plfa.part2.Untyped._⊢_.·
-          (plfa.part2.Untyped._⊢_.`
-           (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-        plfa.part2.Untyped._⊢_.·
-        (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))
-       plfa.part2.Untyped._⊢_.·
-       ((plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.`
-             (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.`
-                (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-               plfa.part2.Untyped._⊢_.·
-               ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.`
-                (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-               plfa.part2.Untyped._⊢_.·
-               ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.ƛ
-                (plfa.part2.Untyped._⊢_.`
-                 (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.ƛ
-                 (plfa.part2.Untyped._⊢_.ƛ
-                  (plfa.part2.Untyped._⊢_.ƛ
-                   (plfa.part2.Untyped._⊢_.ƛ
-                    (plfa.part2.Untyped._⊢_.`
-                     (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-                    plfa.part2.Untyped._⊢_.·
-                    (plfa.part2.Untyped._⊢_.`
-                     (plfa.part2.Untyped._∋_.S
-                      (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-                 plfa.part2.Untyped._⊢_.·
-                 ((plfa.part2.Untyped._⊢_.`
-                   (plfa.part2.Untyped._∋_.S
-                    (plfa.part2.Untyped._∋_.S
-                     (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-                  plfa.part2.Untyped._⊢_.·
-                  (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                  plfa.part2.Untyped._⊢_.·
-                  (plfa.part2.Untyped._⊢_.`
-                   (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-             plfa.part2.Untyped._⊢_.·
-             ((plfa.part2.Untyped._⊢_.`
-               (plfa.part2.Untyped._∋_.S
-                (plfa.part2.Untyped._∋_.S
-                 (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-              plfa.part2.Untyped._⊢_.·
-              ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-               plfa.part2.Untyped._⊢_.·
-               (plfa.part2.Untyped._⊢_.`
-                (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z)))))
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-         plfa.part2.Untyped._⊢_.·
-         ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-          plfa.part2.Untyped._⊢_.·
-          (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-        plfa.part2.Untyped._⊢_.·
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.`
-             (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.`
-                (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-               plfa.part2.Untyped._⊢_.·
-               ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.`
-                (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-               plfa.part2.Untyped._⊢_.·
-               ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.ƛ
-                (plfa.part2.Untyped._⊢_.`
-                 (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.ƛ
-                 (plfa.part2.Untyped._⊢_.ƛ
-                  (plfa.part2.Untyped._⊢_.ƛ
-                   (plfa.part2.Untyped._⊢_.ƛ
-                    (plfa.part2.Untyped._⊢_.`
-                     (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-                    plfa.part2.Untyped._⊢_.·
-                    (plfa.part2.Untyped._⊢_.`
-                     (plfa.part2.Untyped._∋_.S
-                      (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-                 plfa.part2.Untyped._⊢_.·
-                 ((plfa.part2.Untyped._⊢_.`
-                   (plfa.part2.Untyped._∋_.S
-                    (plfa.part2.Untyped._∋_.S
-                     (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-                  plfa.part2.Untyped._⊢_.·
-                  (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                  plfa.part2.Untyped._⊢_.·
-                  (plfa.part2.Untyped._⊢_.`
-                   (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-             plfa.part2.Untyped._⊢_.·
-             ((plfa.part2.Untyped._⊢_.`
-               (plfa.part2.Untyped._∋_.S
-                (plfa.part2.Untyped._∋_.S
-                 (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-              plfa.part2.Untyped._⊢_.·
-              ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-               plfa.part2.Untyped._⊢_.·
-               (plfa.part2.Untyped._⊢_.`
-                (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z)))))
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-         plfa.part2.Untyped._⊢_.·
-         ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-          plfa.part2.Untyped._⊢_.·
-          (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-        plfa.part2.Untyped._⊢_.·
-        ((plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.`
-             (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.`
-             (plfa.part2.Untyped._∋_.S
-              (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-         plfa.part2.Untyped._⊢_.·
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-         plfa.part2.Untyped._⊢_.·
-         ((plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S
-               (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-          plfa.part2.Untyped._⊢_.·
-          ((plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.`
-               (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.`
-               (plfa.part2.Untyped._∋_.S
-                (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-           plfa.part2.Untyped._⊢_.·
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))))))))
-     plfa.part2.Untyped._—↠_.—→⟨
-     plfa.part2.Untyped._—→_.ζ
-     (plfa.part2.Untyped._—→_.ζ
-      (plfa.part2.Untyped._—→_.ξ₂ plfa.part2.Untyped._—→_.β))
+     _⊢_.ƛ
+     (_⊢_.ƛ
+      (_⊢_.`
+       (_∋_.S _∋_.Z))
+      _⊢_.·
+      ((_⊢_.ƛ
+        (_⊢_.ƛ
+         (_⊢_.ƛ
+          (_⊢_.` _∋_.Z)))
+        _⊢_.·
+        (_⊢_.ƛ
+         (_⊢_.ƛ
+          (_⊢_.ƛ
+           (_⊢_.ƛ
+            (_⊢_.`
+             (_∋_.S _∋_.Z))
+            _⊢_.·
+            (_⊢_.`
+             (_∋_.S
+              (_∋_.S _∋_.Z))))))
+         _⊢_.·
+         ((_⊢_.ƛ
+           (_⊢_.ƛ
+            (_⊢_.ƛ
+             (_⊢_.ƛ
+              (_⊢_.`
+               (_∋_.S _∋_.Z))
+              _⊢_.·
+              (_⊢_.ƛ
+               (_⊢_.ƛ
+                (_⊢_.ƛ
+                 (_⊢_.ƛ
+                  (_⊢_.`
+                   (_∋_.S _∋_.Z))
+                  _⊢_.·
+                  (_⊢_.`
+                   (_∋_.S
+                    (_∋_.S _∋_.Z))))))
+               _⊢_.·
+               ((_⊢_.`
+                 (_∋_.S
+                  (_∋_.S
+                   (_∋_.S _∋_.Z))))
+                _⊢_.·
+                (_⊢_.` _∋_.Z)
+                _⊢_.·
+                (_⊢_.`
+                 (_∋_.S _∋_.Z))))
+              _⊢_.·
+              (_⊢_.` _∋_.Z))))
+           _⊢_.·
+           ((_⊢_.` _∋_.Z)
+            _⊢_.·
+            (_⊢_.` _∋_.Z)))
+          _⊢_.·
+          (_⊢_.ƛ
+           (_⊢_.ƛ
+            (_⊢_.ƛ
+             (_⊢_.ƛ
+              (_⊢_.`
+               (_∋_.S _∋_.Z))
+              _⊢_.·
+              (_⊢_.ƛ
+               (_⊢_.ƛ
+                (_⊢_.ƛ
+                 (_⊢_.ƛ
+                  (_⊢_.`
+                   (_∋_.S _∋_.Z))
+                  _⊢_.·
+                  (_⊢_.`
+                   (_∋_.S
+                    (_∋_.S _∋_.Z))))))
+               _⊢_.·
+               ((_⊢_.`
+                 (_∋_.S
+                  (_∋_.S
+                   (_∋_.S _∋_.Z))))
+                _⊢_.·
+                (_⊢_.` _∋_.Z)
+                _⊢_.·
+                (_⊢_.`
+                 (_∋_.S _∋_.Z))))
+              _⊢_.·
+              (_⊢_.` _∋_.Z))))
+           _⊢_.·
+           ((_⊢_.` _∋_.Z)
+            _⊢_.·
+            (_⊢_.` _∋_.Z)))
+          _⊢_.·
+          (_⊢_.` _∋_.Z)
+          _⊢_.·
+          (_⊢_.`
+           (_∋_.S _∋_.Z))))
+        _⊢_.·
+        (_⊢_.` _∋_.Z))
+       _⊢_.·
+       ((_⊢_.ƛ
+         (_⊢_.ƛ
+          (_⊢_.ƛ
+           (_⊢_.ƛ
+            (_⊢_.`
+             (_∋_.S _∋_.Z))
+            _⊢_.·
+            (_⊢_.ƛ
+             (_⊢_.ƛ
+              (_⊢_.ƛ
+               (_⊢_.`
+                (_∋_.S _∋_.Z))
+               _⊢_.·
+               ((_⊢_.` _∋_.Z)
+                _⊢_.·
+                (_⊢_.` _∋_.Z)))
+              _⊢_.·
+              (_⊢_.ƛ
+               (_⊢_.`
+                (_∋_.S _∋_.Z))
+               _⊢_.·
+               ((_⊢_.` _∋_.Z)
+                _⊢_.·
+                (_⊢_.` _∋_.Z))))
+             _⊢_.·
+             (_⊢_.ƛ
+              (_⊢_.ƛ
+               (_⊢_.ƛ
+                (_⊢_.`
+                 (_∋_.S _∋_.Z))
+                _⊢_.·
+                (_⊢_.ƛ
+                 (_⊢_.ƛ
+                  (_⊢_.ƛ
+                   (_⊢_.ƛ
+                    (_⊢_.`
+                     (_∋_.S _∋_.Z))
+                    _⊢_.·
+                    (_⊢_.`
+                     (_∋_.S
+                      (_∋_.S _∋_.Z))))))
+                 _⊢_.·
+                 ((_⊢_.`
+                   (_∋_.S
+                    (_∋_.S
+                     (_∋_.S _∋_.Z))))
+                  _⊢_.·
+                  (_⊢_.` _∋_.Z)
+                  _⊢_.·
+                  (_⊢_.`
+                   (_∋_.S _∋_.Z))))
+                _⊢_.·
+                (_⊢_.` _∋_.Z))))
+             _⊢_.·
+             (_⊢_.` _∋_.Z)
+             _⊢_.·
+             ((_⊢_.`
+               (_∋_.S
+                (_∋_.S
+                 (_∋_.S _∋_.Z))))
+              _⊢_.·
+              ((_⊢_.` _∋_.Z)
+               _⊢_.·
+               (_⊢_.`
+                (_∋_.S _∋_.Z)))))
+            _⊢_.·
+            (_⊢_.` _∋_.Z))))
+         _⊢_.·
+         ((_⊢_.` _∋_.Z)
+          _⊢_.·
+          (_⊢_.` _∋_.Z)))
+        _⊢_.·
+        (_⊢_.ƛ
+         (_⊢_.ƛ
+          (_⊢_.ƛ
+           (_⊢_.ƛ
+            (_⊢_.`
+             (_∋_.S _∋_.Z))
+            _⊢_.·
+            (_⊢_.ƛ
+             (_⊢_.ƛ
+              (_⊢_.ƛ
+               (_⊢_.`
+                (_∋_.S _∋_.Z))
+               _⊢_.·
+               ((_⊢_.` _∋_.Z)
+                _⊢_.·
+                (_⊢_.` _∋_.Z)))
+              _⊢_.·
+              (_⊢_.ƛ
+               (_⊢_.`
+                (_∋_.S _∋_.Z))
+               _⊢_.·
+               ((_⊢_.` _∋_.Z)
+                _⊢_.·
+                (_⊢_.` _∋_.Z))))
+             _⊢_.·
+             (_⊢_.ƛ
+              (_⊢_.ƛ
+               (_⊢_.ƛ
+                (_⊢_.`
+                 (_∋_.S _∋_.Z))
+                _⊢_.·
+                (_⊢_.ƛ
+                 (_⊢_.ƛ
+                  (_⊢_.ƛ
+                   (_⊢_.ƛ
+                    (_⊢_.`
+                     (_∋_.S _∋_.Z))
+                    _⊢_.·
+                    (_⊢_.`
+                     (_∋_.S
+                      (_∋_.S _∋_.Z))))))
+                 _⊢_.·
+                 ((_⊢_.`
+                   (_∋_.S
+                    (_∋_.S
+                     (_∋_.S _∋_.Z))))
+                  _⊢_.·
+                  (_⊢_.` _∋_.Z)
+                  _⊢_.·
+                  (_⊢_.`
+                   (_∋_.S _∋_.Z))))
+                _⊢_.·
+                (_⊢_.` _∋_.Z))))
+             _⊢_.·
+             (_⊢_.` _∋_.Z)
+             _⊢_.·
+             ((_⊢_.`
+               (_∋_.S
+                (_∋_.S
+                 (_∋_.S _∋_.Z))))
+              _⊢_.·
+              ((_⊢_.` _∋_.Z)
+               _⊢_.·
+               (_⊢_.`
+                (_∋_.S _∋_.Z)))))
+            _⊢_.·
+            (_⊢_.` _∋_.Z))))
+         _⊢_.·
+         ((_⊢_.` _∋_.Z)
+          _⊢_.·
+          (_⊢_.` _∋_.Z)))
+        _⊢_.·
+        ((_⊢_.ƛ
+          (_⊢_.ƛ
+           (_⊢_.ƛ
+            (_⊢_.`
+             (_∋_.S _∋_.Z))
+            _⊢_.·
+            (_⊢_.`
+             (_∋_.S
+              (_∋_.S _∋_.Z))))))
+         _⊢_.·
+         (_⊢_.ƛ
+          (_⊢_.ƛ
+           (_⊢_.` _∋_.Z)))
+         _⊢_.·
+         ((_⊢_.ƛ
+           (_⊢_.ƛ
+            (_⊢_.ƛ
+             (_⊢_.`
+              (_∋_.S _∋_.Z))
+             _⊢_.·
+             (_⊢_.`
+              (_∋_.S
+               (_∋_.S _∋_.Z))))))
+          _⊢_.·
+          ((_⊢_.ƛ
+            (_⊢_.ƛ
+             (_⊢_.ƛ
+              (_⊢_.`
+               (_∋_.S _∋_.Z))
+              _⊢_.·
+              (_⊢_.`
+               (_∋_.S
+                (_∋_.S _∋_.Z))))))
+           _⊢_.·
+           (_⊢_.ƛ
+            (_⊢_.ƛ
+             (_⊢_.` _∋_.Z)))))))))
+     _—↠_.—→⟨
+     _—→_.ζ
+     (_—→_.ζ
+      (_—→_.ξ₂ _—→_.β))
      ⟩
-     plfa.part2.Untyped._⊢_.ƛ
-     (plfa.part2.Untyped._⊢_.ƛ
-      (plfa.part2.Untyped._⊢_.`
-       (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-      plfa.part2.Untyped._⊢_.·
-      ((plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-       plfa.part2.Untyped._⊢_.·
-       (plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.`
-            (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-           plfa.part2.Untyped._⊢_.·
-           (plfa.part2.Untyped._⊢_.`
-            (plfa.part2.Untyped._∋_.S
-             (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-        plfa.part2.Untyped._⊢_.·
-        ((plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.ƛ
-                (plfa.part2.Untyped._⊢_.ƛ
-                 (plfa.part2.Untyped._⊢_.`
-                  (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-                 plfa.part2.Untyped._⊢_.·
-                 (plfa.part2.Untyped._⊢_.`
-                  (plfa.part2.Untyped._∋_.S
-                   (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-              plfa.part2.Untyped._⊢_.·
-              ((plfa.part2.Untyped._⊢_.`
-                (plfa.part2.Untyped._∋_.S
-                 (plfa.part2.Untyped._∋_.S
-                  (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-               plfa.part2.Untyped._⊢_.·
-               (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-               plfa.part2.Untyped._⊢_.·
-               (plfa.part2.Untyped._⊢_.`
-                (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-          plfa.part2.Untyped._⊢_.·
-          ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-           plfa.part2.Untyped._⊢_.·
-           (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-         plfa.part2.Untyped._⊢_.·
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.ƛ
-                (plfa.part2.Untyped._⊢_.ƛ
-                 (plfa.part2.Untyped._⊢_.`
-                  (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-                 plfa.part2.Untyped._⊢_.·
-                 (plfa.part2.Untyped._⊢_.`
-                  (plfa.part2.Untyped._∋_.S
-                   (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-              plfa.part2.Untyped._⊢_.·
-              ((plfa.part2.Untyped._⊢_.`
-                (plfa.part2.Untyped._∋_.S
-                 (plfa.part2.Untyped._∋_.S
-                  (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-               plfa.part2.Untyped._⊢_.·
-               (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-               plfa.part2.Untyped._⊢_.·
-               (plfa.part2.Untyped._⊢_.`
-                (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-          plfa.part2.Untyped._⊢_.·
-          ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-           plfa.part2.Untyped._⊢_.·
-           (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-         plfa.part2.Untyped._⊢_.·
-         (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-         plfa.part2.Untyped._⊢_.·
-         ((plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.`
-               (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.ƛ
-                (plfa.part2.Untyped._⊢_.ƛ
-                 (plfa.part2.Untyped._⊢_.`
-                  (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-                 plfa.part2.Untyped._⊢_.·
-                 ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                  plfa.part2.Untyped._⊢_.·
-                  (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.ƛ
-                 (plfa.part2.Untyped._⊢_.`
-                  (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-                 plfa.part2.Untyped._⊢_.·
-                 ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                  plfa.part2.Untyped._⊢_.·
-                  (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-               plfa.part2.Untyped._⊢_.·
-               (plfa.part2.Untyped._⊢_.ƛ
-                (plfa.part2.Untyped._⊢_.ƛ
-                 (plfa.part2.Untyped._⊢_.ƛ
-                  (plfa.part2.Untyped._⊢_.`
-                   (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-                  plfa.part2.Untyped._⊢_.·
-                  (plfa.part2.Untyped._⊢_.ƛ
-                   (plfa.part2.Untyped._⊢_.ƛ
-                    (plfa.part2.Untyped._⊢_.ƛ
-                     (plfa.part2.Untyped._⊢_.ƛ
-                      (plfa.part2.Untyped._⊢_.`
-                       (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-                      plfa.part2.Untyped._⊢_.·
-                      (plfa.part2.Untyped._⊢_.`
-                       (plfa.part2.Untyped._∋_.S
-                        (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-                   plfa.part2.Untyped._⊢_.·
-                   ((plfa.part2.Untyped._⊢_.`
-                     (plfa.part2.Untyped._∋_.S
-                      (plfa.part2.Untyped._∋_.S
-                       (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-                    plfa.part2.Untyped._⊢_.·
-                    (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                    plfa.part2.Untyped._⊢_.·
-                    (plfa.part2.Untyped._⊢_.`
-                     (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-                  plfa.part2.Untyped._⊢_.·
-                  (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-               plfa.part2.Untyped._⊢_.·
-               (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-               plfa.part2.Untyped._⊢_.·
-               ((plfa.part2.Untyped._⊢_.`
-                 (plfa.part2.Untyped._∋_.S
-                  (plfa.part2.Untyped._∋_.S
-                   (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-                plfa.part2.Untyped._⊢_.·
-                ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                 plfa.part2.Untyped._⊢_.·
-                 (plfa.part2.Untyped._⊢_.`
-                  (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z)))))
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-           plfa.part2.Untyped._⊢_.·
-           ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-          plfa.part2.Untyped._⊢_.·
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.`
-               (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.ƛ
-                (plfa.part2.Untyped._⊢_.ƛ
-                 (plfa.part2.Untyped._⊢_.`
-                  (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-                 plfa.part2.Untyped._⊢_.·
-                 ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                  plfa.part2.Untyped._⊢_.·
-                  (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.ƛ
-                 (plfa.part2.Untyped._⊢_.`
-                  (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-                 plfa.part2.Untyped._⊢_.·
-                 ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                  plfa.part2.Untyped._⊢_.·
-                  (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-               plfa.part2.Untyped._⊢_.·
-               (plfa.part2.Untyped._⊢_.ƛ
-                (plfa.part2.Untyped._⊢_.ƛ
-                 (plfa.part2.Untyped._⊢_.ƛ
-                  (plfa.part2.Untyped._⊢_.`
-                   (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-                  plfa.part2.Untyped._⊢_.·
-                  (plfa.part2.Untyped._⊢_.ƛ
-                   (plfa.part2.Untyped._⊢_.ƛ
-                    (plfa.part2.Untyped._⊢_.ƛ
-                     (plfa.part2.Untyped._⊢_.ƛ
-                      (plfa.part2.Untyped._⊢_.`
-                       (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-                      plfa.part2.Untyped._⊢_.·
-                      (plfa.part2.Untyped._⊢_.`
-                       (plfa.part2.Untyped._∋_.S
-                        (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-                   plfa.part2.Untyped._⊢_.·
-                   ((plfa.part2.Untyped._⊢_.`
-                     (plfa.part2.Untyped._∋_.S
-                      (plfa.part2.Untyped._∋_.S
-                       (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-                    plfa.part2.Untyped._⊢_.·
-                    (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                    plfa.part2.Untyped._⊢_.·
-                    (plfa.part2.Untyped._⊢_.`
-                     (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-                  plfa.part2.Untyped._⊢_.·
-                  (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-               plfa.part2.Untyped._⊢_.·
-               (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-               plfa.part2.Untyped._⊢_.·
-               ((plfa.part2.Untyped._⊢_.`
-                 (plfa.part2.Untyped._∋_.S
-                  (plfa.part2.Untyped._∋_.S
-                   (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-                plfa.part2.Untyped._⊢_.·
-                ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                 plfa.part2.Untyped._⊢_.·
-                 (plfa.part2.Untyped._⊢_.`
-                  (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z)))))
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-           plfa.part2.Untyped._⊢_.·
-           ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-          plfa.part2.Untyped._⊢_.·
-          ((plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.`
-               (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.`
-               (plfa.part2.Untyped._∋_.S
-                (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-           plfa.part2.Untyped._⊢_.·
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-           plfa.part2.Untyped._⊢_.·
-           ((plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.`
-                (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-               plfa.part2.Untyped._⊢_.·
-               (plfa.part2.Untyped._⊢_.`
-                (plfa.part2.Untyped._∋_.S
-                 (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-            plfa.part2.Untyped._⊢_.·
-            ((plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.ƛ
-                (plfa.part2.Untyped._⊢_.`
-                 (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.`
-                 (plfa.part2.Untyped._∋_.S
-                  (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))))))))
-       plfa.part2.Untyped._⊢_.·
-       ((plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.`
-             (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.`
-                (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-               plfa.part2.Untyped._⊢_.·
-               ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.`
-                (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-               plfa.part2.Untyped._⊢_.·
-               ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.ƛ
-                (plfa.part2.Untyped._⊢_.`
-                 (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.ƛ
-                 (plfa.part2.Untyped._⊢_.ƛ
-                  (plfa.part2.Untyped._⊢_.ƛ
-                   (plfa.part2.Untyped._⊢_.ƛ
-                    (plfa.part2.Untyped._⊢_.`
-                     (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-                    plfa.part2.Untyped._⊢_.·
-                    (plfa.part2.Untyped._⊢_.`
-                     (plfa.part2.Untyped._∋_.S
-                      (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-                 plfa.part2.Untyped._⊢_.·
-                 ((plfa.part2.Untyped._⊢_.`
-                   (plfa.part2.Untyped._∋_.S
-                    (plfa.part2.Untyped._∋_.S
-                     (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-                  plfa.part2.Untyped._⊢_.·
-                  (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                  plfa.part2.Untyped._⊢_.·
-                  (plfa.part2.Untyped._⊢_.`
-                   (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-             plfa.part2.Untyped._⊢_.·
-             ((plfa.part2.Untyped._⊢_.`
-               (plfa.part2.Untyped._∋_.S
-                (plfa.part2.Untyped._∋_.S
-                 (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-              plfa.part2.Untyped._⊢_.·
-              ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-               plfa.part2.Untyped._⊢_.·
-               (plfa.part2.Untyped._⊢_.`
-                (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z)))))
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-         plfa.part2.Untyped._⊢_.·
-         ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-          plfa.part2.Untyped._⊢_.·
-          (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-        plfa.part2.Untyped._⊢_.·
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.`
-             (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.`
-                (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-               plfa.part2.Untyped._⊢_.·
-               ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.`
-                (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-               plfa.part2.Untyped._⊢_.·
-               ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.ƛ
-                (plfa.part2.Untyped._⊢_.`
-                 (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.ƛ
-                 (plfa.part2.Untyped._⊢_.ƛ
-                  (plfa.part2.Untyped._⊢_.ƛ
-                   (plfa.part2.Untyped._⊢_.ƛ
-                    (plfa.part2.Untyped._⊢_.`
-                     (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-                    plfa.part2.Untyped._⊢_.·
-                    (plfa.part2.Untyped._⊢_.`
-                     (plfa.part2.Untyped._∋_.S
-                      (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-                 plfa.part2.Untyped._⊢_.·
-                 ((plfa.part2.Untyped._⊢_.`
-                   (plfa.part2.Untyped._∋_.S
-                    (plfa.part2.Untyped._∋_.S
-                     (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-                  plfa.part2.Untyped._⊢_.·
-                  (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                  plfa.part2.Untyped._⊢_.·
-                  (plfa.part2.Untyped._⊢_.`
-                   (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-             plfa.part2.Untyped._⊢_.·
-             ((plfa.part2.Untyped._⊢_.`
-               (plfa.part2.Untyped._∋_.S
-                (plfa.part2.Untyped._∋_.S
-                 (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-              plfa.part2.Untyped._⊢_.·
-              ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-               plfa.part2.Untyped._⊢_.·
-               (plfa.part2.Untyped._⊢_.`
-                (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z)))))
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-         plfa.part2.Untyped._⊢_.·
-         ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-          plfa.part2.Untyped._⊢_.·
-          (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-        plfa.part2.Untyped._⊢_.·
-        ((plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.`
-             (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.`
-             (plfa.part2.Untyped._∋_.S
-              (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-         plfa.part2.Untyped._⊢_.·
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-         plfa.part2.Untyped._⊢_.·
-         ((plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S
-               (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-          plfa.part2.Untyped._⊢_.·
-          ((plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.`
-               (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.`
-               (plfa.part2.Untyped._∋_.S
-                (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-           plfa.part2.Untyped._⊢_.·
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))))))))
-     plfa.part2.Untyped._—↠_.—→⟨
-     plfa.part2.Untyped._—→_.ζ
-     (plfa.part2.Untyped._—→_.ζ
-      (plfa.part2.Untyped._—→_.ξ₂
-       (plfa.part2.Untyped._—→_.ξ₁ plfa.part2.Untyped._—→_.β)))
+     _⊢_.ƛ
+     (_⊢_.ƛ
+      (_⊢_.`
+       (_∋_.S _∋_.Z))
+      _⊢_.·
+      ((_⊢_.ƛ
+        (_⊢_.ƛ
+         (_⊢_.` _∋_.Z)))
+       _⊢_.·
+       (_⊢_.ƛ
+        (_⊢_.ƛ
+         (_⊢_.ƛ
+          (_⊢_.ƛ
+           (_⊢_.`
+            (_∋_.S _∋_.Z))
+           _⊢_.·
+           (_⊢_.`
+            (_∋_.S
+             (_∋_.S _∋_.Z))))))
+        _⊢_.·
+        ((_⊢_.ƛ
+          (_⊢_.ƛ
+           (_⊢_.ƛ
+            (_⊢_.ƛ
+             (_⊢_.`
+              (_∋_.S _∋_.Z))
+             _⊢_.·
+             (_⊢_.ƛ
+              (_⊢_.ƛ
+               (_⊢_.ƛ
+                (_⊢_.ƛ
+                 (_⊢_.`
+                  (_∋_.S _∋_.Z))
+                 _⊢_.·
+                 (_⊢_.`
+                  (_∋_.S
+                   (_∋_.S _∋_.Z))))))
+              _⊢_.·
+              ((_⊢_.`
+                (_∋_.S
+                 (_∋_.S
+                  (_∋_.S _∋_.Z))))
+               _⊢_.·
+               (_⊢_.` _∋_.Z)
+               _⊢_.·
+               (_⊢_.`
+                (_∋_.S _∋_.Z))))
+             _⊢_.·
+             (_⊢_.` _∋_.Z))))
+          _⊢_.·
+          ((_⊢_.` _∋_.Z)
+           _⊢_.·
+           (_⊢_.` _∋_.Z)))
+         _⊢_.·
+         (_⊢_.ƛ
+          (_⊢_.ƛ
+           (_⊢_.ƛ
+            (_⊢_.ƛ
+             (_⊢_.`
+              (_∋_.S _∋_.Z))
+             _⊢_.·
+             (_⊢_.ƛ
+              (_⊢_.ƛ
+               (_⊢_.ƛ
+                (_⊢_.ƛ
+                 (_⊢_.`
+                  (_∋_.S _∋_.Z))
+                 _⊢_.·
+                 (_⊢_.`
+                  (_∋_.S
+                   (_∋_.S _∋_.Z))))))
+              _⊢_.·
+              ((_⊢_.`
+                (_∋_.S
+                 (_∋_.S
+                  (_∋_.S _∋_.Z))))
+               _⊢_.·
+               (_⊢_.` _∋_.Z)
+               _⊢_.·
+               (_⊢_.`
+                (_∋_.S _∋_.Z))))
+             _⊢_.·
+             (_⊢_.` _∋_.Z))))
+          _⊢_.·
+          ((_⊢_.` _∋_.Z)
+           _⊢_.·
+           (_⊢_.` _∋_.Z)))
+         _⊢_.·
+         (_⊢_.` _∋_.Z)
+         _⊢_.·
+         ((_⊢_.ƛ
+           (_⊢_.ƛ
+            (_⊢_.ƛ
+             (_⊢_.ƛ
+              (_⊢_.`
+               (_∋_.S _∋_.Z))
+              _⊢_.·
+              (_⊢_.ƛ
+               (_⊢_.ƛ
+                (_⊢_.ƛ
+                 (_⊢_.`
+                  (_∋_.S _∋_.Z))
+                 _⊢_.·
+                 ((_⊢_.` _∋_.Z)
+                  _⊢_.·
+                  (_⊢_.` _∋_.Z)))
+                _⊢_.·
+                (_⊢_.ƛ
+                 (_⊢_.`
+                  (_∋_.S _∋_.Z))
+                 _⊢_.·
+                 ((_⊢_.` _∋_.Z)
+                  _⊢_.·
+                  (_⊢_.` _∋_.Z))))
+               _⊢_.·
+               (_⊢_.ƛ
+                (_⊢_.ƛ
+                 (_⊢_.ƛ
+                  (_⊢_.`
+                   (_∋_.S _∋_.Z))
+                  _⊢_.·
+                  (_⊢_.ƛ
+                   (_⊢_.ƛ
+                    (_⊢_.ƛ
+                     (_⊢_.ƛ
+                      (_⊢_.`
+                       (_∋_.S _∋_.Z))
+                      _⊢_.·
+                      (_⊢_.`
+                       (_∋_.S
+                        (_∋_.S _∋_.Z))))))
+                   _⊢_.·
+                   ((_⊢_.`
+                     (_∋_.S
+                      (_∋_.S
+                       (_∋_.S _∋_.Z))))
+                    _⊢_.·
+                    (_⊢_.` _∋_.Z)
+                    _⊢_.·
+                    (_⊢_.`
+                     (_∋_.S _∋_.Z))))
+                  _⊢_.·
+                  (_⊢_.` _∋_.Z))))
+               _⊢_.·
+               (_⊢_.` _∋_.Z)
+               _⊢_.·
+               ((_⊢_.`
+                 (_∋_.S
+                  (_∋_.S
+                   (_∋_.S _∋_.Z))))
+                _⊢_.·
+                ((_⊢_.` _∋_.Z)
+                 _⊢_.·
+                 (_⊢_.`
+                  (_∋_.S _∋_.Z)))))
+              _⊢_.·
+              (_⊢_.` _∋_.Z))))
+           _⊢_.·
+           ((_⊢_.` _∋_.Z)
+            _⊢_.·
+            (_⊢_.` _∋_.Z)))
+          _⊢_.·
+          (_⊢_.ƛ
+           (_⊢_.ƛ
+            (_⊢_.ƛ
+             (_⊢_.ƛ
+              (_⊢_.`
+               (_∋_.S _∋_.Z))
+              _⊢_.·
+              (_⊢_.ƛ
+               (_⊢_.ƛ
+                (_⊢_.ƛ
+                 (_⊢_.`
+                  (_∋_.S _∋_.Z))
+                 _⊢_.·
+                 ((_⊢_.` _∋_.Z)
+                  _⊢_.·
+                  (_⊢_.` _∋_.Z)))
+                _⊢_.·
+                (_⊢_.ƛ
+                 (_⊢_.`
+                  (_∋_.S _∋_.Z))
+                 _⊢_.·
+                 ((_⊢_.` _∋_.Z)
+                  _⊢_.·
+                  (_⊢_.` _∋_.Z))))
+               _⊢_.·
+               (_⊢_.ƛ
+                (_⊢_.ƛ
+                 (_⊢_.ƛ
+                  (_⊢_.`
+                   (_∋_.S _∋_.Z))
+                  _⊢_.·
+                  (_⊢_.ƛ
+                   (_⊢_.ƛ
+                    (_⊢_.ƛ
+                     (_⊢_.ƛ
+                      (_⊢_.`
+                       (_∋_.S _∋_.Z))
+                      _⊢_.·
+                      (_⊢_.`
+                       (_∋_.S
+                        (_∋_.S _∋_.Z))))))
+                   _⊢_.·
+                   ((_⊢_.`
+                     (_∋_.S
+                      (_∋_.S
+                       (_∋_.S _∋_.Z))))
+                    _⊢_.·
+                    (_⊢_.` _∋_.Z)
+                    _⊢_.·
+                    (_⊢_.`
+                     (_∋_.S _∋_.Z))))
+                  _⊢_.·
+                  (_⊢_.` _∋_.Z))))
+               _⊢_.·
+               (_⊢_.` _∋_.Z)
+               _⊢_.·
+               ((_⊢_.`
+                 (_∋_.S
+                  (_∋_.S
+                   (_∋_.S _∋_.Z))))
+                _⊢_.·
+                ((_⊢_.` _∋_.Z)
+                 _⊢_.·
+                 (_⊢_.`
+                  (_∋_.S _∋_.Z)))))
+              _⊢_.·
+              (_⊢_.` _∋_.Z))))
+           _⊢_.·
+           ((_⊢_.` _∋_.Z)
+            _⊢_.·
+            (_⊢_.` _∋_.Z)))
+          _⊢_.·
+          ((_⊢_.ƛ
+            (_⊢_.ƛ
+             (_⊢_.ƛ
+              (_⊢_.`
+               (_∋_.S _∋_.Z))
+              _⊢_.·
+              (_⊢_.`
+               (_∋_.S
+                (_∋_.S _∋_.Z))))))
+           _⊢_.·
+           (_⊢_.ƛ
+            (_⊢_.ƛ
+             (_⊢_.` _∋_.Z)))
+           _⊢_.·
+           ((_⊢_.ƛ
+             (_⊢_.ƛ
+              (_⊢_.ƛ
+               (_⊢_.`
+                (_∋_.S _∋_.Z))
+               _⊢_.·
+               (_⊢_.`
+                (_∋_.S
+                 (_∋_.S _∋_.Z))))))
+            _⊢_.·
+            ((_⊢_.ƛ
+              (_⊢_.ƛ
+               (_⊢_.ƛ
+                (_⊢_.`
+                 (_∋_.S _∋_.Z))
+                _⊢_.·
+                (_⊢_.`
+                 (_∋_.S
+                  (_∋_.S _∋_.Z))))))
+             _⊢_.·
+             (_⊢_.ƛ
+              (_⊢_.ƛ
+               (_⊢_.` _∋_.Z)))))))))
+       _⊢_.·
+       ((_⊢_.ƛ
+         (_⊢_.ƛ
+          (_⊢_.ƛ
+           (_⊢_.ƛ
+            (_⊢_.`
+             (_∋_.S _∋_.Z))
+            _⊢_.·
+            (_⊢_.ƛ
+             (_⊢_.ƛ
+              (_⊢_.ƛ
+               (_⊢_.`
+                (_∋_.S _∋_.Z))
+               _⊢_.·
+               ((_⊢_.` _∋_.Z)
+                _⊢_.·
+                (_⊢_.` _∋_.Z)))
+              _⊢_.·
+              (_⊢_.ƛ
+               (_⊢_.`
+                (_∋_.S _∋_.Z))
+               _⊢_.·
+               ((_⊢_.` _∋_.Z)
+                _⊢_.·
+                (_⊢_.` _∋_.Z))))
+             _⊢_.·
+             (_⊢_.ƛ
+              (_⊢_.ƛ
+               (_⊢_.ƛ
+                (_⊢_.`
+                 (_∋_.S _∋_.Z))
+                _⊢_.·
+                (_⊢_.ƛ
+                 (_⊢_.ƛ
+                  (_⊢_.ƛ
+                   (_⊢_.ƛ
+                    (_⊢_.`
+                     (_∋_.S _∋_.Z))
+                    _⊢_.·
+                    (_⊢_.`
+                     (_∋_.S
+                      (_∋_.S _∋_.Z))))))
+                 _⊢_.·
+                 ((_⊢_.`
+                   (_∋_.S
+                    (_∋_.S
+                     (_∋_.S _∋_.Z))))
+                  _⊢_.·
+                  (_⊢_.` _∋_.Z)
+                  _⊢_.·
+                  (_⊢_.`
+                   (_∋_.S _∋_.Z))))
+                _⊢_.·
+                (_⊢_.` _∋_.Z))))
+             _⊢_.·
+             (_⊢_.` _∋_.Z)
+             _⊢_.·
+             ((_⊢_.`
+               (_∋_.S
+                (_∋_.S
+                 (_∋_.S _∋_.Z))))
+              _⊢_.·
+              ((_⊢_.` _∋_.Z)
+               _⊢_.·
+               (_⊢_.`
+                (_∋_.S _∋_.Z)))))
+            _⊢_.·
+            (_⊢_.` _∋_.Z))))
+         _⊢_.·
+         ((_⊢_.` _∋_.Z)
+          _⊢_.·
+          (_⊢_.` _∋_.Z)))
+        _⊢_.·
+        (_⊢_.ƛ
+         (_⊢_.ƛ
+          (_⊢_.ƛ
+           (_⊢_.ƛ
+            (_⊢_.`
+             (_∋_.S _∋_.Z))
+            _⊢_.·
+            (_⊢_.ƛ
+             (_⊢_.ƛ
+              (_⊢_.ƛ
+               (_⊢_.`
+                (_∋_.S _∋_.Z))
+               _⊢_.·
+               ((_⊢_.` _∋_.Z)
+                _⊢_.·
+                (_⊢_.` _∋_.Z)))
+              _⊢_.·
+              (_⊢_.ƛ
+               (_⊢_.`
+                (_∋_.S _∋_.Z))
+               _⊢_.·
+               ((_⊢_.` _∋_.Z)
+                _⊢_.·
+                (_⊢_.` _∋_.Z))))
+             _⊢_.·
+             (_⊢_.ƛ
+              (_⊢_.ƛ
+               (_⊢_.ƛ
+                (_⊢_.`
+                 (_∋_.S _∋_.Z))
+                _⊢_.·
+                (_⊢_.ƛ
+                 (_⊢_.ƛ
+                  (_⊢_.ƛ
+                   (_⊢_.ƛ
+                    (_⊢_.`
+                     (_∋_.S _∋_.Z))
+                    _⊢_.·
+                    (_⊢_.`
+                     (_∋_.S
+                      (_∋_.S _∋_.Z))))))
+                 _⊢_.·
+                 ((_⊢_.`
+                   (_∋_.S
+                    (_∋_.S
+                     (_∋_.S _∋_.Z))))
+                  _⊢_.·
+                  (_⊢_.` _∋_.Z)
+                  _⊢_.·
+                  (_⊢_.`
+                   (_∋_.S _∋_.Z))))
+                _⊢_.·
+                (_⊢_.` _∋_.Z))))
+             _⊢_.·
+             (_⊢_.` _∋_.Z)
+             _⊢_.·
+             ((_⊢_.`
+               (_∋_.S
+                (_∋_.S
+                 (_∋_.S _∋_.Z))))
+              _⊢_.·
+              ((_⊢_.` _∋_.Z)
+               _⊢_.·
+               (_⊢_.`
+                (_∋_.S _∋_.Z)))))
+            _⊢_.·
+            (_⊢_.` _∋_.Z))))
+         _⊢_.·
+         ((_⊢_.` _∋_.Z)
+          _⊢_.·
+          (_⊢_.` _∋_.Z)))
+        _⊢_.·
+        ((_⊢_.ƛ
+          (_⊢_.ƛ
+           (_⊢_.ƛ
+            (_⊢_.`
+             (_∋_.S _∋_.Z))
+            _⊢_.·
+            (_⊢_.`
+             (_∋_.S
+              (_∋_.S _∋_.Z))))))
+         _⊢_.·
+         (_⊢_.ƛ
+          (_⊢_.ƛ
+           (_⊢_.` _∋_.Z)))
+         _⊢_.·
+         ((_⊢_.ƛ
+           (_⊢_.ƛ
+            (_⊢_.ƛ
+             (_⊢_.`
+              (_∋_.S _∋_.Z))
+             _⊢_.·
+             (_⊢_.`
+              (_∋_.S
+               (_∋_.S _∋_.Z))))))
+          _⊢_.·
+          ((_⊢_.ƛ
+            (_⊢_.ƛ
+             (_⊢_.ƛ
+              (_⊢_.`
+               (_∋_.S _∋_.Z))
+              _⊢_.·
+              (_⊢_.`
+               (_∋_.S
+                (_∋_.S _∋_.Z))))))
+           _⊢_.·
+           (_⊢_.ƛ
+            (_⊢_.ƛ
+             (_⊢_.` _∋_.Z)))))))))
+     _—↠_.—→⟨
+     _—→_.ζ
+     (_—→_.ζ
+      (_—→_.ξ₂
+       (_—→_.ξ₁ _—→_.β)))
      ⟩
-     plfa.part2.Untyped._⊢_.ƛ
-     (plfa.part2.Untyped._⊢_.ƛ
-      (plfa.part2.Untyped._⊢_.`
-       (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-      plfa.part2.Untyped._⊢_.·
-      ((plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))
-       plfa.part2.Untyped._⊢_.·
-       ((plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.`
-             (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.`
-                (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-               plfa.part2.Untyped._⊢_.·
-               ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.`
-                (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-               plfa.part2.Untyped._⊢_.·
-               ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.ƛ
-                (plfa.part2.Untyped._⊢_.`
-                 (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.ƛ
-                 (plfa.part2.Untyped._⊢_.ƛ
-                  (plfa.part2.Untyped._⊢_.ƛ
-                   (plfa.part2.Untyped._⊢_.ƛ
-                    (plfa.part2.Untyped._⊢_.`
-                     (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-                    plfa.part2.Untyped._⊢_.·
-                    (plfa.part2.Untyped._⊢_.`
-                     (plfa.part2.Untyped._∋_.S
-                      (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-                 plfa.part2.Untyped._⊢_.·
-                 ((plfa.part2.Untyped._⊢_.`
-                   (plfa.part2.Untyped._∋_.S
-                    (plfa.part2.Untyped._∋_.S
-                     (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-                  plfa.part2.Untyped._⊢_.·
-                  (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                  plfa.part2.Untyped._⊢_.·
-                  (plfa.part2.Untyped._⊢_.`
-                   (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-             plfa.part2.Untyped._⊢_.·
-             ((plfa.part2.Untyped._⊢_.`
-               (plfa.part2.Untyped._∋_.S
-                (plfa.part2.Untyped._∋_.S
-                 (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-              plfa.part2.Untyped._⊢_.·
-              ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-               plfa.part2.Untyped._⊢_.·
-               (plfa.part2.Untyped._⊢_.`
-                (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z)))))
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-         plfa.part2.Untyped._⊢_.·
-         ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-          plfa.part2.Untyped._⊢_.·
-          (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-        plfa.part2.Untyped._⊢_.·
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.`
-             (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.`
-                (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-               plfa.part2.Untyped._⊢_.·
-               ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.`
-                (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-               plfa.part2.Untyped._⊢_.·
-               ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.ƛ
-                (plfa.part2.Untyped._⊢_.`
-                 (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.ƛ
-                 (plfa.part2.Untyped._⊢_.ƛ
-                  (plfa.part2.Untyped._⊢_.ƛ
-                   (plfa.part2.Untyped._⊢_.ƛ
-                    (plfa.part2.Untyped._⊢_.`
-                     (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-                    plfa.part2.Untyped._⊢_.·
-                    (plfa.part2.Untyped._⊢_.`
-                     (plfa.part2.Untyped._∋_.S
-                      (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-                 plfa.part2.Untyped._⊢_.·
-                 ((plfa.part2.Untyped._⊢_.`
-                   (plfa.part2.Untyped._∋_.S
-                    (plfa.part2.Untyped._∋_.S
-                     (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-                  plfa.part2.Untyped._⊢_.·
-                  (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                  plfa.part2.Untyped._⊢_.·
-                  (plfa.part2.Untyped._⊢_.`
-                   (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-             plfa.part2.Untyped._⊢_.·
-             ((plfa.part2.Untyped._⊢_.`
-               (plfa.part2.Untyped._∋_.S
-                (plfa.part2.Untyped._∋_.S
-                 (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-              plfa.part2.Untyped._⊢_.·
-              ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-               plfa.part2.Untyped._⊢_.·
-               (plfa.part2.Untyped._⊢_.`
-                (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z)))))
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-         plfa.part2.Untyped._⊢_.·
-         ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-          plfa.part2.Untyped._⊢_.·
-          (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-        plfa.part2.Untyped._⊢_.·
-        ((plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.`
-             (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.`
-             (plfa.part2.Untyped._∋_.S
-              (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-         plfa.part2.Untyped._⊢_.·
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-         plfa.part2.Untyped._⊢_.·
-         ((plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S
-               (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-          plfa.part2.Untyped._⊢_.·
-          ((plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.`
-               (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.`
-               (plfa.part2.Untyped._∋_.S
-                (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-           plfa.part2.Untyped._⊢_.·
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))))))))
-     plfa.part2.Untyped._—↠_.—→⟨
-     plfa.part2.Untyped._—→_.ζ
-     (plfa.part2.Untyped._—→_.ζ
-      (plfa.part2.Untyped._—→_.ξ₂ plfa.part2.Untyped._—→_.β))
+     _⊢_.ƛ
+     (_⊢_.ƛ
+      (_⊢_.`
+       (_∋_.S _∋_.Z))
+      _⊢_.·
+      ((_⊢_.ƛ
+        (_⊢_.` _∋_.Z))
+       _⊢_.·
+       ((_⊢_.ƛ
+         (_⊢_.ƛ
+          (_⊢_.ƛ
+           (_⊢_.ƛ
+            (_⊢_.`
+             (_∋_.S _∋_.Z))
+            _⊢_.·
+            (_⊢_.ƛ
+             (_⊢_.ƛ
+              (_⊢_.ƛ
+               (_⊢_.`
+                (_∋_.S _∋_.Z))
+               _⊢_.·
+               ((_⊢_.` _∋_.Z)
+                _⊢_.·
+                (_⊢_.` _∋_.Z)))
+              _⊢_.·
+              (_⊢_.ƛ
+               (_⊢_.`
+                (_∋_.S _∋_.Z))
+               _⊢_.·
+               ((_⊢_.` _∋_.Z)
+                _⊢_.·
+                (_⊢_.` _∋_.Z))))
+             _⊢_.·
+             (_⊢_.ƛ
+              (_⊢_.ƛ
+               (_⊢_.ƛ
+                (_⊢_.`
+                 (_∋_.S _∋_.Z))
+                _⊢_.·
+                (_⊢_.ƛ
+                 (_⊢_.ƛ
+                  (_⊢_.ƛ
+                   (_⊢_.ƛ
+                    (_⊢_.`
+                     (_∋_.S _∋_.Z))
+                    _⊢_.·
+                    (_⊢_.`
+                     (_∋_.S
+                      (_∋_.S _∋_.Z))))))
+                 _⊢_.·
+                 ((_⊢_.`
+                   (_∋_.S
+                    (_∋_.S
+                     (_∋_.S _∋_.Z))))
+                  _⊢_.·
+                  (_⊢_.` _∋_.Z)
+                  _⊢_.·
+                  (_⊢_.`
+                   (_∋_.S _∋_.Z))))
+                _⊢_.·
+                (_⊢_.` _∋_.Z))))
+             _⊢_.·
+             (_⊢_.` _∋_.Z)
+             _⊢_.·
+             ((_⊢_.`
+               (_∋_.S
+                (_∋_.S
+                 (_∋_.S _∋_.Z))))
+              _⊢_.·
+              ((_⊢_.` _∋_.Z)
+               _⊢_.·
+               (_⊢_.`
+                (_∋_.S _∋_.Z)))))
+            _⊢_.·
+            (_⊢_.` _∋_.Z))))
+         _⊢_.·
+         ((_⊢_.` _∋_.Z)
+          _⊢_.·
+          (_⊢_.` _∋_.Z)))
+        _⊢_.·
+        (_⊢_.ƛ
+         (_⊢_.ƛ
+          (_⊢_.ƛ
+           (_⊢_.ƛ
+            (_⊢_.`
+             (_∋_.S _∋_.Z))
+            _⊢_.·
+            (_⊢_.ƛ
+             (_⊢_.ƛ
+              (_⊢_.ƛ
+               (_⊢_.`
+                (_∋_.S _∋_.Z))
+               _⊢_.·
+               ((_⊢_.` _∋_.Z)
+                _⊢_.·
+                (_⊢_.` _∋_.Z)))
+              _⊢_.·
+              (_⊢_.ƛ
+               (_⊢_.`
+                (_∋_.S _∋_.Z))
+               _⊢_.·
+               ((_⊢_.` _∋_.Z)
+                _⊢_.·
+                (_⊢_.` _∋_.Z))))
+             _⊢_.·
+             (_⊢_.ƛ
+              (_⊢_.ƛ
+               (_⊢_.ƛ
+                (_⊢_.`
+                 (_∋_.S _∋_.Z))
+                _⊢_.·
+                (_⊢_.ƛ
+                 (_⊢_.ƛ
+                  (_⊢_.ƛ
+                   (_⊢_.ƛ
+                    (_⊢_.`
+                     (_∋_.S _∋_.Z))
+                    _⊢_.·
+                    (_⊢_.`
+                     (_∋_.S
+                      (_∋_.S _∋_.Z))))))
+                 _⊢_.·
+                 ((_⊢_.`
+                   (_∋_.S
+                    (_∋_.S
+                     (_∋_.S _∋_.Z))))
+                  _⊢_.·
+                  (_⊢_.` _∋_.Z)
+                  _⊢_.·
+                  (_⊢_.`
+                   (_∋_.S _∋_.Z))))
+                _⊢_.·
+                (_⊢_.` _∋_.Z))))
+             _⊢_.·
+             (_⊢_.` _∋_.Z)
+             _⊢_.·
+             ((_⊢_.`
+               (_∋_.S
+                (_∋_.S
+                 (_∋_.S _∋_.Z))))
+              _⊢_.·
+              ((_⊢_.` _∋_.Z)
+               _⊢_.·
+               (_⊢_.`
+                (_∋_.S _∋_.Z)))))
+            _⊢_.·
+            (_⊢_.` _∋_.Z))))
+         _⊢_.·
+         ((_⊢_.` _∋_.Z)
+          _⊢_.·
+          (_⊢_.` _∋_.Z)))
+        _⊢_.·
+        ((_⊢_.ƛ
+          (_⊢_.ƛ
+           (_⊢_.ƛ
+            (_⊢_.`
+             (_∋_.S _∋_.Z))
+            _⊢_.·
+            (_⊢_.`
+             (_∋_.S
+              (_∋_.S _∋_.Z))))))
+         _⊢_.·
+         (_⊢_.ƛ
+          (_⊢_.ƛ
+           (_⊢_.` _∋_.Z)))
+         _⊢_.·
+         ((_⊢_.ƛ
+           (_⊢_.ƛ
+            (_⊢_.ƛ
+             (_⊢_.`
+              (_∋_.S _∋_.Z))
+             _⊢_.·
+             (_⊢_.`
+              (_∋_.S
+               (_∋_.S _∋_.Z))))))
+          _⊢_.·
+          ((_⊢_.ƛ
+            (_⊢_.ƛ
+             (_⊢_.ƛ
+              (_⊢_.`
+               (_∋_.S _∋_.Z))
+              _⊢_.·
+              (_⊢_.`
+               (_∋_.S
+                (_∋_.S _∋_.Z))))))
+           _⊢_.·
+           (_⊢_.ƛ
+            (_⊢_.ƛ
+             (_⊢_.` _∋_.Z)))))))))
+     _—↠_.—→⟨
+     _—→_.ζ
+     (_—→_.ζ
+      (_—→_.ξ₂ _—→_.β))
      ⟩
-     plfa.part2.Untyped._⊢_.ƛ
-     (plfa.part2.Untyped._⊢_.ƛ
-      (plfa.part2.Untyped._⊢_.`
-       (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-      plfa.part2.Untyped._⊢_.·
-      ((plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.`
-            (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-           plfa.part2.Untyped._⊢_.·
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.`
-               (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-              plfa.part2.Untyped._⊢_.·
-              ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-               plfa.part2.Untyped._⊢_.·
-               (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.`
-               (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-              plfa.part2.Untyped._⊢_.·
-              ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-               plfa.part2.Untyped._⊢_.·
-               (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.`
-                (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-               plfa.part2.Untyped._⊢_.·
-               (plfa.part2.Untyped._⊢_.ƛ
-                (plfa.part2.Untyped._⊢_.ƛ
-                 (plfa.part2.Untyped._⊢_.ƛ
-                  (plfa.part2.Untyped._⊢_.ƛ
-                   (plfa.part2.Untyped._⊢_.`
-                    (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-                   plfa.part2.Untyped._⊢_.·
-                   (plfa.part2.Untyped._⊢_.`
-                    (plfa.part2.Untyped._∋_.S
-                     (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-                plfa.part2.Untyped._⊢_.·
-                ((plfa.part2.Untyped._⊢_.`
-                  (plfa.part2.Untyped._∋_.S
-                   (plfa.part2.Untyped._∋_.S
-                    (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-                 plfa.part2.Untyped._⊢_.·
-                 (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                 plfa.part2.Untyped._⊢_.·
-                 (plfa.part2.Untyped._⊢_.`
-                  (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-               plfa.part2.Untyped._⊢_.·
-               (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-            plfa.part2.Untyped._⊢_.·
-            ((plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S
-               (plfa.part2.Untyped._∋_.S
-                (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-             plfa.part2.Untyped._⊢_.·
-             ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.`
-               (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z)))))
-           plfa.part2.Untyped._⊢_.·
-           (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-        plfa.part2.Untyped._⊢_.·
-        ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-         plfa.part2.Untyped._⊢_.·
-         (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-       plfa.part2.Untyped._⊢_.·
-       (plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.`
-            (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-           plfa.part2.Untyped._⊢_.·
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.`
-               (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-              plfa.part2.Untyped._⊢_.·
-              ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-               plfa.part2.Untyped._⊢_.·
-               (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.`
-               (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-              plfa.part2.Untyped._⊢_.·
-              ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-               plfa.part2.Untyped._⊢_.·
-               (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.`
-                (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-               plfa.part2.Untyped._⊢_.·
-               (plfa.part2.Untyped._⊢_.ƛ
-                (plfa.part2.Untyped._⊢_.ƛ
-                 (plfa.part2.Untyped._⊢_.ƛ
-                  (plfa.part2.Untyped._⊢_.ƛ
-                   (plfa.part2.Untyped._⊢_.`
-                    (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-                   plfa.part2.Untyped._⊢_.·
-                   (plfa.part2.Untyped._⊢_.`
-                    (plfa.part2.Untyped._∋_.S
-                     (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-                plfa.part2.Untyped._⊢_.·
-                ((plfa.part2.Untyped._⊢_.`
-                  (plfa.part2.Untyped._∋_.S
-                   (plfa.part2.Untyped._∋_.S
-                    (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-                 plfa.part2.Untyped._⊢_.·
-                 (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                 plfa.part2.Untyped._⊢_.·
-                 (plfa.part2.Untyped._⊢_.`
-                  (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-               plfa.part2.Untyped._⊢_.·
-               (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-            plfa.part2.Untyped._⊢_.·
-            ((plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S
-               (plfa.part2.Untyped._∋_.S
-                (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-             plfa.part2.Untyped._⊢_.·
-             ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.`
-               (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z)))))
-           plfa.part2.Untyped._⊢_.·
-           (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-        plfa.part2.Untyped._⊢_.·
-        ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-         plfa.part2.Untyped._⊢_.·
-         (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-       plfa.part2.Untyped._⊢_.·
-       ((plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.`
-            (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-           plfa.part2.Untyped._⊢_.·
-           (plfa.part2.Untyped._⊢_.`
-            (plfa.part2.Untyped._∋_.S
-             (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-        plfa.part2.Untyped._⊢_.·
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-        plfa.part2.Untyped._⊢_.·
-        ((plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.`
-             (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.`
-             (plfa.part2.Untyped._∋_.S
-              (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-         plfa.part2.Untyped._⊢_.·
-         ((plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S
-               (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-          plfa.part2.Untyped._⊢_.·
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))))))
-     plfa.part2.Untyped._—↠_.—→⟨
-     plfa.part2.Untyped._—→_.ζ
-     (plfa.part2.Untyped._—→_.ζ
-      (plfa.part2.Untyped._—→_.ξ₂
-       (plfa.part2.Untyped._—→_.ξ₁ plfa.part2.Untyped._—→_.β)))
+     _⊢_.ƛ
+     (_⊢_.ƛ
+      (_⊢_.`
+       (_∋_.S _∋_.Z))
+      _⊢_.·
+      ((_⊢_.ƛ
+        (_⊢_.ƛ
+         (_⊢_.ƛ
+          (_⊢_.ƛ
+           (_⊢_.`
+            (_∋_.S _∋_.Z))
+           _⊢_.·
+           (_⊢_.ƛ
+            (_⊢_.ƛ
+             (_⊢_.ƛ
+              (_⊢_.`
+               (_∋_.S _∋_.Z))
+              _⊢_.·
+              ((_⊢_.` _∋_.Z)
+               _⊢_.·
+               (_⊢_.` _∋_.Z)))
+             _⊢_.·
+             (_⊢_.ƛ
+              (_⊢_.`
+               (_∋_.S _∋_.Z))
+              _⊢_.·
+              ((_⊢_.` _∋_.Z)
+               _⊢_.·
+               (_⊢_.` _∋_.Z))))
+            _⊢_.·
+            (_⊢_.ƛ
+             (_⊢_.ƛ
+              (_⊢_.ƛ
+               (_⊢_.`
+                (_∋_.S _∋_.Z))
+               _⊢_.·
+               (_⊢_.ƛ
+                (_⊢_.ƛ
+                 (_⊢_.ƛ
+                  (_⊢_.ƛ
+                   (_⊢_.`
+                    (_∋_.S _∋_.Z))
+                   _⊢_.·
+                   (_⊢_.`
+                    (_∋_.S
+                     (_∋_.S _∋_.Z))))))
+                _⊢_.·
+                ((_⊢_.`
+                  (_∋_.S
+                   (_∋_.S
+                    (_∋_.S _∋_.Z))))
+                 _⊢_.·
+                 (_⊢_.` _∋_.Z)
+                 _⊢_.·
+                 (_⊢_.`
+                  (_∋_.S _∋_.Z))))
+               _⊢_.·
+               (_⊢_.` _∋_.Z))))
+            _⊢_.·
+            (_⊢_.` _∋_.Z)
+            _⊢_.·
+            ((_⊢_.`
+              (_∋_.S
+               (_∋_.S
+                (_∋_.S _∋_.Z))))
+             _⊢_.·
+             ((_⊢_.` _∋_.Z)
+              _⊢_.·
+              (_⊢_.`
+               (_∋_.S _∋_.Z)))))
+           _⊢_.·
+           (_⊢_.` _∋_.Z))))
+        _⊢_.·
+        ((_⊢_.` _∋_.Z)
+         _⊢_.·
+         (_⊢_.` _∋_.Z)))
+       _⊢_.·
+       (_⊢_.ƛ
+        (_⊢_.ƛ
+         (_⊢_.ƛ
+          (_⊢_.ƛ
+           (_⊢_.`
+            (_∋_.S _∋_.Z))
+           _⊢_.·
+           (_⊢_.ƛ
+            (_⊢_.ƛ
+             (_⊢_.ƛ
+              (_⊢_.`
+               (_∋_.S _∋_.Z))
+              _⊢_.·
+              ((_⊢_.` _∋_.Z)
+               _⊢_.·
+               (_⊢_.` _∋_.Z)))
+             _⊢_.·
+             (_⊢_.ƛ
+              (_⊢_.`
+               (_∋_.S _∋_.Z))
+              _⊢_.·
+              ((_⊢_.` _∋_.Z)
+               _⊢_.·
+               (_⊢_.` _∋_.Z))))
+            _⊢_.·
+            (_⊢_.ƛ
+             (_⊢_.ƛ
+              (_⊢_.ƛ
+               (_⊢_.`
+                (_∋_.S _∋_.Z))
+               _⊢_.·
+               (_⊢_.ƛ
+                (_⊢_.ƛ
+                 (_⊢_.ƛ
+                  (_⊢_.ƛ
+                   (_⊢_.`
+                    (_∋_.S _∋_.Z))
+                   _⊢_.·
+                   (_⊢_.`
+                    (_∋_.S
+                     (_∋_.S _∋_.Z))))))
+                _⊢_.·
+                ((_⊢_.`
+                  (_∋_.S
+                   (_∋_.S
+                    (_∋_.S _∋_.Z))))
+                 _⊢_.·
+                 (_⊢_.` _∋_.Z)
+                 _⊢_.·
+                 (_⊢_.`
+                  (_∋_.S _∋_.Z))))
+               _⊢_.·
+               (_⊢_.` _∋_.Z))))
+            _⊢_.·
+            (_⊢_.` _∋_.Z)
+            _⊢_.·
+            ((_⊢_.`
+              (_∋_.S
+               (_∋_.S
+                (_∋_.S _∋_.Z))))
+             _⊢_.·
+             ((_⊢_.` _∋_.Z)
+              _⊢_.·
+              (_⊢_.`
+               (_∋_.S _∋_.Z)))))
+           _⊢_.·
+           (_⊢_.` _∋_.Z))))
+        _⊢_.·
+        ((_⊢_.` _∋_.Z)
+         _⊢_.·
+         (_⊢_.` _∋_.Z)))
+       _⊢_.·
+       ((_⊢_.ƛ
+         (_⊢_.ƛ
+          (_⊢_.ƛ
+           (_⊢_.`
+            (_∋_.S _∋_.Z))
+           _⊢_.·
+           (_⊢_.`
+            (_∋_.S
+             (_∋_.S _∋_.Z))))))
+        _⊢_.·
+        (_⊢_.ƛ
+         (_⊢_.ƛ
+          (_⊢_.` _∋_.Z)))
+        _⊢_.·
+        ((_⊢_.ƛ
+          (_⊢_.ƛ
+           (_⊢_.ƛ
+            (_⊢_.`
+             (_∋_.S _∋_.Z))
+            _⊢_.·
+            (_⊢_.`
+             (_∋_.S
+              (_∋_.S _∋_.Z))))))
+         _⊢_.·
+         ((_⊢_.ƛ
+           (_⊢_.ƛ
+            (_⊢_.ƛ
+             (_⊢_.`
+              (_∋_.S _∋_.Z))
+             _⊢_.·
+             (_⊢_.`
+              (_∋_.S
+               (_∋_.S _∋_.Z))))))
+          _⊢_.·
+          (_⊢_.ƛ
+           (_⊢_.ƛ
+            (_⊢_.` _∋_.Z))))))))
+     _—↠_.—→⟨
+     _—→_.ζ
+     (_—→_.ζ
+      (_—→_.ξ₂
+       (_—→_.ξ₁ _—→_.β)))
      ⟩
-     plfa.part2.Untyped._⊢_.ƛ
-     (plfa.part2.Untyped._⊢_.ƛ
-      (plfa.part2.Untyped._⊢_.`
-       (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-      plfa.part2.Untyped._⊢_.·
-      ((plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.`
-           (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-          plfa.part2.Untyped._⊢_.·
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-             plfa.part2.Untyped._⊢_.·
-             ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-             plfa.part2.Untyped._⊢_.·
-             ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-           plfa.part2.Untyped._⊢_.·
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.`
-               (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.ƛ
-                (plfa.part2.Untyped._⊢_.ƛ
-                 (plfa.part2.Untyped._⊢_.ƛ
-                  (plfa.part2.Untyped._⊢_.`
-                   (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-                  plfa.part2.Untyped._⊢_.·
-                  (plfa.part2.Untyped._⊢_.`
-                   (plfa.part2.Untyped._∋_.S
-                    (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-               plfa.part2.Untyped._⊢_.·
-               ((plfa.part2.Untyped._⊢_.`
-                 (plfa.part2.Untyped._∋_.S
-                  (plfa.part2.Untyped._∋_.S
-                   (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.`
-                 (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-           plfa.part2.Untyped._⊢_.·
-           (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-           plfa.part2.Untyped._⊢_.·
-           ((plfa.part2.Untyped._⊢_.`
-             (plfa.part2.Untyped._∋_.S
-              (plfa.part2.Untyped._∋_.S
-               (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-            plfa.part2.Untyped._⊢_.·
-            ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z)))))
-          plfa.part2.Untyped._⊢_.·
-          (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-       plfa.part2.Untyped._⊢_.·
-       ((plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.`
-             (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.`
-                (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-               plfa.part2.Untyped._⊢_.·
-               ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.`
-                (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-               plfa.part2.Untyped._⊢_.·
-               ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.ƛ
-                (plfa.part2.Untyped._⊢_.`
-                 (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.ƛ
-                 (plfa.part2.Untyped._⊢_.ƛ
-                  (plfa.part2.Untyped._⊢_.ƛ
-                   (plfa.part2.Untyped._⊢_.ƛ
-                    (plfa.part2.Untyped._⊢_.`
-                     (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-                    plfa.part2.Untyped._⊢_.·
-                    (plfa.part2.Untyped._⊢_.`
-                     (plfa.part2.Untyped._∋_.S
-                      (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-                 plfa.part2.Untyped._⊢_.·
-                 ((plfa.part2.Untyped._⊢_.`
-                   (plfa.part2.Untyped._∋_.S
-                    (plfa.part2.Untyped._∋_.S
-                     (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-                  plfa.part2.Untyped._⊢_.·
-                  (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                  plfa.part2.Untyped._⊢_.·
-                  (plfa.part2.Untyped._⊢_.`
-                   (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-             plfa.part2.Untyped._⊢_.·
-             ((plfa.part2.Untyped._⊢_.`
-               (plfa.part2.Untyped._∋_.S
-                (plfa.part2.Untyped._∋_.S
-                 (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-              plfa.part2.Untyped._⊢_.·
-              ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-               plfa.part2.Untyped._⊢_.·
-               (plfa.part2.Untyped._⊢_.`
-                (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z)))))
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-         plfa.part2.Untyped._⊢_.·
-         ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-          plfa.part2.Untyped._⊢_.·
-          (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-        plfa.part2.Untyped._⊢_.·
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.`
-             (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.`
-                (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-               plfa.part2.Untyped._⊢_.·
-               ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.`
-                (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-               plfa.part2.Untyped._⊢_.·
-               ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.ƛ
-                (plfa.part2.Untyped._⊢_.`
-                 (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.ƛ
-                 (plfa.part2.Untyped._⊢_.ƛ
-                  (plfa.part2.Untyped._⊢_.ƛ
-                   (plfa.part2.Untyped._⊢_.ƛ
-                    (plfa.part2.Untyped._⊢_.`
-                     (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-                    plfa.part2.Untyped._⊢_.·
-                    (plfa.part2.Untyped._⊢_.`
-                     (plfa.part2.Untyped._∋_.S
-                      (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-                 plfa.part2.Untyped._⊢_.·
-                 ((plfa.part2.Untyped._⊢_.`
-                   (plfa.part2.Untyped._∋_.S
-                    (plfa.part2.Untyped._∋_.S
-                     (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-                  plfa.part2.Untyped._⊢_.·
-                  (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                  plfa.part2.Untyped._⊢_.·
-                  (plfa.part2.Untyped._⊢_.`
-                   (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-             plfa.part2.Untyped._⊢_.·
-             ((plfa.part2.Untyped._⊢_.`
-               (plfa.part2.Untyped._∋_.S
-                (plfa.part2.Untyped._∋_.S
-                 (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-              plfa.part2.Untyped._⊢_.·
-              ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-               plfa.part2.Untyped._⊢_.·
-               (plfa.part2.Untyped._⊢_.`
-                (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z)))))
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-         plfa.part2.Untyped._⊢_.·
-         ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-          plfa.part2.Untyped._⊢_.·
-          (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-       plfa.part2.Untyped._⊢_.·
-       ((plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.`
-            (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-           plfa.part2.Untyped._⊢_.·
-           (plfa.part2.Untyped._⊢_.`
-            (plfa.part2.Untyped._∋_.S
-             (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-        plfa.part2.Untyped._⊢_.·
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-        plfa.part2.Untyped._⊢_.·
-        ((plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.`
-             (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.`
-             (plfa.part2.Untyped._∋_.S
-              (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-         plfa.part2.Untyped._⊢_.·
-         ((plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S
-               (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-          plfa.part2.Untyped._⊢_.·
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))))))
-     plfa.part2.Untyped._—↠_.—→⟨
-     plfa.part2.Untyped._—→_.ζ
-     (plfa.part2.Untyped._—→_.ζ
-      (plfa.part2.Untyped._—→_.ξ₂
-       (plfa.part2.Untyped._—→_.ξ₁ plfa.part2.Untyped._—→_.β)))
+     _⊢_.ƛ
+     (_⊢_.ƛ
+      (_⊢_.`
+       (_∋_.S _∋_.Z))
+      _⊢_.·
+      ((_⊢_.ƛ
+        (_⊢_.ƛ
+         (_⊢_.ƛ
+          (_⊢_.`
+           (_∋_.S _∋_.Z))
+          _⊢_.·
+          (_⊢_.ƛ
+           (_⊢_.ƛ
+            (_⊢_.ƛ
+             (_⊢_.`
+              (_∋_.S _∋_.Z))
+             _⊢_.·
+             ((_⊢_.` _∋_.Z)
+              _⊢_.·
+              (_⊢_.` _∋_.Z)))
+            _⊢_.·
+            (_⊢_.ƛ
+             (_⊢_.`
+              (_∋_.S _∋_.Z))
+             _⊢_.·
+             ((_⊢_.` _∋_.Z)
+              _⊢_.·
+              (_⊢_.` _∋_.Z))))
+           _⊢_.·
+           (_⊢_.ƛ
+            (_⊢_.ƛ
+             (_⊢_.ƛ
+              (_⊢_.`
+               (_∋_.S _∋_.Z))
+              _⊢_.·
+              (_⊢_.ƛ
+               (_⊢_.ƛ
+                (_⊢_.ƛ
+                 (_⊢_.ƛ
+                  (_⊢_.`
+                   (_∋_.S _∋_.Z))
+                  _⊢_.·
+                  (_⊢_.`
+                   (_∋_.S
+                    (_∋_.S _∋_.Z))))))
+               _⊢_.·
+               ((_⊢_.`
+                 (_∋_.S
+                  (_∋_.S
+                   (_∋_.S _∋_.Z))))
+                _⊢_.·
+                (_⊢_.` _∋_.Z)
+                _⊢_.·
+                (_⊢_.`
+                 (_∋_.S _∋_.Z))))
+              _⊢_.·
+              (_⊢_.` _∋_.Z))))
+           _⊢_.·
+           (_⊢_.` _∋_.Z)
+           _⊢_.·
+           ((_⊢_.`
+             (_∋_.S
+              (_∋_.S
+               (_∋_.S _∋_.Z))))
+            _⊢_.·
+            ((_⊢_.` _∋_.Z)
+             _⊢_.·
+             (_⊢_.`
+              (_∋_.S _∋_.Z)))))
+          _⊢_.·
+          (_⊢_.` _∋_.Z))))
+       _⊢_.·
+       ((_⊢_.ƛ
+         (_⊢_.ƛ
+          (_⊢_.ƛ
+           (_⊢_.ƛ
+            (_⊢_.`
+             (_∋_.S _∋_.Z))
+            _⊢_.·
+            (_⊢_.ƛ
+             (_⊢_.ƛ
+              (_⊢_.ƛ
+               (_⊢_.`
+                (_∋_.S _∋_.Z))
+               _⊢_.·
+               ((_⊢_.` _∋_.Z)
+                _⊢_.·
+                (_⊢_.` _∋_.Z)))
+              _⊢_.·
+              (_⊢_.ƛ
+               (_⊢_.`
+                (_∋_.S _∋_.Z))
+               _⊢_.·
+               ((_⊢_.` _∋_.Z)
+                _⊢_.·
+                (_⊢_.` _∋_.Z))))
+             _⊢_.·
+             (_⊢_.ƛ
+              (_⊢_.ƛ
+               (_⊢_.ƛ
+                (_⊢_.`
+                 (_∋_.S _∋_.Z))
+                _⊢_.·
+                (_⊢_.ƛ
+                 (_⊢_.ƛ
+                  (_⊢_.ƛ
+                   (_⊢_.ƛ
+                    (_⊢_.`
+                     (_∋_.S _∋_.Z))
+                    _⊢_.·
+                    (_⊢_.`
+                     (_∋_.S
+                      (_∋_.S _∋_.Z))))))
+                 _⊢_.·
+                 ((_⊢_.`
+                   (_∋_.S
+                    (_∋_.S
+                     (_∋_.S _∋_.Z))))
+                  _⊢_.·
+                  (_⊢_.` _∋_.Z)
+                  _⊢_.·
+                  (_⊢_.`
+                   (_∋_.S _∋_.Z))))
+                _⊢_.·
+                (_⊢_.` _∋_.Z))))
+             _⊢_.·
+             (_⊢_.` _∋_.Z)
+             _⊢_.·
+             ((_⊢_.`
+               (_∋_.S
+                (_∋_.S
+                 (_∋_.S _∋_.Z))))
+              _⊢_.·
+              ((_⊢_.` _∋_.Z)
+               _⊢_.·
+               (_⊢_.`
+                (_∋_.S _∋_.Z)))))
+            _⊢_.·
+            (_⊢_.` _∋_.Z))))
+         _⊢_.·
+         ((_⊢_.` _∋_.Z)
+          _⊢_.·
+          (_⊢_.` _∋_.Z)))
+        _⊢_.·
+        (_⊢_.ƛ
+         (_⊢_.ƛ
+          (_⊢_.ƛ
+           (_⊢_.ƛ
+            (_⊢_.`
+             (_∋_.S _∋_.Z))
+            _⊢_.·
+            (_⊢_.ƛ
+             (_⊢_.ƛ
+              (_⊢_.ƛ
+               (_⊢_.`
+                (_∋_.S _∋_.Z))
+               _⊢_.·
+               ((_⊢_.` _∋_.Z)
+                _⊢_.·
+                (_⊢_.` _∋_.Z)))
+              _⊢_.·
+              (_⊢_.ƛ
+               (_⊢_.`
+                (_∋_.S _∋_.Z))
+               _⊢_.·
+               ((_⊢_.` _∋_.Z)
+                _⊢_.·
+                (_⊢_.` _∋_.Z))))
+             _⊢_.·
+             (_⊢_.ƛ
+              (_⊢_.ƛ
+               (_⊢_.ƛ
+                (_⊢_.`
+                 (_∋_.S _∋_.Z))
+                _⊢_.·
+                (_⊢_.ƛ
+                 (_⊢_.ƛ
+                  (_⊢_.ƛ
+                   (_⊢_.ƛ
+                    (_⊢_.`
+                     (_∋_.S _∋_.Z))
+                    _⊢_.·
+                    (_⊢_.`
+                     (_∋_.S
+                      (_∋_.S _∋_.Z))))))
+                 _⊢_.·
+                 ((_⊢_.`
+                   (_∋_.S
+                    (_∋_.S
+                     (_∋_.S _∋_.Z))))
+                  _⊢_.·
+                  (_⊢_.` _∋_.Z)
+                  _⊢_.·
+                  (_⊢_.`
+                   (_∋_.S _∋_.Z))))
+                _⊢_.·
+                (_⊢_.` _∋_.Z))))
+             _⊢_.·
+             (_⊢_.` _∋_.Z)
+             _⊢_.·
+             ((_⊢_.`
+               (_∋_.S
+                (_∋_.S
+                 (_∋_.S _∋_.Z))))
+              _⊢_.·
+              ((_⊢_.` _∋_.Z)
+               _⊢_.·
+               (_⊢_.`
+                (_∋_.S _∋_.Z)))))
+            _⊢_.·
+            (_⊢_.` _∋_.Z))))
+         _⊢_.·
+         ((_⊢_.` _∋_.Z)
+          _⊢_.·
+          (_⊢_.` _∋_.Z))))
+       _⊢_.·
+       ((_⊢_.ƛ
+         (_⊢_.ƛ
+          (_⊢_.ƛ
+           (_⊢_.`
+            (_∋_.S _∋_.Z))
+           _⊢_.·
+           (_⊢_.`
+            (_∋_.S
+             (_∋_.S _∋_.Z))))))
+        _⊢_.·
+        (_⊢_.ƛ
+         (_⊢_.ƛ
+          (_⊢_.` _∋_.Z)))
+        _⊢_.·
+        ((_⊢_.ƛ
+          (_⊢_.ƛ
+           (_⊢_.ƛ
+            (_⊢_.`
+             (_∋_.S _∋_.Z))
+            _⊢_.·
+            (_⊢_.`
+             (_∋_.S
+              (_∋_.S _∋_.Z))))))
+         _⊢_.·
+         ((_⊢_.ƛ
+           (_⊢_.ƛ
+            (_⊢_.ƛ
+             (_⊢_.`
+              (_∋_.S _∋_.Z))
+             _⊢_.·
+             (_⊢_.`
+              (_∋_.S
+               (_∋_.S _∋_.Z))))))
+          _⊢_.·
+          (_⊢_.ƛ
+           (_⊢_.ƛ
+            (_⊢_.` _∋_.Z))))))))
+     _—↠_.—→⟨
+     _—→_.ζ
+     (_—→_.ζ
+      (_—→_.ξ₂
+       (_—→_.ξ₁ _—→_.β)))
      ⟩
-     plfa.part2.Untyped._⊢_.ƛ
-     (plfa.part2.Untyped._⊢_.ƛ
-      (plfa.part2.Untyped._⊢_.`
-       (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-      plfa.part2.Untyped._⊢_.·
-      ((plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.`
-          (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-         plfa.part2.Untyped._⊢_.·
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.`
-             (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-            plfa.part2.Untyped._⊢_.·
-            ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-           plfa.part2.Untyped._⊢_.·
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.`
-             (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-            plfa.part2.Untyped._⊢_.·
-            ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-          plfa.part2.Untyped._⊢_.·
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.ƛ
-                (plfa.part2.Untyped._⊢_.ƛ
-                 (plfa.part2.Untyped._⊢_.`
-                  (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-                 plfa.part2.Untyped._⊢_.·
-                 (plfa.part2.Untyped._⊢_.`
-                  (plfa.part2.Untyped._∋_.S
-                   (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-              plfa.part2.Untyped._⊢_.·
-              ((plfa.part2.Untyped._⊢_.`
-                (plfa.part2.Untyped._∋_.S
-                 (plfa.part2.Untyped._∋_.S
-                  (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-               plfa.part2.Untyped._⊢_.·
-               (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-               plfa.part2.Untyped._⊢_.·
-               (plfa.part2.Untyped._⊢_.`
-                (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-          plfa.part2.Untyped._⊢_.·
-          (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-          plfa.part2.Untyped._⊢_.·
-          ((plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.`
-                (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-               plfa.part2.Untyped._⊢_.·
-               (plfa.part2.Untyped._⊢_.ƛ
-                (plfa.part2.Untyped._⊢_.ƛ
-                 (plfa.part2.Untyped._⊢_.ƛ
-                  (plfa.part2.Untyped._⊢_.`
-                   (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-                  plfa.part2.Untyped._⊢_.·
-                  ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                   plfa.part2.Untyped._⊢_.·
-                   (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-                 plfa.part2.Untyped._⊢_.·
-                 (plfa.part2.Untyped._⊢_.ƛ
-                  (plfa.part2.Untyped._⊢_.`
-                   (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-                  plfa.part2.Untyped._⊢_.·
-                  ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                   plfa.part2.Untyped._⊢_.·
-                   (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.ƛ
-                 (plfa.part2.Untyped._⊢_.ƛ
-                  (plfa.part2.Untyped._⊢_.ƛ
-                   (plfa.part2.Untyped._⊢_.`
-                    (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-                   plfa.part2.Untyped._⊢_.·
-                   (plfa.part2.Untyped._⊢_.ƛ
-                    (plfa.part2.Untyped._⊢_.ƛ
-                     (plfa.part2.Untyped._⊢_.ƛ
-                      (plfa.part2.Untyped._⊢_.ƛ
-                       (plfa.part2.Untyped._⊢_.`
-                        (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-                       plfa.part2.Untyped._⊢_.·
-                       (plfa.part2.Untyped._⊢_.`
-                        (plfa.part2.Untyped._∋_.S
-                         (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-                    plfa.part2.Untyped._⊢_.·
-                    ((plfa.part2.Untyped._⊢_.`
-                      (plfa.part2.Untyped._∋_.S
-                       (plfa.part2.Untyped._∋_.S
-                        (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-                     plfa.part2.Untyped._⊢_.·
-                     (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                     plfa.part2.Untyped._⊢_.·
-                     (plfa.part2.Untyped._⊢_.`
-                      (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-                   plfa.part2.Untyped._⊢_.·
-                   (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                plfa.part2.Untyped._⊢_.·
-                ((plfa.part2.Untyped._⊢_.`
-                  (plfa.part2.Untyped._∋_.S
-                   (plfa.part2.Untyped._∋_.S
-                    (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-                 plfa.part2.Untyped._⊢_.·
-                 ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                  plfa.part2.Untyped._⊢_.·
-                  (plfa.part2.Untyped._⊢_.`
-                   (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z)))))
-               plfa.part2.Untyped._⊢_.·
-               (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-            plfa.part2.Untyped._⊢_.·
-            ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-           plfa.part2.Untyped._⊢_.·
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.`
-                (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-               plfa.part2.Untyped._⊢_.·
-               (plfa.part2.Untyped._⊢_.ƛ
-                (plfa.part2.Untyped._⊢_.ƛ
-                 (plfa.part2.Untyped._⊢_.ƛ
-                  (plfa.part2.Untyped._⊢_.`
-                   (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-                  plfa.part2.Untyped._⊢_.·
-                  ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                   plfa.part2.Untyped._⊢_.·
-                   (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-                 plfa.part2.Untyped._⊢_.·
-                 (plfa.part2.Untyped._⊢_.ƛ
-                  (plfa.part2.Untyped._⊢_.`
-                   (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-                  plfa.part2.Untyped._⊢_.·
-                  ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                   plfa.part2.Untyped._⊢_.·
-                   (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.ƛ
-                 (plfa.part2.Untyped._⊢_.ƛ
-                  (plfa.part2.Untyped._⊢_.ƛ
-                   (plfa.part2.Untyped._⊢_.`
-                    (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-                   plfa.part2.Untyped._⊢_.·
-                   (plfa.part2.Untyped._⊢_.ƛ
-                    (plfa.part2.Untyped._⊢_.ƛ
-                     (plfa.part2.Untyped._⊢_.ƛ
-                      (plfa.part2.Untyped._⊢_.ƛ
-                       (plfa.part2.Untyped._⊢_.`
-                        (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-                       plfa.part2.Untyped._⊢_.·
-                       (plfa.part2.Untyped._⊢_.`
-                        (plfa.part2.Untyped._∋_.S
-                         (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-                    plfa.part2.Untyped._⊢_.·
-                    ((plfa.part2.Untyped._⊢_.`
-                      (plfa.part2.Untyped._∋_.S
-                       (plfa.part2.Untyped._∋_.S
-                        (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-                     plfa.part2.Untyped._⊢_.·
-                     (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                     plfa.part2.Untyped._⊢_.·
-                     (plfa.part2.Untyped._⊢_.`
-                      (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-                   plfa.part2.Untyped._⊢_.·
-                   (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                plfa.part2.Untyped._⊢_.·
-                ((plfa.part2.Untyped._⊢_.`
-                  (plfa.part2.Untyped._∋_.S
-                   (plfa.part2.Untyped._∋_.S
-                    (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-                 plfa.part2.Untyped._⊢_.·
-                 ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                  plfa.part2.Untyped._⊢_.·
-                  (plfa.part2.Untyped._⊢_.`
-                   (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z)))))
-               plfa.part2.Untyped._⊢_.·
-               (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-            plfa.part2.Untyped._⊢_.·
-            ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-           plfa.part2.Untyped._⊢_.·
-           ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.`
-             (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z)))))
-         plfa.part2.Untyped._⊢_.·
-         (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-       plfa.part2.Untyped._⊢_.·
-       ((plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.`
-            (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-           plfa.part2.Untyped._⊢_.·
-           (plfa.part2.Untyped._⊢_.`
-            (plfa.part2.Untyped._∋_.S
-             (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-        plfa.part2.Untyped._⊢_.·
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-        plfa.part2.Untyped._⊢_.·
-        ((plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.`
-             (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.`
-             (plfa.part2.Untyped._∋_.S
-              (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-         plfa.part2.Untyped._⊢_.·
-         ((plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S
-               (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-          plfa.part2.Untyped._⊢_.·
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))))))
-     plfa.part2.Untyped._—↠_.—→⟨
-     plfa.part2.Untyped._—→_.ζ
-     (plfa.part2.Untyped._—→_.ζ
-      (plfa.part2.Untyped._—→_.ξ₂ plfa.part2.Untyped._—→_.β))
+     _⊢_.ƛ
+     (_⊢_.ƛ
+      (_⊢_.`
+       (_∋_.S _∋_.Z))
+      _⊢_.·
+      ((_⊢_.ƛ
+        (_⊢_.ƛ
+         (_⊢_.`
+          (_∋_.S _∋_.Z))
+         _⊢_.·
+         (_⊢_.ƛ
+          (_⊢_.ƛ
+           (_⊢_.ƛ
+            (_⊢_.`
+             (_∋_.S _∋_.Z))
+            _⊢_.·
+            ((_⊢_.` _∋_.Z)
+             _⊢_.·
+             (_⊢_.` _∋_.Z)))
+           _⊢_.·
+           (_⊢_.ƛ
+            (_⊢_.`
+             (_∋_.S _∋_.Z))
+            _⊢_.·
+            ((_⊢_.` _∋_.Z)
+             _⊢_.·
+             (_⊢_.` _∋_.Z))))
+          _⊢_.·
+          (_⊢_.ƛ
+           (_⊢_.ƛ
+            (_⊢_.ƛ
+             (_⊢_.`
+              (_∋_.S _∋_.Z))
+             _⊢_.·
+             (_⊢_.ƛ
+              (_⊢_.ƛ
+               (_⊢_.ƛ
+                (_⊢_.ƛ
+                 (_⊢_.`
+                  (_∋_.S _∋_.Z))
+                 _⊢_.·
+                 (_⊢_.`
+                  (_∋_.S
+                   (_∋_.S _∋_.Z))))))
+              _⊢_.·
+              ((_⊢_.`
+                (_∋_.S
+                 (_∋_.S
+                  (_∋_.S _∋_.Z))))
+               _⊢_.·
+               (_⊢_.` _∋_.Z)
+               _⊢_.·
+               (_⊢_.`
+                (_∋_.S _∋_.Z))))
+             _⊢_.·
+             (_⊢_.` _∋_.Z))))
+          _⊢_.·
+          (_⊢_.` _∋_.Z)
+          _⊢_.·
+          ((_⊢_.ƛ
+            (_⊢_.ƛ
+             (_⊢_.ƛ
+              (_⊢_.ƛ
+               (_⊢_.`
+                (_∋_.S _∋_.Z))
+               _⊢_.·
+               (_⊢_.ƛ
+                (_⊢_.ƛ
+                 (_⊢_.ƛ
+                  (_⊢_.`
+                   (_∋_.S _∋_.Z))
+                  _⊢_.·
+                  ((_⊢_.` _∋_.Z)
+                   _⊢_.·
+                   (_⊢_.` _∋_.Z)))
+                 _⊢_.·
+                 (_⊢_.ƛ
+                  (_⊢_.`
+                   (_∋_.S _∋_.Z))
+                  _⊢_.·
+                  ((_⊢_.` _∋_.Z)
+                   _⊢_.·
+                   (_⊢_.` _∋_.Z))))
+                _⊢_.·
+                (_⊢_.ƛ
+                 (_⊢_.ƛ
+                  (_⊢_.ƛ
+                   (_⊢_.`
+                    (_∋_.S _∋_.Z))
+                   _⊢_.·
+                   (_⊢_.ƛ
+                    (_⊢_.ƛ
+                     (_⊢_.ƛ
+                      (_⊢_.ƛ
+                       (_⊢_.`
+                        (_∋_.S _∋_.Z))
+                       _⊢_.·
+                       (_⊢_.`
+                        (_∋_.S
+                         (_∋_.S _∋_.Z))))))
+                    _⊢_.·
+                    ((_⊢_.`
+                      (_∋_.S
+                       (_∋_.S
+                        (_∋_.S _∋_.Z))))
+                     _⊢_.·
+                     (_⊢_.` _∋_.Z)
+                     _⊢_.·
+                     (_⊢_.`
+                      (_∋_.S _∋_.Z))))
+                   _⊢_.·
+                   (_⊢_.` _∋_.Z))))
+                _⊢_.·
+                (_⊢_.` _∋_.Z)
+                _⊢_.·
+                ((_⊢_.`
+                  (_∋_.S
+                   (_∋_.S
+                    (_∋_.S _∋_.Z))))
+                 _⊢_.·
+                 ((_⊢_.` _∋_.Z)
+                  _⊢_.·
+                  (_⊢_.`
+                   (_∋_.S _∋_.Z)))))
+               _⊢_.·
+               (_⊢_.` _∋_.Z))))
+            _⊢_.·
+            ((_⊢_.` _∋_.Z)
+             _⊢_.·
+             (_⊢_.` _∋_.Z)))
+           _⊢_.·
+           (_⊢_.ƛ
+            (_⊢_.ƛ
+             (_⊢_.ƛ
+              (_⊢_.ƛ
+               (_⊢_.`
+                (_∋_.S _∋_.Z))
+               _⊢_.·
+               (_⊢_.ƛ
+                (_⊢_.ƛ
+                 (_⊢_.ƛ
+                  (_⊢_.`
+                   (_∋_.S _∋_.Z))
+                  _⊢_.·
+                  ((_⊢_.` _∋_.Z)
+                   _⊢_.·
+                   (_⊢_.` _∋_.Z)))
+                 _⊢_.·
+                 (_⊢_.ƛ
+                  (_⊢_.`
+                   (_∋_.S _∋_.Z))
+                  _⊢_.·
+                  ((_⊢_.` _∋_.Z)
+                   _⊢_.·
+                   (_⊢_.` _∋_.Z))))
+                _⊢_.·
+                (_⊢_.ƛ
+                 (_⊢_.ƛ
+                  (_⊢_.ƛ
+                   (_⊢_.`
+                    (_∋_.S _∋_.Z))
+                   _⊢_.·
+                   (_⊢_.ƛ
+                    (_⊢_.ƛ
+                     (_⊢_.ƛ
+                      (_⊢_.ƛ
+                       (_⊢_.`
+                        (_∋_.S _∋_.Z))
+                       _⊢_.·
+                       (_⊢_.`
+                        (_∋_.S
+                         (_∋_.S _∋_.Z))))))
+                    _⊢_.·
+                    ((_⊢_.`
+                      (_∋_.S
+                       (_∋_.S
+                        (_∋_.S _∋_.Z))))
+                     _⊢_.·
+                     (_⊢_.` _∋_.Z)
+                     _⊢_.·
+                     (_⊢_.`
+                      (_∋_.S _∋_.Z))))
+                   _⊢_.·
+                   (_⊢_.` _∋_.Z))))
+                _⊢_.·
+                (_⊢_.` _∋_.Z)
+                _⊢_.·
+                ((_⊢_.`
+                  (_∋_.S
+                   (_∋_.S
+                    (_∋_.S _∋_.Z))))
+                 _⊢_.·
+                 ((_⊢_.` _∋_.Z)
+                  _⊢_.·
+                  (_⊢_.`
+                   (_∋_.S _∋_.Z)))))
+               _⊢_.·
+               (_⊢_.` _∋_.Z))))
+            _⊢_.·
+            ((_⊢_.` _∋_.Z)
+             _⊢_.·
+             (_⊢_.` _∋_.Z)))
+           _⊢_.·
+           ((_⊢_.` _∋_.Z)
+            _⊢_.·
+            (_⊢_.`
+             (_∋_.S _∋_.Z)))))
+         _⊢_.·
+         (_⊢_.` _∋_.Z)))
+       _⊢_.·
+       ((_⊢_.ƛ
+         (_⊢_.ƛ
+          (_⊢_.ƛ
+           (_⊢_.`
+            (_∋_.S _∋_.Z))
+           _⊢_.·
+           (_⊢_.`
+            (_∋_.S
+             (_∋_.S _∋_.Z))))))
+        _⊢_.·
+        (_⊢_.ƛ
+         (_⊢_.ƛ
+          (_⊢_.` _∋_.Z)))
+        _⊢_.·
+        ((_⊢_.ƛ
+          (_⊢_.ƛ
+           (_⊢_.ƛ
+            (_⊢_.`
+             (_∋_.S _∋_.Z))
+            _⊢_.·
+            (_⊢_.`
+             (_∋_.S
+              (_∋_.S _∋_.Z))))))
+         _⊢_.·
+         ((_⊢_.ƛ
+           (_⊢_.ƛ
+            (_⊢_.ƛ
+             (_⊢_.`
+              (_∋_.S _∋_.Z))
+             _⊢_.·
+             (_⊢_.`
+              (_∋_.S
+               (_∋_.S _∋_.Z))))))
+          _⊢_.·
+          (_⊢_.ƛ
+           (_⊢_.ƛ
+            (_⊢_.` _∋_.Z))))))))
+     _—↠_.—→⟨
+     _—→_.ζ
+     (_—→_.ζ
+      (_—→_.ξ₂ _—→_.β))
      ⟩
-     plfa.part2.Untyped._⊢_.ƛ
-     (plfa.part2.Untyped._⊢_.ƛ
-      (plfa.part2.Untyped._⊢_.`
-       (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-      plfa.part2.Untyped._⊢_.·
-      (plfa.part2.Untyped._⊢_.ƛ
-       (plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.`
-           (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-          plfa.part2.Untyped._⊢_.·
-          (plfa.part2.Untyped._⊢_.`
-           (plfa.part2.Untyped._∋_.S
-            (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-       plfa.part2.Untyped._⊢_.·
-       (plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-       plfa.part2.Untyped._⊢_.·
-       ((plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.`
-            (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-           plfa.part2.Untyped._⊢_.·
-           (plfa.part2.Untyped._⊢_.`
-            (plfa.part2.Untyped._∋_.S
-             (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-        plfa.part2.Untyped._⊢_.·
-        ((plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.`
-             (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.`
-             (plfa.part2.Untyped._∋_.S
-              (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-         plfa.part2.Untyped._⊢_.·
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))))
-       plfa.part2.Untyped._⊢_.·
-       (plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.`
-           (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-          plfa.part2.Untyped._⊢_.·
-          ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-           plfa.part2.Untyped._⊢_.·
-           (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-         plfa.part2.Untyped._⊢_.·
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.`
-           (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-          plfa.part2.Untyped._⊢_.·
-          ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-           plfa.part2.Untyped._⊢_.·
-           (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-        plfa.part2.Untyped._⊢_.·
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.`
-            (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-           plfa.part2.Untyped._⊢_.·
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.`
-                (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-               plfa.part2.Untyped._⊢_.·
-               (plfa.part2.Untyped._⊢_.`
-                (plfa.part2.Untyped._∋_.S
-                 (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-            plfa.part2.Untyped._⊢_.·
-            ((plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S
-               (plfa.part2.Untyped._∋_.S
-                (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-           plfa.part2.Untyped._⊢_.·
-           (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-        plfa.part2.Untyped._⊢_.·
-        (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-        plfa.part2.Untyped._⊢_.·
-        ((plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.ƛ
-                (plfa.part2.Untyped._⊢_.`
-                 (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-                plfa.part2.Untyped._⊢_.·
-                ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                 plfa.part2.Untyped._⊢_.·
-                 (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-               plfa.part2.Untyped._⊢_.·
-               (plfa.part2.Untyped._⊢_.ƛ
-                (plfa.part2.Untyped._⊢_.`
-                 (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-                plfa.part2.Untyped._⊢_.·
-                ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                 plfa.part2.Untyped._⊢_.·
-                 (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.ƛ
-                (plfa.part2.Untyped._⊢_.ƛ
-                 (plfa.part2.Untyped._⊢_.`
-                  (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-                 plfa.part2.Untyped._⊢_.·
-                 (plfa.part2.Untyped._⊢_.ƛ
-                  (plfa.part2.Untyped._⊢_.ƛ
-                   (plfa.part2.Untyped._⊢_.ƛ
-                    (plfa.part2.Untyped._⊢_.ƛ
-                     (plfa.part2.Untyped._⊢_.`
-                      (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-                     plfa.part2.Untyped._⊢_.·
-                     (plfa.part2.Untyped._⊢_.`
-                      (plfa.part2.Untyped._∋_.S
-                       (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-                  plfa.part2.Untyped._⊢_.·
-                  ((plfa.part2.Untyped._⊢_.`
-                    (plfa.part2.Untyped._∋_.S
-                     (plfa.part2.Untyped._∋_.S
-                      (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-                   plfa.part2.Untyped._⊢_.·
-                   (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                   plfa.part2.Untyped._⊢_.·
-                   (plfa.part2.Untyped._⊢_.`
-                    (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-                 plfa.part2.Untyped._⊢_.·
-                 (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-              plfa.part2.Untyped._⊢_.·
-              ((plfa.part2.Untyped._⊢_.`
-                (plfa.part2.Untyped._∋_.S
-                 (plfa.part2.Untyped._∋_.S
-                  (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-               plfa.part2.Untyped._⊢_.·
-               ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.`
-                 (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z)))))
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-          plfa.part2.Untyped._⊢_.·
-          ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-           plfa.part2.Untyped._⊢_.·
-           (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-         plfa.part2.Untyped._⊢_.·
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.ƛ
-                (plfa.part2.Untyped._⊢_.`
-                 (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-                plfa.part2.Untyped._⊢_.·
-                ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                 plfa.part2.Untyped._⊢_.·
-                 (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-               plfa.part2.Untyped._⊢_.·
-               (plfa.part2.Untyped._⊢_.ƛ
-                (plfa.part2.Untyped._⊢_.`
-                 (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-                plfa.part2.Untyped._⊢_.·
-                ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                 plfa.part2.Untyped._⊢_.·
-                 (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.ƛ
-                (plfa.part2.Untyped._⊢_.ƛ
-                 (plfa.part2.Untyped._⊢_.`
-                  (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-                 plfa.part2.Untyped._⊢_.·
-                 (plfa.part2.Untyped._⊢_.ƛ
-                  (plfa.part2.Untyped._⊢_.ƛ
-                   (plfa.part2.Untyped._⊢_.ƛ
-                    (plfa.part2.Untyped._⊢_.ƛ
-                     (plfa.part2.Untyped._⊢_.`
-                      (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-                     plfa.part2.Untyped._⊢_.·
-                     (plfa.part2.Untyped._⊢_.`
-                      (plfa.part2.Untyped._∋_.S
-                       (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-                  plfa.part2.Untyped._⊢_.·
-                  ((plfa.part2.Untyped._⊢_.`
-                    (plfa.part2.Untyped._∋_.S
-                     (plfa.part2.Untyped._∋_.S
-                      (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-                   plfa.part2.Untyped._⊢_.·
-                   (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                   plfa.part2.Untyped._⊢_.·
-                   (plfa.part2.Untyped._⊢_.`
-                    (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-                 plfa.part2.Untyped._⊢_.·
-                 (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-              plfa.part2.Untyped._⊢_.·
-              ((plfa.part2.Untyped._⊢_.`
-                (plfa.part2.Untyped._∋_.S
-                 (plfa.part2.Untyped._∋_.S
-                  (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-               plfa.part2.Untyped._⊢_.·
-               ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.`
-                 (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z)))))
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-          plfa.part2.Untyped._⊢_.·
-          ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-           plfa.part2.Untyped._⊢_.·
-           (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-         plfa.part2.Untyped._⊢_.·
-         ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-          plfa.part2.Untyped._⊢_.·
-          (plfa.part2.Untyped._⊢_.`
-           (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z)))))
-       plfa.part2.Untyped._⊢_.·
-       (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-     plfa.part2.Untyped._—↠_.—→⟨
-     plfa.part2.Untyped._—→_.ζ
-     (plfa.part2.Untyped._—→_.ζ
-      (plfa.part2.Untyped._—→_.ξ₂
-       (plfa.part2.Untyped._—→_.ζ
-        (plfa.part2.Untyped._—→_.ξ₁
-         (plfa.part2.Untyped._—→_.ξ₁
-          (plfa.part2.Untyped._—→_.ξ₁ plfa.part2.Untyped._—→_.β))))))
+     _⊢_.ƛ
+     (_⊢_.ƛ
+      (_⊢_.`
+       (_∋_.S _∋_.Z))
+      _⊢_.·
+      (_⊢_.ƛ
+       (_⊢_.ƛ
+        (_⊢_.ƛ
+         (_⊢_.ƛ
+          (_⊢_.`
+           (_∋_.S _∋_.Z))
+          _⊢_.·
+          (_⊢_.`
+           (_∋_.S
+            (_∋_.S _∋_.Z))))))
+       _⊢_.·
+       (_⊢_.ƛ
+        (_⊢_.ƛ
+         (_⊢_.` _∋_.Z)))
+       _⊢_.·
+       ((_⊢_.ƛ
+         (_⊢_.ƛ
+          (_⊢_.ƛ
+           (_⊢_.`
+            (_∋_.S _∋_.Z))
+           _⊢_.·
+           (_⊢_.`
+            (_∋_.S
+             (_∋_.S _∋_.Z))))))
+        _⊢_.·
+        ((_⊢_.ƛ
+          (_⊢_.ƛ
+           (_⊢_.ƛ
+            (_⊢_.`
+             (_∋_.S _∋_.Z))
+            _⊢_.·
+            (_⊢_.`
+             (_∋_.S
+              (_∋_.S _∋_.Z))))))
+         _⊢_.·
+         (_⊢_.ƛ
+          (_⊢_.ƛ
+           (_⊢_.` _∋_.Z)))))
+       _⊢_.·
+       (_⊢_.ƛ
+        (_⊢_.ƛ
+         (_⊢_.ƛ
+          (_⊢_.`
+           (_∋_.S _∋_.Z))
+          _⊢_.·
+          ((_⊢_.` _∋_.Z)
+           _⊢_.·
+           (_⊢_.` _∋_.Z)))
+         _⊢_.·
+         (_⊢_.ƛ
+          (_⊢_.`
+           (_∋_.S _∋_.Z))
+          _⊢_.·
+          ((_⊢_.` _∋_.Z)
+           _⊢_.·
+           (_⊢_.` _∋_.Z))))
+        _⊢_.·
+        (_⊢_.ƛ
+         (_⊢_.ƛ
+          (_⊢_.ƛ
+           (_⊢_.`
+            (_∋_.S _∋_.Z))
+           _⊢_.·
+           (_⊢_.ƛ
+            (_⊢_.ƛ
+             (_⊢_.ƛ
+              (_⊢_.ƛ
+               (_⊢_.`
+                (_∋_.S _∋_.Z))
+               _⊢_.·
+               (_⊢_.`
+                (_∋_.S
+                 (_∋_.S _∋_.Z))))))
+            _⊢_.·
+            ((_⊢_.`
+              (_∋_.S
+               (_∋_.S
+                (_∋_.S _∋_.Z))))
+             _⊢_.·
+             (_⊢_.` _∋_.Z)
+             _⊢_.·
+             (_⊢_.`
+              (_∋_.S _∋_.Z))))
+           _⊢_.·
+           (_⊢_.` _∋_.Z))))
+        _⊢_.·
+        (_⊢_.` _∋_.Z)
+        _⊢_.·
+        ((_⊢_.ƛ
+          (_⊢_.ƛ
+           (_⊢_.ƛ
+            (_⊢_.ƛ
+             (_⊢_.`
+              (_∋_.S _∋_.Z))
+             _⊢_.·
+             (_⊢_.ƛ
+              (_⊢_.ƛ
+               (_⊢_.ƛ
+                (_⊢_.`
+                 (_∋_.S _∋_.Z))
+                _⊢_.·
+                ((_⊢_.` _∋_.Z)
+                 _⊢_.·
+                 (_⊢_.` _∋_.Z)))
+               _⊢_.·
+               (_⊢_.ƛ
+                (_⊢_.`
+                 (_∋_.S _∋_.Z))
+                _⊢_.·
+                ((_⊢_.` _∋_.Z)
+                 _⊢_.·
+                 (_⊢_.` _∋_.Z))))
+              _⊢_.·
+              (_⊢_.ƛ
+               (_⊢_.ƛ
+                (_⊢_.ƛ
+                 (_⊢_.`
+                  (_∋_.S _∋_.Z))
+                 _⊢_.·
+                 (_⊢_.ƛ
+                  (_⊢_.ƛ
+                   (_⊢_.ƛ
+                    (_⊢_.ƛ
+                     (_⊢_.`
+                      (_∋_.S _∋_.Z))
+                     _⊢_.·
+                     (_⊢_.`
+                      (_∋_.S
+                       (_∋_.S _∋_.Z))))))
+                  _⊢_.·
+                  ((_⊢_.`
+                    (_∋_.S
+                     (_∋_.S
+                      (_∋_.S _∋_.Z))))
+                   _⊢_.·
+                   (_⊢_.` _∋_.Z)
+                   _⊢_.·
+                   (_⊢_.`
+                    (_∋_.S _∋_.Z))))
+                 _⊢_.·
+                 (_⊢_.` _∋_.Z))))
+              _⊢_.·
+              (_⊢_.` _∋_.Z)
+              _⊢_.·
+              ((_⊢_.`
+                (_∋_.S
+                 (_∋_.S
+                  (_∋_.S _∋_.Z))))
+               _⊢_.·
+               ((_⊢_.` _∋_.Z)
+                _⊢_.·
+                (_⊢_.`
+                 (_∋_.S _∋_.Z)))))
+             _⊢_.·
+             (_⊢_.` _∋_.Z))))
+          _⊢_.·
+          ((_⊢_.` _∋_.Z)
+           _⊢_.·
+           (_⊢_.` _∋_.Z)))
+         _⊢_.·
+         (_⊢_.ƛ
+          (_⊢_.ƛ
+           (_⊢_.ƛ
+            (_⊢_.ƛ
+             (_⊢_.`
+              (_∋_.S _∋_.Z))
+             _⊢_.·
+             (_⊢_.ƛ
+              (_⊢_.ƛ
+               (_⊢_.ƛ
+                (_⊢_.`
+                 (_∋_.S _∋_.Z))
+                _⊢_.·
+                ((_⊢_.` _∋_.Z)
+                 _⊢_.·
+                 (_⊢_.` _∋_.Z)))
+               _⊢_.·
+               (_⊢_.ƛ
+                (_⊢_.`
+                 (_∋_.S _∋_.Z))
+                _⊢_.·
+                ((_⊢_.` _∋_.Z)
+                 _⊢_.·
+                 (_⊢_.` _∋_.Z))))
+              _⊢_.·
+              (_⊢_.ƛ
+               (_⊢_.ƛ
+                (_⊢_.ƛ
+                 (_⊢_.`
+                  (_∋_.S _∋_.Z))
+                 _⊢_.·
+                 (_⊢_.ƛ
+                  (_⊢_.ƛ
+                   (_⊢_.ƛ
+                    (_⊢_.ƛ
+                     (_⊢_.`
+                      (_∋_.S _∋_.Z))
+                     _⊢_.·
+                     (_⊢_.`
+                      (_∋_.S
+                       (_∋_.S _∋_.Z))))))
+                  _⊢_.·
+                  ((_⊢_.`
+                    (_∋_.S
+                     (_∋_.S
+                      (_∋_.S _∋_.Z))))
+                   _⊢_.·
+                   (_⊢_.` _∋_.Z)
+                   _⊢_.·
+                   (_⊢_.`
+                    (_∋_.S _∋_.Z))))
+                 _⊢_.·
+                 (_⊢_.` _∋_.Z))))
+              _⊢_.·
+              (_⊢_.` _∋_.Z)
+              _⊢_.·
+              ((_⊢_.`
+                (_∋_.S
+                 (_∋_.S
+                  (_∋_.S _∋_.Z))))
+               _⊢_.·
+               ((_⊢_.` _∋_.Z)
+                _⊢_.·
+                (_⊢_.`
+                 (_∋_.S _∋_.Z)))))
+             _⊢_.·
+             (_⊢_.` _∋_.Z))))
+          _⊢_.·
+          ((_⊢_.` _∋_.Z)
+           _⊢_.·
+           (_⊢_.` _∋_.Z)))
+         _⊢_.·
+         ((_⊢_.` _∋_.Z)
+          _⊢_.·
+          (_⊢_.`
+           (_∋_.S _∋_.Z)))))
+       _⊢_.·
+       (_⊢_.` _∋_.Z)))
+     _—↠_.—→⟨
+     _—→_.ζ
+     (_—→_.ζ
+      (_—→_.ξ₂
+       (_—→_.ζ
+        (_—→_.ξ₁
+         (_—→_.ξ₁
+          (_—→_.ξ₁ _—→_.β))))))
      ⟩
-     plfa.part2.Untyped._⊢_.ƛ
-     (plfa.part2.Untyped._⊢_.ƛ
-      (plfa.part2.Untyped._⊢_.`
-       (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-      plfa.part2.Untyped._⊢_.·
-      (plfa.part2.Untyped._⊢_.ƛ
-       (plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.`
-          (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-         plfa.part2.Untyped._⊢_.·
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))))
-       plfa.part2.Untyped._⊢_.·
-       ((plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.`
-            (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-           plfa.part2.Untyped._⊢_.·
-           (plfa.part2.Untyped._⊢_.`
-            (plfa.part2.Untyped._∋_.S
-             (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-        plfa.part2.Untyped._⊢_.·
-        ((plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.`
-             (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.`
-             (plfa.part2.Untyped._∋_.S
-              (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-         plfa.part2.Untyped._⊢_.·
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))))
-       plfa.part2.Untyped._⊢_.·
-       (plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.`
-           (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-          plfa.part2.Untyped._⊢_.·
-          ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-           plfa.part2.Untyped._⊢_.·
-           (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-         plfa.part2.Untyped._⊢_.·
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.`
-           (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-          plfa.part2.Untyped._⊢_.·
-          ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-           plfa.part2.Untyped._⊢_.·
-           (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-        plfa.part2.Untyped._⊢_.·
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.`
-            (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-           plfa.part2.Untyped._⊢_.·
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.`
-                (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-               plfa.part2.Untyped._⊢_.·
-               (plfa.part2.Untyped._⊢_.`
-                (plfa.part2.Untyped._∋_.S
-                 (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-            plfa.part2.Untyped._⊢_.·
-            ((plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S
-               (plfa.part2.Untyped._∋_.S
-                (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-           plfa.part2.Untyped._⊢_.·
-           (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-        plfa.part2.Untyped._⊢_.·
-        (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-        plfa.part2.Untyped._⊢_.·
-        ((plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.ƛ
-                (plfa.part2.Untyped._⊢_.`
-                 (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-                plfa.part2.Untyped._⊢_.·
-                ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                 plfa.part2.Untyped._⊢_.·
-                 (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-               plfa.part2.Untyped._⊢_.·
-               (plfa.part2.Untyped._⊢_.ƛ
-                (plfa.part2.Untyped._⊢_.`
-                 (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-                plfa.part2.Untyped._⊢_.·
-                ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                 plfa.part2.Untyped._⊢_.·
-                 (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.ƛ
-                (plfa.part2.Untyped._⊢_.ƛ
-                 (plfa.part2.Untyped._⊢_.`
-                  (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-                 plfa.part2.Untyped._⊢_.·
-                 (plfa.part2.Untyped._⊢_.ƛ
-                  (plfa.part2.Untyped._⊢_.ƛ
-                   (plfa.part2.Untyped._⊢_.ƛ
-                    (plfa.part2.Untyped._⊢_.ƛ
-                     (plfa.part2.Untyped._⊢_.`
-                      (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-                     plfa.part2.Untyped._⊢_.·
-                     (plfa.part2.Untyped._⊢_.`
-                      (plfa.part2.Untyped._∋_.S
-                       (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-                  plfa.part2.Untyped._⊢_.·
-                  ((plfa.part2.Untyped._⊢_.`
-                    (plfa.part2.Untyped._∋_.S
-                     (plfa.part2.Untyped._∋_.S
-                      (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-                   plfa.part2.Untyped._⊢_.·
-                   (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                   plfa.part2.Untyped._⊢_.·
-                   (plfa.part2.Untyped._⊢_.`
-                    (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-                 plfa.part2.Untyped._⊢_.·
-                 (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-              plfa.part2.Untyped._⊢_.·
-              ((plfa.part2.Untyped._⊢_.`
-                (plfa.part2.Untyped._∋_.S
-                 (plfa.part2.Untyped._∋_.S
-                  (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-               plfa.part2.Untyped._⊢_.·
-               ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.`
-                 (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z)))))
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-          plfa.part2.Untyped._⊢_.·
-          ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-           plfa.part2.Untyped._⊢_.·
-           (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-         plfa.part2.Untyped._⊢_.·
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.ƛ
-                (plfa.part2.Untyped._⊢_.`
-                 (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-                plfa.part2.Untyped._⊢_.·
-                ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                 plfa.part2.Untyped._⊢_.·
-                 (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-               plfa.part2.Untyped._⊢_.·
-               (plfa.part2.Untyped._⊢_.ƛ
-                (plfa.part2.Untyped._⊢_.`
-                 (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-                plfa.part2.Untyped._⊢_.·
-                ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                 plfa.part2.Untyped._⊢_.·
-                 (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.ƛ
-                (plfa.part2.Untyped._⊢_.ƛ
-                 (plfa.part2.Untyped._⊢_.`
-                  (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-                 plfa.part2.Untyped._⊢_.·
-                 (plfa.part2.Untyped._⊢_.ƛ
-                  (plfa.part2.Untyped._⊢_.ƛ
-                   (plfa.part2.Untyped._⊢_.ƛ
-                    (plfa.part2.Untyped._⊢_.ƛ
-                     (plfa.part2.Untyped._⊢_.`
-                      (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-                     plfa.part2.Untyped._⊢_.·
-                     (plfa.part2.Untyped._⊢_.`
-                      (plfa.part2.Untyped._∋_.S
-                       (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-                  plfa.part2.Untyped._⊢_.·
-                  ((plfa.part2.Untyped._⊢_.`
-                    (plfa.part2.Untyped._∋_.S
-                     (plfa.part2.Untyped._∋_.S
-                      (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-                   plfa.part2.Untyped._⊢_.·
-                   (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                   plfa.part2.Untyped._⊢_.·
-                   (plfa.part2.Untyped._⊢_.`
-                    (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-                 plfa.part2.Untyped._⊢_.·
-                 (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-              plfa.part2.Untyped._⊢_.·
-              ((plfa.part2.Untyped._⊢_.`
-                (plfa.part2.Untyped._∋_.S
-                 (plfa.part2.Untyped._∋_.S
-                  (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-               plfa.part2.Untyped._⊢_.·
-               ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.`
-                 (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z)))))
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-          plfa.part2.Untyped._⊢_.·
-          ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-           plfa.part2.Untyped._⊢_.·
-           (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-         plfa.part2.Untyped._⊢_.·
-         ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-          plfa.part2.Untyped._⊢_.·
-          (plfa.part2.Untyped._⊢_.`
-           (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z)))))
-       plfa.part2.Untyped._⊢_.·
-       (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-     plfa.part2.Untyped._—↠_.—→⟨
-     plfa.part2.Untyped._—→_.ζ
-     (plfa.part2.Untyped._—→_.ζ
-      (plfa.part2.Untyped._—→_.ξ₂
-       (plfa.part2.Untyped._—→_.ζ
-        (plfa.part2.Untyped._—→_.ξ₁
-         (plfa.part2.Untyped._—→_.ξ₁ plfa.part2.Untyped._—→_.β)))))
+     _⊢_.ƛ
+     (_⊢_.ƛ
+      (_⊢_.`
+       (_∋_.S _∋_.Z))
+      _⊢_.·
+      (_⊢_.ƛ
+       (_⊢_.ƛ
+        (_⊢_.ƛ
+         (_⊢_.`
+          (_∋_.S _∋_.Z))
+         _⊢_.·
+         (_⊢_.ƛ
+          (_⊢_.ƛ
+           (_⊢_.` _∋_.Z)))))
+       _⊢_.·
+       ((_⊢_.ƛ
+         (_⊢_.ƛ
+          (_⊢_.ƛ
+           (_⊢_.`
+            (_∋_.S _∋_.Z))
+           _⊢_.·
+           (_⊢_.`
+            (_∋_.S
+             (_∋_.S _∋_.Z))))))
+        _⊢_.·
+        ((_⊢_.ƛ
+          (_⊢_.ƛ
+           (_⊢_.ƛ
+            (_⊢_.`
+             (_∋_.S _∋_.Z))
+            _⊢_.·
+            (_⊢_.`
+             (_∋_.S
+              (_∋_.S _∋_.Z))))))
+         _⊢_.·
+         (_⊢_.ƛ
+          (_⊢_.ƛ
+           (_⊢_.` _∋_.Z)))))
+       _⊢_.·
+       (_⊢_.ƛ
+        (_⊢_.ƛ
+         (_⊢_.ƛ
+          (_⊢_.`
+           (_∋_.S _∋_.Z))
+          _⊢_.·
+          ((_⊢_.` _∋_.Z)
+           _⊢_.·
+           (_⊢_.` _∋_.Z)))
+         _⊢_.·
+         (_⊢_.ƛ
+          (_⊢_.`
+           (_∋_.S _∋_.Z))
+          _⊢_.·
+          ((_⊢_.` _∋_.Z)
+           _⊢_.·
+           (_⊢_.` _∋_.Z))))
+        _⊢_.·
+        (_⊢_.ƛ
+         (_⊢_.ƛ
+          (_⊢_.ƛ
+           (_⊢_.`
+            (_∋_.S _∋_.Z))
+           _⊢_.·
+           (_⊢_.ƛ
+            (_⊢_.ƛ
+             (_⊢_.ƛ
+              (_⊢_.ƛ
+               (_⊢_.`
+                (_∋_.S _∋_.Z))
+               _⊢_.·
+               (_⊢_.`
+                (_∋_.S
+                 (_∋_.S _∋_.Z))))))
+            _⊢_.·
+            ((_⊢_.`
+              (_∋_.S
+               (_∋_.S
+                (_∋_.S _∋_.Z))))
+             _⊢_.·
+             (_⊢_.` _∋_.Z)
+             _⊢_.·
+             (_⊢_.`
+              (_∋_.S _∋_.Z))))
+           _⊢_.·
+           (_⊢_.` _∋_.Z))))
+        _⊢_.·
+        (_⊢_.` _∋_.Z)
+        _⊢_.·
+        ((_⊢_.ƛ
+          (_⊢_.ƛ
+           (_⊢_.ƛ
+            (_⊢_.ƛ
+             (_⊢_.`
+              (_∋_.S _∋_.Z))
+             _⊢_.·
+             (_⊢_.ƛ
+              (_⊢_.ƛ
+               (_⊢_.ƛ
+                (_⊢_.`
+                 (_∋_.S _∋_.Z))
+                _⊢_.·
+                ((_⊢_.` _∋_.Z)
+                 _⊢_.·
+                 (_⊢_.` _∋_.Z)))
+               _⊢_.·
+               (_⊢_.ƛ
+                (_⊢_.`
+                 (_∋_.S _∋_.Z))
+                _⊢_.·
+                ((_⊢_.` _∋_.Z)
+                 _⊢_.·
+                 (_⊢_.` _∋_.Z))))
+              _⊢_.·
+              (_⊢_.ƛ
+               (_⊢_.ƛ
+                (_⊢_.ƛ
+                 (_⊢_.`
+                  (_∋_.S _∋_.Z))
+                 _⊢_.·
+                 (_⊢_.ƛ
+                  (_⊢_.ƛ
+                   (_⊢_.ƛ
+                    (_⊢_.ƛ
+                     (_⊢_.`
+                      (_∋_.S _∋_.Z))
+                     _⊢_.·
+                     (_⊢_.`
+                      (_∋_.S
+                       (_∋_.S _∋_.Z))))))
+                  _⊢_.·
+                  ((_⊢_.`
+                    (_∋_.S
+                     (_∋_.S
+                      (_∋_.S _∋_.Z))))
+                   _⊢_.·
+                   (_⊢_.` _∋_.Z)
+                   _⊢_.·
+                   (_⊢_.`
+                    (_∋_.S _∋_.Z))))
+                 _⊢_.·
+                 (_⊢_.` _∋_.Z))))
+              _⊢_.·
+              (_⊢_.` _∋_.Z)
+              _⊢_.·
+              ((_⊢_.`
+                (_∋_.S
+                 (_∋_.S
+                  (_∋_.S _∋_.Z))))
+               _⊢_.·
+               ((_⊢_.` _∋_.Z)
+                _⊢_.·
+                (_⊢_.`
+                 (_∋_.S _∋_.Z)))))
+             _⊢_.·
+             (_⊢_.` _∋_.Z))))
+          _⊢_.·
+          ((_⊢_.` _∋_.Z)
+           _⊢_.·
+           (_⊢_.` _∋_.Z)))
+         _⊢_.·
+         (_⊢_.ƛ
+          (_⊢_.ƛ
+           (_⊢_.ƛ
+            (_⊢_.ƛ
+             (_⊢_.`
+              (_∋_.S _∋_.Z))
+             _⊢_.·
+             (_⊢_.ƛ
+              (_⊢_.ƛ
+               (_⊢_.ƛ
+                (_⊢_.`
+                 (_∋_.S _∋_.Z))
+                _⊢_.·
+                ((_⊢_.` _∋_.Z)
+                 _⊢_.·
+                 (_⊢_.` _∋_.Z)))
+               _⊢_.·
+               (_⊢_.ƛ
+                (_⊢_.`
+                 (_∋_.S _∋_.Z))
+                _⊢_.·
+                ((_⊢_.` _∋_.Z)
+                 _⊢_.·
+                 (_⊢_.` _∋_.Z))))
+              _⊢_.·
+              (_⊢_.ƛ
+               (_⊢_.ƛ
+                (_⊢_.ƛ
+                 (_⊢_.`
+                  (_∋_.S _∋_.Z))
+                 _⊢_.·
+                 (_⊢_.ƛ
+                  (_⊢_.ƛ
+                   (_⊢_.ƛ
+                    (_⊢_.ƛ
+                     (_⊢_.`
+                      (_∋_.S _∋_.Z))
+                     _⊢_.·
+                     (_⊢_.`
+                      (_∋_.S
+                       (_∋_.S _∋_.Z))))))
+                  _⊢_.·
+                  ((_⊢_.`
+                    (_∋_.S
+                     (_∋_.S
+                      (_∋_.S _∋_.Z))))
+                   _⊢_.·
+                   (_⊢_.` _∋_.Z)
+                   _⊢_.·
+                   (_⊢_.`
+                    (_∋_.S _∋_.Z))))
+                 _⊢_.·
+                 (_⊢_.` _∋_.Z))))
+              _⊢_.·
+              (_⊢_.` _∋_.Z)
+              _⊢_.·
+              ((_⊢_.`
+                (_∋_.S
+                 (_∋_.S
+                  (_∋_.S _∋_.Z))))
+               _⊢_.·
+               ((_⊢_.` _∋_.Z)
+                _⊢_.·
+                (_⊢_.`
+                 (_∋_.S _∋_.Z)))))
+             _⊢_.·
+             (_⊢_.` _∋_.Z))))
+          _⊢_.·
+          ((_⊢_.` _∋_.Z)
+           _⊢_.·
+           (_⊢_.` _∋_.Z)))
+         _⊢_.·
+         ((_⊢_.` _∋_.Z)
+          _⊢_.·
+          (_⊢_.`
+           (_∋_.S _∋_.Z)))))
+       _⊢_.·
+       (_⊢_.` _∋_.Z)))
+     _—↠_.—→⟨
+     _—→_.ζ
+     (_—→_.ζ
+      (_—→_.ξ₂
+       (_—→_.ζ
+        (_—→_.ξ₁
+         (_—→_.ξ₁ _—→_.β)))))
      ⟩
-     plfa.part2.Untyped._⊢_.ƛ
-     (plfa.part2.Untyped._⊢_.ƛ
-      (plfa.part2.Untyped._⊢_.`
-       (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-      plfa.part2.Untyped._⊢_.·
-      (plfa.part2.Untyped._⊢_.ƛ
-       (plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.`
-            (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-           plfa.part2.Untyped._⊢_.·
-           (plfa.part2.Untyped._⊢_.`
-            (plfa.part2.Untyped._∋_.S
-             (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-        plfa.part2.Untyped._⊢_.·
-        ((plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.`
-             (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.`
-             (plfa.part2.Untyped._∋_.S
-              (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-         plfa.part2.Untyped._⊢_.·
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-        plfa.part2.Untyped._⊢_.·
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-       plfa.part2.Untyped._⊢_.·
-       (plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.`
-           (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-          plfa.part2.Untyped._⊢_.·
-          ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-           plfa.part2.Untyped._⊢_.·
-           (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-         plfa.part2.Untyped._⊢_.·
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.`
-           (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-          plfa.part2.Untyped._⊢_.·
-          ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-           plfa.part2.Untyped._⊢_.·
-           (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-        plfa.part2.Untyped._⊢_.·
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.`
-            (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-           plfa.part2.Untyped._⊢_.·
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.`
-                (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-               plfa.part2.Untyped._⊢_.·
-               (plfa.part2.Untyped._⊢_.`
-                (plfa.part2.Untyped._∋_.S
-                 (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-            plfa.part2.Untyped._⊢_.·
-            ((plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S
-               (plfa.part2.Untyped._∋_.S
-                (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-           plfa.part2.Untyped._⊢_.·
-           (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-        plfa.part2.Untyped._⊢_.·
-        (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-        plfa.part2.Untyped._⊢_.·
-        ((plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.ƛ
-                (plfa.part2.Untyped._⊢_.`
-                 (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-                plfa.part2.Untyped._⊢_.·
-                ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                 plfa.part2.Untyped._⊢_.·
-                 (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-               plfa.part2.Untyped._⊢_.·
-               (plfa.part2.Untyped._⊢_.ƛ
-                (plfa.part2.Untyped._⊢_.`
-                 (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-                plfa.part2.Untyped._⊢_.·
-                ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                 plfa.part2.Untyped._⊢_.·
-                 (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.ƛ
-                (plfa.part2.Untyped._⊢_.ƛ
-                 (plfa.part2.Untyped._⊢_.`
-                  (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-                 plfa.part2.Untyped._⊢_.·
-                 (plfa.part2.Untyped._⊢_.ƛ
-                  (plfa.part2.Untyped._⊢_.ƛ
-                   (plfa.part2.Untyped._⊢_.ƛ
-                    (plfa.part2.Untyped._⊢_.ƛ
-                     (plfa.part2.Untyped._⊢_.`
-                      (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-                     plfa.part2.Untyped._⊢_.·
-                     (plfa.part2.Untyped._⊢_.`
-                      (plfa.part2.Untyped._∋_.S
-                       (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-                  plfa.part2.Untyped._⊢_.·
-                  ((plfa.part2.Untyped._⊢_.`
-                    (plfa.part2.Untyped._∋_.S
-                     (plfa.part2.Untyped._∋_.S
-                      (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-                   plfa.part2.Untyped._⊢_.·
-                   (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                   plfa.part2.Untyped._⊢_.·
-                   (plfa.part2.Untyped._⊢_.`
-                    (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-                 plfa.part2.Untyped._⊢_.·
-                 (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-              plfa.part2.Untyped._⊢_.·
-              ((plfa.part2.Untyped._⊢_.`
-                (plfa.part2.Untyped._∋_.S
-                 (plfa.part2.Untyped._∋_.S
-                  (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-               plfa.part2.Untyped._⊢_.·
-               ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.`
-                 (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z)))))
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-          plfa.part2.Untyped._⊢_.·
-          ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-           plfa.part2.Untyped._⊢_.·
-           (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-         plfa.part2.Untyped._⊢_.·
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.ƛ
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.ƛ
-                (plfa.part2.Untyped._⊢_.`
-                 (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-                plfa.part2.Untyped._⊢_.·
-                ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                 plfa.part2.Untyped._⊢_.·
-                 (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-               plfa.part2.Untyped._⊢_.·
-               (plfa.part2.Untyped._⊢_.ƛ
-                (plfa.part2.Untyped._⊢_.`
-                 (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-                plfa.part2.Untyped._⊢_.·
-                ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                 plfa.part2.Untyped._⊢_.·
-                 (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.ƛ
-               (plfa.part2.Untyped._⊢_.ƛ
-                (plfa.part2.Untyped._⊢_.ƛ
-                 (plfa.part2.Untyped._⊢_.`
-                  (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-                 plfa.part2.Untyped._⊢_.·
-                 (plfa.part2.Untyped._⊢_.ƛ
-                  (plfa.part2.Untyped._⊢_.ƛ
-                   (plfa.part2.Untyped._⊢_.ƛ
-                    (plfa.part2.Untyped._⊢_.ƛ
-                     (plfa.part2.Untyped._⊢_.`
-                      (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-                     plfa.part2.Untyped._⊢_.·
-                     (plfa.part2.Untyped._⊢_.`
-                      (plfa.part2.Untyped._∋_.S
-                       (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-                  plfa.part2.Untyped._⊢_.·
-                  ((plfa.part2.Untyped._⊢_.`
-                    (plfa.part2.Untyped._∋_.S
-                     (plfa.part2.Untyped._∋_.S
-                      (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-                   plfa.part2.Untyped._⊢_.·
-                   (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                   plfa.part2.Untyped._⊢_.·
-                   (plfa.part2.Untyped._⊢_.`
-                    (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-                 plfa.part2.Untyped._⊢_.·
-                 (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-              plfa.part2.Untyped._⊢_.·
-              (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-              plfa.part2.Untyped._⊢_.·
-              ((plfa.part2.Untyped._⊢_.`
-                (plfa.part2.Untyped._∋_.S
-                 (plfa.part2.Untyped._∋_.S
-                  (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))
-               plfa.part2.Untyped._⊢_.·
-               ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-                plfa.part2.Untyped._⊢_.·
-                (plfa.part2.Untyped._⊢_.`
-                 (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z)))))
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-          plfa.part2.Untyped._⊢_.·
-          ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-           plfa.part2.Untyped._⊢_.·
-           (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-         plfa.part2.Untyped._⊢_.·
-         ((plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)
-          plfa.part2.Untyped._⊢_.·
-          (plfa.part2.Untyped._⊢_.`
-           (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z)))))
-       plfa.part2.Untyped._⊢_.·
-       (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-     plfa.part2.Untyped._—↠_.—→⟨
-     plfa.part2.Untyped._—→_.ζ
-     (plfa.part2.Untyped._—→_.ζ
-      (plfa.part2.Untyped._—→_.ξ₂
-       (plfa.part2.Untyped._—→_.ζ
-        (plfa.part2.Untyped._—→_.ξ₁ plfa.part2.Untyped._—→_.β))))
+     _⊢_.ƛ
+     (_⊢_.ƛ
+      (_⊢_.`
+       (_∋_.S _∋_.Z))
+      _⊢_.·
+      (_⊢_.ƛ
+       (_⊢_.ƛ
+        (_⊢_.ƛ
+         (_⊢_.ƛ
+          (_⊢_.ƛ
+           (_⊢_.`
+            (_∋_.S _∋_.Z))
+           _⊢_.·
+           (_⊢_.`
+            (_∋_.S
+             (_∋_.S _∋_.Z))))))
+        _⊢_.·
+        ((_⊢_.ƛ
+          (_⊢_.ƛ
+           (_⊢_.ƛ
+            (_⊢_.`
+             (_∋_.S _∋_.Z))
+            _⊢_.·
+            (_⊢_.`
+             (_∋_.S
+              (_∋_.S _∋_.Z))))))
+         _⊢_.·
+         (_⊢_.ƛ
+          (_⊢_.ƛ
+           (_⊢_.` _∋_.Z))))
+        _⊢_.·
+        (_⊢_.ƛ
+         (_⊢_.ƛ
+          (_⊢_.` _∋_.Z))))
+       _⊢_.·
+       (_⊢_.ƛ
+        (_⊢_.ƛ
+         (_⊢_.ƛ
+          (_⊢_.`
+           (_∋_.S _∋_.Z))
+          _⊢_.·
+          ((_⊢_.` _∋_.Z)
+           _⊢_.·
+           (_⊢_.` _∋_.Z)))
+         _⊢_.·
+         (_⊢_.ƛ
+          (_⊢_.`
+           (_∋_.S _∋_.Z))
+          _⊢_.·
+          ((_⊢_.` _∋_.Z)
+           _⊢_.·
+           (_⊢_.` _∋_.Z))))
+        _⊢_.·
+        (_⊢_.ƛ
+         (_⊢_.ƛ
+          (_⊢_.ƛ
+           (_⊢_.`
+            (_∋_.S _∋_.Z))
+           _⊢_.·
+           (_⊢_.ƛ
+            (_⊢_.ƛ
+             (_⊢_.ƛ
+              (_⊢_.ƛ
+               (_⊢_.`
+                (_∋_.S _∋_.Z))
+               _⊢_.·
+               (_⊢_.`
+                (_∋_.S
+                 (_∋_.S _∋_.Z))))))
+            _⊢_.·
+            ((_⊢_.`
+              (_∋_.S
+               (_∋_.S
+                (_∋_.S _∋_.Z))))
+             _⊢_.·
+             (_⊢_.` _∋_.Z)
+             _⊢_.·
+             (_⊢_.`
+              (_∋_.S _∋_.Z))))
+           _⊢_.·
+           (_⊢_.` _∋_.Z))))
+        _⊢_.·
+        (_⊢_.` _∋_.Z)
+        _⊢_.·
+        ((_⊢_.ƛ
+          (_⊢_.ƛ
+           (_⊢_.ƛ
+            (_⊢_.ƛ
+             (_⊢_.`
+              (_∋_.S _∋_.Z))
+             _⊢_.·
+             (_⊢_.ƛ
+              (_⊢_.ƛ
+               (_⊢_.ƛ
+                (_⊢_.`
+                 (_∋_.S _∋_.Z))
+                _⊢_.·
+                ((_⊢_.` _∋_.Z)
+                 _⊢_.·
+                 (_⊢_.` _∋_.Z)))
+               _⊢_.·
+               (_⊢_.ƛ
+                (_⊢_.`
+                 (_∋_.S _∋_.Z))
+                _⊢_.·
+                ((_⊢_.` _∋_.Z)
+                 _⊢_.·
+                 (_⊢_.` _∋_.Z))))
+              _⊢_.·
+              (_⊢_.ƛ
+               (_⊢_.ƛ
+                (_⊢_.ƛ
+                 (_⊢_.`
+                  (_∋_.S _∋_.Z))
+                 _⊢_.·
+                 (_⊢_.ƛ
+                  (_⊢_.ƛ
+                   (_⊢_.ƛ
+                    (_⊢_.ƛ
+                     (_⊢_.`
+                      (_∋_.S _∋_.Z))
+                     _⊢_.·
+                     (_⊢_.`
+                      (_∋_.S
+                       (_∋_.S _∋_.Z))))))
+                  _⊢_.·
+                  ((_⊢_.`
+                    (_∋_.S
+                     (_∋_.S
+                      (_∋_.S _∋_.Z))))
+                   _⊢_.·
+                   (_⊢_.` _∋_.Z)
+                   _⊢_.·
+                   (_⊢_.`
+                    (_∋_.S _∋_.Z))))
+                 _⊢_.·
+                 (_⊢_.` _∋_.Z))))
+              _⊢_.·
+              (_⊢_.` _∋_.Z)
+              _⊢_.·
+              ((_⊢_.`
+                (_∋_.S
+                 (_∋_.S
+                  (_∋_.S _∋_.Z))))
+               _⊢_.·
+               ((_⊢_.` _∋_.Z)
+                _⊢_.·
+                (_⊢_.`
+                 (_∋_.S _∋_.Z)))))
+             _⊢_.·
+             (_⊢_.` _∋_.Z))))
+          _⊢_.·
+          ((_⊢_.` _∋_.Z)
+           _⊢_.·
+           (_⊢_.` _∋_.Z)))
+         _⊢_.·
+         (_⊢_.ƛ
+          (_⊢_.ƛ
+           (_⊢_.ƛ
+            (_⊢_.ƛ
+             (_⊢_.`
+              (_∋_.S _∋_.Z))
+             _⊢_.·
+             (_⊢_.ƛ
+              (_⊢_.ƛ
+               (_⊢_.ƛ
+                (_⊢_.`
+                 (_∋_.S _∋_.Z))
+                _⊢_.·
+                ((_⊢_.` _∋_.Z)
+                 _⊢_.·
+                 (_⊢_.` _∋_.Z)))
+               _⊢_.·
+               (_⊢_.ƛ
+                (_⊢_.`
+                 (_∋_.S _∋_.Z))
+                _⊢_.·
+                ((_⊢_.` _∋_.Z)
+                 _⊢_.·
+                 (_⊢_.` _∋_.Z))))
+              _⊢_.·
+              (_⊢_.ƛ
+               (_⊢_.ƛ
+                (_⊢_.ƛ
+                 (_⊢_.`
+                  (_∋_.S _∋_.Z))
+                 _⊢_.·
+                 (_⊢_.ƛ
+                  (_⊢_.ƛ
+                   (_⊢_.ƛ
+                    (_⊢_.ƛ
+                     (_⊢_.`
+                      (_∋_.S _∋_.Z))
+                     _⊢_.·
+                     (_⊢_.`
+                      (_∋_.S
+                       (_∋_.S _∋_.Z))))))
+                  _⊢_.·
+                  ((_⊢_.`
+                    (_∋_.S
+                     (_∋_.S
+                      (_∋_.S _∋_.Z))))
+                   _⊢_.·
+                   (_⊢_.` _∋_.Z)
+                   _⊢_.·
+                   (_⊢_.`
+                    (_∋_.S _∋_.Z))))
+                 _⊢_.·
+                 (_⊢_.` _∋_.Z))))
+              _⊢_.·
+              (_⊢_.` _∋_.Z)
+              _⊢_.·
+              ((_⊢_.`
+                (_∋_.S
+                 (_∋_.S
+                  (_∋_.S _∋_.Z))))
+               _⊢_.·
+               ((_⊢_.` _∋_.Z)
+                _⊢_.·
+                (_⊢_.`
+                 (_∋_.S _∋_.Z)))))
+             _⊢_.·
+             (_⊢_.` _∋_.Z))))
+          _⊢_.·
+          ((_⊢_.` _∋_.Z)
+           _⊢_.·
+           (_⊢_.` _∋_.Z)))
+         _⊢_.·
+         ((_⊢_.` _∋_.Z)
+          _⊢_.·
+          (_⊢_.`
+           (_∋_.S _∋_.Z)))))
+       _⊢_.·
+       (_⊢_.` _∋_.Z)))
+     _—↠_.—→⟨
+     _—→_.ζ
+     (_—→_.ζ
+      (_—→_.ξ₂
+       (_—→_.ζ
+        (_—→_.ξ₁ _—→_.β))))
      ⟩
-     plfa.part2.Untyped._⊢_.ƛ
-     (plfa.part2.Untyped._⊢_.ƛ
-      (plfa.part2.Untyped._⊢_.`
-       (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-      plfa.part2.Untyped._⊢_.·
-      (plfa.part2.Untyped._⊢_.ƛ
-       (plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.`
-           (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-          plfa.part2.Untyped._⊢_.·
-          (plfa.part2.Untyped._⊢_.`
-           (plfa.part2.Untyped._∋_.S
-            (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-       plfa.part2.Untyped._⊢_.·
-       ((plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.`
-            (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-           plfa.part2.Untyped._⊢_.·
-           (plfa.part2.Untyped._⊢_.`
-            (plfa.part2.Untyped._∋_.S
-             (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-        plfa.part2.Untyped._⊢_.·
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-       plfa.part2.Untyped._⊢_.·
-       (plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-       plfa.part2.Untyped._⊢_.·
-       (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-     plfa.part2.Untyped._—↠_.—→⟨
-     plfa.part2.Untyped._—→_.ζ
-     (plfa.part2.Untyped._—→_.ζ
-      (plfa.part2.Untyped._—→_.ξ₂
-       (plfa.part2.Untyped._—→_.ζ
-        (plfa.part2.Untyped._—→_.ξ₁
-         (plfa.part2.Untyped._—→_.ξ₁ plfa.part2.Untyped._—→_.β)))))
+     _⊢_.ƛ
+     (_⊢_.ƛ
+      (_⊢_.`
+       (_∋_.S _∋_.Z))
+      _⊢_.·
+      (_⊢_.ƛ
+       (_⊢_.ƛ
+        (_⊢_.ƛ
+         (_⊢_.ƛ
+          (_⊢_.`
+           (_∋_.S _∋_.Z))
+          _⊢_.·
+          (_⊢_.`
+           (_∋_.S
+            (_∋_.S _∋_.Z))))))
+       _⊢_.·
+       ((_⊢_.ƛ
+         (_⊢_.ƛ
+          (_⊢_.ƛ
+           (_⊢_.`
+            (_∋_.S _∋_.Z))
+           _⊢_.·
+           (_⊢_.`
+            (_∋_.S
+             (_∋_.S _∋_.Z))))))
+        _⊢_.·
+        (_⊢_.ƛ
+         (_⊢_.ƛ
+          (_⊢_.` _∋_.Z))))
+       _⊢_.·
+       (_⊢_.ƛ
+        (_⊢_.ƛ
+         (_⊢_.` _∋_.Z)))
+       _⊢_.·
+       (_⊢_.` _∋_.Z)))
+     _—↠_.—→⟨
+     _—→_.ζ
+     (_—→_.ζ
+      (_—→_.ξ₂
+       (_—→_.ζ
+        (_—→_.ξ₁
+         (_—→_.ξ₁ _—→_.β)))))
      ⟩
-     plfa.part2.Untyped._⊢_.ƛ
-     (plfa.part2.Untyped._⊢_.ƛ
-      (plfa.part2.Untyped._⊢_.`
-       (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-      plfa.part2.Untyped._⊢_.·
-      (plfa.part2.Untyped._⊢_.ƛ
-       (plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.`
-          (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-         plfa.part2.Untyped._⊢_.·
-         ((plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.ƛ
-             (plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-             plfa.part2.Untyped._⊢_.·
-             (plfa.part2.Untyped._⊢_.`
-              (plfa.part2.Untyped._∋_.S
-               (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-          plfa.part2.Untyped._⊢_.·
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))))
-       plfa.part2.Untyped._⊢_.·
-       (plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-       plfa.part2.Untyped._⊢_.·
-       (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-     plfa.part2.Untyped._—↠_.—→⟨
-     plfa.part2.Untyped._—→_.ζ
-     (plfa.part2.Untyped._—→_.ζ
-      (plfa.part2.Untyped._—→_.ξ₂
-       (plfa.part2.Untyped._—→_.ζ
-        (plfa.part2.Untyped._—→_.ξ₁ plfa.part2.Untyped._—→_.β))))
+     _⊢_.ƛ
+     (_⊢_.ƛ
+      (_⊢_.`
+       (_∋_.S _∋_.Z))
+      _⊢_.·
+      (_⊢_.ƛ
+       (_⊢_.ƛ
+        (_⊢_.ƛ
+         (_⊢_.`
+          (_∋_.S _∋_.Z))
+         _⊢_.·
+         ((_⊢_.ƛ
+           (_⊢_.ƛ
+            (_⊢_.ƛ
+             (_⊢_.`
+              (_∋_.S _∋_.Z))
+             _⊢_.·
+             (_⊢_.`
+              (_∋_.S
+               (_∋_.S _∋_.Z))))))
+          _⊢_.·
+          (_⊢_.ƛ
+           (_⊢_.ƛ
+            (_⊢_.` _∋_.Z))))))
+       _⊢_.·
+       (_⊢_.ƛ
+        (_⊢_.ƛ
+         (_⊢_.` _∋_.Z)))
+       _⊢_.·
+       (_⊢_.` _∋_.Z)))
+     _—↠_.—→⟨
+     _—→_.ζ
+     (_—→_.ζ
+      (_—→_.ξ₂
+       (_—→_.ζ
+        (_—→_.ξ₁ _—→_.β))))
      ⟩
-     plfa.part2.Untyped._⊢_.ƛ
-     (plfa.part2.Untyped._⊢_.ƛ
-      (plfa.part2.Untyped._⊢_.`
-       (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-      plfa.part2.Untyped._⊢_.·
-      (plfa.part2.Untyped._⊢_.ƛ
-       (plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-        plfa.part2.Untyped._⊢_.·
-        ((plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.ƛ
-            (plfa.part2.Untyped._⊢_.`
-             (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-            plfa.part2.Untyped._⊢_.·
-            (plfa.part2.Untyped._⊢_.`
-             (plfa.part2.Untyped._∋_.S
-              (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-         plfa.part2.Untyped._⊢_.·
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))))
-       plfa.part2.Untyped._⊢_.·
-       (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-     plfa.part2.Untyped._—↠_.—→⟨
-     plfa.part2.Untyped._—→_.ζ
-     (plfa.part2.Untyped._—→_.ζ
-      (plfa.part2.Untyped._—→_.ξ₂
-       (plfa.part2.Untyped._—→_.ζ plfa.part2.Untyped._—→_.β)))
+     _⊢_.ƛ
+     (_⊢_.ƛ
+      (_⊢_.`
+       (_∋_.S _∋_.Z))
+      _⊢_.·
+      (_⊢_.ƛ
+       (_⊢_.ƛ
+        (_⊢_.ƛ
+         (_⊢_.ƛ
+          (_⊢_.` _∋_.Z)))
+        _⊢_.·
+        ((_⊢_.ƛ
+          (_⊢_.ƛ
+           (_⊢_.ƛ
+            (_⊢_.`
+             (_∋_.S _∋_.Z))
+            _⊢_.·
+            (_⊢_.`
+             (_∋_.S
+              (_∋_.S _∋_.Z))))))
+         _⊢_.·
+         (_⊢_.ƛ
+          (_⊢_.ƛ
+           (_⊢_.` _∋_.Z)))))
+       _⊢_.·
+       (_⊢_.` _∋_.Z)))
+     _—↠_.—→⟨
+     _—→_.ζ
+     (_—→_.ζ
+      (_—→_.ξ₂
+       (_—→_.ζ _—→_.β)))
      ⟩
-     plfa.part2.Untyped._⊢_.ƛ
-     (plfa.part2.Untyped._⊢_.ƛ
-      (plfa.part2.Untyped._⊢_.`
-       (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-      plfa.part2.Untyped._⊢_.·
-      (plfa.part2.Untyped._⊢_.ƛ
-       (plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z)))
-       plfa.part2.Untyped._⊢_.·
-       ((plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.ƛ
-           (plfa.part2.Untyped._⊢_.`
-            (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-           plfa.part2.Untyped._⊢_.·
-           (plfa.part2.Untyped._⊢_.`
-            (plfa.part2.Untyped._∋_.S
-             (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))))))
-        plfa.part2.Untyped._⊢_.·
-        (plfa.part2.Untyped._⊢_.ƛ
-         (plfa.part2.Untyped._⊢_.ƛ
-          (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))))
-     plfa.part2.Untyped._—↠_.—→⟨
-     plfa.part2.Untyped._—→_.ζ
-     (plfa.part2.Untyped._—→_.ζ
-      (plfa.part2.Untyped._—→_.ξ₂
-       (plfa.part2.Untyped._—→_.ζ plfa.part2.Untyped._—→_.β)))
+     _⊢_.ƛ
+     (_⊢_.ƛ
+      (_⊢_.`
+       (_∋_.S _∋_.Z))
+      _⊢_.·
+      (_⊢_.ƛ
+       (_⊢_.ƛ
+        (_⊢_.ƛ
+         (_⊢_.` _∋_.Z)))
+       _⊢_.·
+       ((_⊢_.ƛ
+         (_⊢_.ƛ
+          (_⊢_.ƛ
+           (_⊢_.`
+            (_∋_.S _∋_.Z))
+           _⊢_.·
+           (_⊢_.`
+            (_∋_.S
+             (_∋_.S _∋_.Z))))))
+        _⊢_.·
+        (_⊢_.ƛ
+         (_⊢_.ƛ
+          (_⊢_.` _∋_.Z))))))
+     _—↠_.—→⟨
+     _—→_.ζ
+     (_—→_.ζ
+      (_—→_.ξ₂
+       (_—→_.ζ _—→_.β)))
      ⟩
-     plfa.part2.Untyped._⊢_.ƛ
-     (plfa.part2.Untyped._⊢_.ƛ
-      (plfa.part2.Untyped._⊢_.`
-       (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-      plfa.part2.Untyped._⊢_.·
-      (plfa.part2.Untyped._⊢_.ƛ
-       (plfa.part2.Untyped._⊢_.ƛ
-        (plfa.part2.Untyped._⊢_.` plfa.part2.Untyped._∋_.Z))))
-     plfa.part2.Untyped._—↠_.∎)
-    (plfa.part2.Untyped.Finished.done
-     (plfa.part2.Untyped.Normal.ƛ
-      (plfa.part2.Untyped.Normal.ƛ
-       (plfa.part2.Untyped.Normal.′
-        (plfa.part2.Untyped.Neutral.`
-         (plfa.part2.Untyped._∋_.S plfa.part2.Untyped._∋_.Z))
-        plfa.part2.Untyped.Neutral.·
-        (plfa.part2.Untyped.Normal.ƛ
-         (plfa.part2.Untyped.Normal.ƛ
-          (plfa.part2.Untyped.Normal.′
-           (plfa.part2.Untyped.Neutral.` plfa.part2.Untyped._∋_.Z))))))))
+     _⊢_.ƛ
+     (_⊢_.ƛ
+      (_⊢_.`
+       (_∋_.S _∋_.Z))
+      _⊢_.·
+      (_⊢_.ƛ
+       (_⊢_.ƛ
+        (_⊢_.` _∋_.Z))))
+     _—↠_.∎)
+    (Finished.done
+     (Normal.ƛ
+      (Normal.ƛ
+       (Normal.′
+        (Neutral.`
+         (_∋_.S _∋_.Z))
+        Neutral.·
+        (Normal.ƛ
+         (Normal.ƛ
+          (Normal.′
+           (Neutral.` _∋_.Z))))))))
   2*2=4 = refl
-```
