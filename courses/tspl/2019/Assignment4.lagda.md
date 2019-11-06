@@ -2888,16 +2888,6 @@ Remember to indent all code by two spaces.
         -------------------------------
       → Γ ⊢ `⟨ M , N ⟩ ↓ A `× B
 
-    -- ⊢proj₁ : ∀ {Γ M N A B}
-    --   → Γ ⊢ `⟨ M , N ⟩ ↓ A `× B
-    --     -----------------------
-    --   → Γ ⊢ `proj₁ M ↓ A
-
-    -- ⊢proj₂ : ∀ {Γ M N A B}
-    --   → Γ ⊢ `⟨ M , N ⟩ ↓ A `× B
-    --     -----------------------
-    --   → Γ ⊢ `proj₂ N ↓ B
-
 ```
 
 
@@ -3090,7 +3080,8 @@ Remember to indent all code by two spaces.
   inherit Γ `⟨ M , N ⟩ (A `× B)
     with inherit Γ M A | inherit Γ N B
   ...  | no ¬⊢M        | _      = no λ { (⊢× ⊢M _) → ¬⊢M ⊢M }
-  ...  | _             | no ¬⊢N = no λ { (⊢× _ ⊢N) → ¬⊢N ⊢N }
+  ...  | yes ⊢M        | no ¬⊢N = no λ { (⊢× _ ⊢N) → ¬⊢N ⊢N }
+  -- ...  | _             | no ¬⊢N = no λ { (⊢× _ ⊢N) → ¬⊢N ⊢N }
   ...  | yes ⊢M        | yes ⊢N = yes (⊢× ⊢M ⊢N)
 
 ```
@@ -3143,14 +3134,19 @@ mul = μ "*" ⇒ ƛ "m" ⇒ ƛ "n" ⇒
           |suc "m" ⇒ plus · ` "n" · (` "*" · ` "m" · ` "n" ) ]
 
 ```
-bidirectional-mul : Inference.Term⁺
-bidirectional-mul = (μ "*" ⇒ (ƛ "m" ⇒ ƛ "n" ⇒ 
-                       case ` "m"
-                             [zero⇒ ` "n" ↑
-                             |suc "m" ⇒ (plus · (` "n" ↑) · (` "*" · (` "m" ↑) · (` "n" ↑) ↑)) ↑ ]))
-                       ↓ (`ℕ ⇒ `ℕ ⇒ `ℕ)
-  where open Inference
+  bimul : Term⁺
+  bimul = (μ "*" ⇒ (ƛ "m" ⇒ ƛ "n" ⇒
+                         case ` "m"
+                               [zero⇒ ` "n" ↑
+                               |suc "m" ⇒ (plus · (` "n" ↑) · (` "*" · (` "m" ↑) · (` "n" ↑) ↑)) ↑ ]))
+                         ↓ (`ℕ ⇒ `ℕ ⇒ `ℕ)
 
+```
+
+```
+
+  2+2 : Term⁺
+  2+2 = plus · two · two
 ```
 
 #### Exercise `bidirectional-products` (recommended) {#bidirectional-products}
@@ -3172,6 +3168,75 @@ Chapter [Lambda][plfa.Lambda] decorated to support inference, and show
 that erasure of the inferred typing yields your definition of
 multiplication from Chapter [DeBruijn][plfa.DeBruijn].
 
+```
+  -- synthesize ∅ bimul
+  _≠_ : ∀ (x y : Id) → x ≢ y
+  x ≠ y  with x ≟ y
+  ...       | no  x≢y  =  x≢y
+  ...       | yes _    =  ⊥-elim impossible
+    where postulate impossible : ⊥
+
+  ⊢bimul : ∅ ⊢ bimul ↑ `ℕ ⇒ `ℕ ⇒ `ℕ
+  ⊢bimul = {!!}
+
+```
+
+   ⊢↓
+   (⊢μ
+    (⊢ƛ
+     (⊢ƛ
+      (⊢case
+       (⊢`
+        (S ("m" ≠ "n")
+         Z))
+       (⊢↑ (⊢` Z) refl)
+       (⊢↑
+        (⊢↓
+         (⊢μ
+          (⊢ƛ
+           (⊢ƛ
+            (⊢case
+             (⊢`
+              (S ("*" ≠ "m")
+                 (S ("*" ≠ "n")
+                  (S ("*" ≠ "m")
+                   Z)))
+                · ⊢↑ (⊢` Z) refl
+                ·
+                ⊢↑
+                (⊢`
+                 (S ("m" ≠ "n")
+                  Z))
+                refl)
+               refl))))))
+         ·
+         ⊢↑
+         (⊢`
+          (S ("n" ≠ "m")
+           Z))
+         refl
+         ·
+         ⊢↑
+         (⊢`
+          (S ("*" ≠ "m")
+           (S ("*" ≠ "n")
+            (S ("*" ≠ "m")
+             Z)))
+          · ⊢↑ (⊢` Z) refl
+          ·
+          ⊢↑
+          (⊢`
+           (S ("m" ≠ "*")
+            Z))
+          refl)
+         refl)
+        refl)))
+        
+
+```
+  _ : ∥ ⊢bimul ∥⁺ ≡ DeBruijn.mul
+  _ = ?
+```
 
 #### Exercise `inference-products` (recommended)
 
