@@ -1,0 +1,6 @@
+#+TITLE: todo
+
+* Compatibility
+** TODO Fix Grounding so that it takes a GType
+** TODO See if there's a more elegant way to do the GType stuff
+** TODO Prove Grounding lemma
