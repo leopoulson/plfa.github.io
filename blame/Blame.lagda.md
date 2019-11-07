@@ -38,11 +38,11 @@ data _∼_ : Type → Type → Set where
       -----
       ι ∼ ι
 
-  C-★-A : ∀ {A}
+  C-A-★ : ∀ (A)
       -----
     → A ∼ ★
 
-  C-★-B : ∀ {B} {G : GType B}
+  C-★-B : ∀ (B)
       -----
     → ★ ∼ B
 
@@ -52,19 +52,11 @@ data _∼_ : Type → Type → Set where
       -------------------
     → (A ⇒ B) ∼ (A' ⇒ B')
 
--- grounding-1 : ∀ {A T : Type} {G : GType T} → A ≢ ★
---   → ∃[ G ] (A ∼ G × ∀ {F} A ∼ F → F ≡ G)
--- grounding-1 x = {!!} , {!!}
-
-
--- data unique-grounding : Type → Type → Set where
-
---   ug : ∀ {A G}
---     → A ≢ ★
---     → A ≢ G
---     → A ∼ G
---       ------
---     → unique-grounding A G
+∼-sym : ∀ {A B} → A ∼ B → B ∼ A
+∼-sym C-ι = C-ι
+∼-sym (C-A-★ A) = C-★-B A
+∼-sym (C-★-B B) = C-A-★ B
+∼-sym (C-Step x x₁) = C-Step (∼-sym x) (∼-sym x₁)
 
 record unique-grounding (A G : Type) : Set where
   field
@@ -73,14 +65,13 @@ record unique-grounding (A G : Type) : Set where
     A∼G : A ∼ G
 open unique-grounding
 
-
 ```
 
 Blame Labels
 
 ```
-Blame : Set
-Blame = String
+-- Blame : Set
+-- Blame = String
 
 -- infix 3 -_
 
@@ -88,6 +79,18 @@ Blame = String
 --   -_ : ∀ {B : Blame}
 
 --     → - B
+
+data Blame : Set where
+
+  `_ :
+      String
+      ------
+    → Blame
+
+  ¬_ :
+      Blame
+      -----
+    → Blame
 ```
 
 Terms
@@ -181,10 +184,10 @@ data Value : ∀ {Γ A} → Γ ⊢ A → Set where
       -----------------------
     → Value (cast V P (comp))
 
-  V-★ : ∀ {Γ T} {G : GType T} {P : Blame} {V : Γ ⊢ T} {A : Type}
+  V-★ : ∀ {Γ G} {GT : GType G} {P : Blame} {V : Γ ⊢ G}
     → Value V
 
-    → Value (cast V P (C-★-A))
+    → Value (cast V P (C-A-★ G))
 ```
 
 
@@ -200,11 +203,31 @@ data _—→_ : ∀ {Γ A} → (Γ ⊢ A) → (Γ ⊢ A) → Set where
       -------------------
     → cast V P (C-ι) —→ V
 
+  wrap : ∀ {Γ A B A′ B′ W} {A∼A′ : A ∼ A′} {B∼B′ : B ∼ B′} {V : Γ ⊢ A ⇒ B} {P : Blame}
+      ----------------------------------------------------
+    → (cast V P (C-Step A∼A′ B∼B′)) · W —→
+           cast (V · (cast W (¬ P) (∼-sym A∼A′))) P (B∼B′)
+
   ★★ : ∀ {Γ} {P : Blame} {V : Γ ⊢ ★}
       -------------------
-    → cast V P (C-★-A) —→ V
+    → cast V P (C-A-★ ★) —→ V
 
-  A* : ∀ {Γ A B} {P : Blame} {V : Γ ⊢ A}
-    → (ug : unique-grounding A B)
-    → cast V P (C-★-A) —→ cast (cast V P (A∼G ug)) P C-★-A
+  A* : ∀ {Γ A G} {_ : GType G} {P : Blame} {V : Γ ⊢ A}
+    → (ug : unique-grounding A G)
+      ----------------------------------------------------------
+    → cast V P (C-A-★ A) —→ cast (cast V P (A∼G ug)) P (C-A-★ G)
+
+  *A : ∀ {Γ A G} {_ : GType G} {P : Blame} {V : Γ ⊢ ★}
+    → (ug : unique-grounding A G)
+      ------------------------------------------------------------------
+    → cast V P (C-★-B A) —→ cast (cast V P (C-★-B G)) P (∼-sym (A∼G ug))
+
+  G★G : ∀ {Γ G} {_ : GType G} {P Q : Blame} {V : Γ ⊢ G}
+      -----------------------------------------------
+    → cast (cast V P (C-A-★ G)) Q (C-★-B G) —→ V
+
+  G★H : ∀ {Γ G H} {_ : GType G} {_ : GType H} {P Q : Blame} {V : Γ ⊢ G}
+    → G ≢ H
+      -----------------------------------------------
+    → cast (cast V P (C-A-★ G)) Q (C-★-B H) —→ blame Q
 ```
