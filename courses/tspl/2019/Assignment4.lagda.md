@@ -2099,9 +2099,15 @@ Remember to indent all code by two spaces.
       → Γ ⊢ A `⊎ B
       → Γ , A ⊢ C
       → Γ , B ⊢ C
-        -----
+        ----------
       → Γ ⊢ C
+
+    case⊥ : ∀ {Γ A}
+      → Γ ⊢ `⊥
+        ------
+      → Γ ⊢ A
     -- end
+    
 ```
 
 ### Abbreviating de Bruijn indices
@@ -2152,6 +2158,7 @@ Remember to indent all code by two spaces.
   rename ρ (case⊎ L M N)   =  case⊎ (rename ρ L)
                                     (rename (ext ρ) M)
                                     (rename (ext ρ) N)
+  rename ρ (case⊥ x)       =  case⊥ (rename ρ x)
   -- end
 ```
 
@@ -2184,6 +2191,7 @@ Remember to indent all code by two spaces.
   subst σ (case⊎ L M N)  =  case⊎ (subst σ L)
                                   (subst (exts σ) M)
                                   (subst (exts σ) N)
+  subst σ (case⊥ M)      =  case⊥ (subst σ M)
   -- end
 ```
 
@@ -2428,7 +2436,8 @@ not fixed by the given arguments.
     ξ-case⊥ : ∀ {Γ A} {L L′ : Γ ⊢ `⊥}
       → L —→ L′
         -------------------
-      → case⊥ {A = A} L —→ case⊥ {A = A} L′
+      →
+      case⊥ {A = A} L —→ case⊥ {A = A} L′
 
     -- end
 ```
@@ -2542,13 +2551,19 @@ not fixed by the given arguments.
   ...    | done (V-⟨ VM , VN ⟩)               =  step (β-case× VM VN)
 
   -- begin
-  progress (`inj₁ M) = {!!} -- with progress M
-  -- ...    | step M—→M'                         =  step (ξ-inj₁ M—→M')
-  -- ...    | done VN                            =  done (V-inj₁ VN)
-  progress (`inj₂ N) = {!!} -- with progress N
-  -- ...    | step N—→N'                         =  step (ξ-inj₂ N—→N')
-  -- ...    | done VN                            =  done (V-inj₂ VN)
-  progress (case⊎ t t₁ t₂) = {!!}
+  progress (`inj₁ M) with progress M
+  ...    | step M—→M'                         =  step (ξ-inj₁ M—→M')
+  ...    | done VN                            =  done (V-inj₁ VN)
+  progress (`inj₂ N) with progress N
+  ...    | step N—→N'                         =  step (ξ-inj₂ N—→N')
+  ...    | done VN                            =  done (V-inj₂ VN)
+  progress (case⊎ L M N) with progress L
+  ...    | step L—→L′                         =  step (ξ-case⊎ L—→L′)
+  ...    | done (V-inj₁ VL)                   =  step β-inj₁
+  ...    | done (V-inj₂ VL)                   =  step β-inj₂
+  progress (case⊥ L) with progress L
+  ...    | step L—→L′                         = step (ξ-case⊥ L—→L′)
+  ...    | done ()
   -- end
 ```
 
@@ -2756,6 +2771,8 @@ Remember to indent all code by two spaces.
     `_                        : Id → Term⁺
     _·_                       : Term⁺ → Term⁻ → Term⁺
     _↓_                       : Term⁻ → Type → Term⁺
+    `proj₁_                  : Term⁺ → Term⁺
+    `proj₂_                  : Term⁺ → Term⁺
 
   data Term⁻ where
     ƛ_⇒_                     : Id → Term⁻ → Term⁻
@@ -2765,8 +2782,6 @@ Remember to indent all code by two spaces.
     μ_⇒_                     : Id → Term⁻ → Term⁻
     `⟨_,_⟩                   : Term⁻ → Term⁻ → Term⁻
     _↑                       : Term⁺ → Term⁻
-    `proj₁_                  : Term⁻ → Term⁻
-    `proj₂_                  : Term⁻ → Term⁻
 ```
 
 ### Sample terms
@@ -3018,6 +3033,16 @@ Remember to indent all code by two spaces.
   synthesize Γ (M ↓ A) with inherit Γ M A
   ... | no  ¬⊢M             =  no  (λ{ ⟨ _ , ⊢↓ ⊢M ⟩  →  ¬⊢M ⊢M })
   ... | yes ⊢M              =  yes ⟨ A , ⊢↓ ⊢M ⟩
+  synthesize Γ (`proj₁ M) with synthesize Γ M
+  ... | no ¬⊢M              = no  (λ{ ⟨ _ , ⊢proj₁ ⊢M ⟩ → ¬⊢M ⟨ _ , ⊢M ⟩ })
+  ... | yes ⟨ `ℕ , ⊢T ⟩     = no  (λ{ ⟨ _ , ⊢proj₁ ⊢T′ ⟩ → ℕ≢× (uniq-↑ ⊢T ⊢T′)})
+  ... | yes ⟨ A ⇒ B , ⊢T ⟩  = no  (λ{ ⟨ _ , ⊢proj₁ ⊢T′ ⟩ → ×≢⇒ (uniq-↑ ⊢T′ ⊢T)})
+  ... | yes ⟨ A `× B , ⊢T ⟩ = yes ⟨ A , ⊢proj₁ ⊢T ⟩
+  synthesize Γ (`proj₂ N) with synthesize Γ N
+  ... | no ¬⊢N              = no  (λ{ ⟨ _ , ⊢proj₂ ⊢N ⟩ → ¬⊢N  ⟨ _ , ⊢N ⟩ })
+  ... | yes ⟨ `ℕ , ⊢T ⟩     = no  (λ{ ⟨ _ , ⊢proj₂ ⊢T′ ⟩ → ℕ≢× (uniq-↑ ⊢T ⊢T′) })
+  ... | yes ⟨ A ⇒ B , ⊢T ⟩  = no  (λ{ ⟨ _ , ⊢proj₂ ⊢T′ ⟩ → ×≢⇒ (uniq-↑ ⊢T′ ⊢T) })
+  ... | yes ⟨ A `× B , ⊢T ⟩ = yes  ⟨ B , ⊢proj₂ ⊢T ⟩
 
   inherit Γ (ƛ x ⇒ N) `ℕ      =  no  (λ())
   inherit Γ (ƛ x ⇒ N) (A ⇒ B) with inherit (Γ , x ⦂ A) N B
@@ -3055,14 +3080,7 @@ Remember to indent all code by two spaces.
     with inherit Γ M A | inherit Γ N B
   ...  | no ¬⊢M        | _      = no λ { (⊢× ⊢M _) → ¬⊢M ⊢M }
   ...  | yes ⊢M        | no ¬⊢N = no λ { (⊢× _ ⊢N) → ¬⊢N ⊢N }
-  -- ...  | _             | no ¬⊢N = no λ { (⊢× _ ⊢N) → ¬⊢N ⊢N }
   ...  | yes ⊢M        | yes ⊢N = yes (⊢× ⊢M ⊢N)
-  inherit Γ (`proj₁ M) `ℕ = {!!}
-  inherit Γ (`proj₁ M) (A ⇒ B) = {!!}
-  inherit Γ (`proj₁ M) (A `× B) = {!!}
-  inherit Γ (`proj₂ N) `ℕ = {!!}
-  inherit Γ (`proj₂ N) (A ⇒ B) = {!!}
-  inherit Γ (`proj₂ N) (A `× B) = {!!}
 
 ```
 
@@ -3088,6 +3106,8 @@ Remember to indent all code by two spaces.
   ∥ ⊢` ⊢x ∥⁺           =  DB.` ∥ ⊢x ∥∋
   ∥ ⊢L · ⊢M ∥⁺         =  ∥ ⊢L ∥⁺ DB.· ∥ ⊢M ∥⁻
   ∥ ⊢↓ ⊢M ∥⁺           =  ∥ ⊢M ∥⁻
+  ∥ ⊢proj₁ ⊢M ∥⁺       = DB.`proj₁ ∥ ⊢M ∥⁺
+  ∥ ⊢proj₂ ⊢N ∥⁺       = DB.`proj₂ ∥ ⊢N ∥⁺
 
   ∥ ⊢ƛ ⊢N ∥⁻           =  DB.ƛ ∥ ⊢N ∥⁻
   ∥ ⊢zero ∥⁻           =  DB.`zero
@@ -3096,8 +3116,6 @@ Remember to indent all code by two spaces.
   ∥ ⊢μ ⊢M ∥⁻           =  DB.μ ∥ ⊢M ∥⁻
   ∥ ⊢↑ ⊢M refl ∥⁻      =  ∥ ⊢M ∥⁺
   ∥ ⊢× ⊢M ⊢N ∥⁻        = DB.`⟨ ∥ ⊢M ∥⁻ , ∥ ⊢N ∥⁻ ⟩
-  ∥ ⊢proj₁ ⊢M ∥⁻       = DB.`proj₁ ∥ ⊢M ∥⁻
-  ∥ ⊢proj₂ ⊢N ∥⁻       = DB.`proj₂ ∥ ⊢N ∥⁻
 ```
 
 #### Exercise `bidirectional-mul` (recommended) {#bidirectional-mul}
@@ -3212,8 +3230,8 @@ multiplication from Chapter [DeBruijn][plfa.DeBruijn].
         
 
 ```
-  _ : ∥ ⊢bimul ∥⁺ ≡ DeBruijn.mul
-  _ = ?
+  -- _ : ∥ ⊢bimul ∥⁺ ≡ DeBruijn.mul
+  -- _ = ?
 ```
 
 #### Exercise `inference-products` (recommended)
