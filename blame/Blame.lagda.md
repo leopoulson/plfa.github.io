@@ -70,15 +70,6 @@ open unique-grounding
 Blame Labels
 
 ```
--- Blame : Set
--- Blame = String
-
--- infix 3 -_
-
--- data Neg : Blame → Set where
---   -_ : ∀ {B : Blame}
-
---     → - B
 
 data Blame : Set where
 
@@ -163,6 +154,10 @@ data _⊢_ : Context → Type → Set where
     → (A ∼ B)
       -------------
     → Γ ⊢ B
+
+  -- E[_] : ∀ {T}
+  --   → (T : Γ ⊢ A)
+  --   → EC
 ```
 
 ### Values
@@ -190,6 +185,33 @@ data Value : ∀ {Γ A} → Γ ⊢ A → Set where
     → Value (cast V P (C-A-★ G))
 ```
 
+
+### Eval Contexts
+
+```
+data EC : Context → Type → Type → Set where
+  ■M : ∀ {Γ A B}
+    → Γ ⊢ A
+      --------------
+    → EC Γ (A ⇒ B) B
+
+  V■ : ∀ {Γ A B} -- {V : Γ ⊢ A ⇒ B}
+    -- → Value V
+    → Γ ⊢ A ⇒ B
+      ---------
+    → EC Γ A B
+
+  cast■ : ∀ {Γ A B}
+      (A∼B : A ∼ B)
+    → (P : Blame)
+      -------------
+    → EC Γ A B
+
+_[_] : ∀ {Γ A B} → EC Γ A B → Γ ⊢ A → Γ ⊢ B
+■M M [ T ] = T · M
+V■ V [ T ] = V · T
+cast■ A∼B P [ T ] = cast T P A∼B
+```
 
 ### Reduction
 
@@ -230,4 +252,13 @@ data _—→_ : ∀ {Γ A} → (Γ ⊢ A) → (Γ ⊢ A) → Set where
     → G ≢ H
       -----------------------------------------------
     → cast (cast V P (C-A-★ G)) Q (C-★-B H) —→ blame Q
+
+  E→E : ∀ {Γ A B} {E : EC Γ A B} {M M′ : Γ ⊢ A}
+    → M —→ M′
+      -------------------
+    → E [ M ] —→ E [ M′ ]
+
+  E→B : ∀ {Γ A B} {E : EC Γ A B} {P : Blame}
+      ------------------------
+    → E [ blame P ] —→ blame P
 ```

@@ -2,5 +2,8 @@
 
 * Compatibility
 ** TODO Fix Grounding so that it takes a GType
-** TODO See if there's a more elegant way to do the GType stuff
 ** TODO Prove Grounding lemma
+* Eval Contexts
+Fix V Square to that it needs a value.
+* Blame
+** Do involution
