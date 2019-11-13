@@ -9,7 +9,8 @@ module Assignment4 where
 ```
 
 ## YOUR NAME AND EMAIL GOES HERE
-
+Leo Poulson
+s1983328@ed.ac.uk
 
 ## Introduction
 
@@ -2768,9 +2769,9 @@ Remember to indent all code by two spaces.
   data Term⁻ : Set
 
   data Term⁺ where
-    `_                        : Id → Term⁺
-    _·_                       : Term⁺ → Term⁻ → Term⁺
-    _↓_                       : Term⁻ → Type → Term⁺
+    `_                       : Id → Term⁺
+    _·_                      : Term⁺ → Term⁻ → Term⁺
+    _↓_                      : Term⁻ → Type → Term⁺
     `proj₁_                  : Term⁺ → Term⁺
     `proj₂_                  : Term⁺ → Term⁺
 
@@ -3137,10 +3138,6 @@ mul = μ "*" ⇒ ƛ "m" ⇒ ƛ "n" ⇒
                                |suc "m" ⇒ (plus · (` "n" ↑) · (` "*" · (` "m" ↑) · (` "n" ↑) ↑)) ↑ ]))
                          ↓ (`ℕ ⇒ `ℕ ⇒ `ℕ)
 
-```
-
-```
-
   2+2 : Term⁺
   2+2 = plus · two · two
 ```
@@ -3172,66 +3169,74 @@ multiplication from Chapter [DeBruijn][plfa.DeBruijn].
   ...       | yes _    =  ⊥-elim impossible
     where postulate impossible : ⊥
 
-  ⊢bimul : ∅ ⊢ bimul ↑ `ℕ ⇒ `ℕ ⇒ `ℕ
-  ⊢bimul = {!!}
+  -- I couldn't get this to typecheck, was giving a strange error
+  postulate
+    ⊢bimul : ∀ {Γ} →  Γ ⊢ bimul ↑ `ℕ ⇒ `ℕ ⇒ `ℕ
+  -- ⊢bimul : ∅ ⊢ bimul ↑ `ℕ ⇒ `ℕ ⇒ `ℕ
+  -- ⊢bimul =
+  --  ⊢↓
+  --  (⊢μ
+  --   (⊢ƛ
+  --    (⊢ƛ
+  --     (⊢case
+  --      (⊢`
+  --       (S ("m" ≠ "n")
+  --        Z))
+  --      (⊢↑ (⊢` Z) refl)
+  --      (⊢↑
+  --       (⊢↓
+  --        (⊢μ
+  --         (⊢ƛ
+  --          (⊢ƛ
+  --           (⊢case
+  --            (⊢`
+  --             (S ("*" ≠ "m")
+  --                (S ("*" ≠ "n")
+  --                 (S ("*" ≠ "m")
+  --                  Z)))
+  --               · ⊢↑ (⊢` Z) refl
+  --               ·
+  --               ⊢↑
+  --               (⊢`
+  --                (S ("m" ≠ "n")
+  --                 Z))
+  --               refl)
+  --              refl))))))
+  --        ·
+  --        ⊢↑
+  --        (⊢`
+  --         (S ("n" ≠ "m")
+  --          Z))
+  --        refl
+  --        ·
+  --        ⊢↑
+  --        (⊢`
+  --         (S ("*" ≠ "m")
+        --    (S ("*" ≠ "n")
+        --     (S ("*" ≠ "m")
+        --      Z)))
+        --   · ⊢↑ (⊢` Z) refl
+        --   ·
+        --   ⊢↑
+        --   (⊢`
+        --    (S ("m" ≠ "*")
+        --     Z))
+        --   refl)
+        --  refl)
+        -- refl)))
 
-```
 
-   ⊢↓
-   (⊢μ
-    (⊢ƛ
-     (⊢ƛ
-      (⊢case
-       (⊢`
-        (S ("m" ≠ "n")
-         Z))
-       (⊢↑ (⊢` Z) refl)
-       (⊢↑
-        (⊢↓
-         (⊢μ
-          (⊢ƛ
-           (⊢ƛ
-            (⊢case
-             (⊢`
-              (S ("*" ≠ "m")
-                 (S ("*" ≠ "n")
-                  (S ("*" ≠ "m")
-                   Z)))
-                · ⊢↑ (⊢` Z) refl
-                ·
-                ⊢↑
-                (⊢`
-                 (S ("m" ≠ "n")
-                  Z))
-                refl)
-               refl))))))
-         ·
-         ⊢↑
-         (⊢`
-          (S ("n" ≠ "m")
-           Z))
-         refl
-         ·
-         ⊢↑
-         (⊢`
-          (S ("*" ≠ "m")
-           (S ("*" ≠ "n")
-            (S ("*" ≠ "m")
-             Z)))
-          · ⊢↑ (⊢` Z) refl
-          ·
-          ⊢↑
-          (⊢`
-           (S ("m" ≠ "*")
-            Z))
-          refl)
-         refl)
-        refl)))
-        
+  dbplus : ∀ {Γ} → Γ DB.⊢ DB.`ℕ DB.⇒ DB.`ℕ DB.⇒ DB.`ℕ
+  dbplus = DB.μ DB.ƛ DB.ƛ DB.case (DB.# 1) (DB.# 0) (DB.`suc (DB.# 3 DB.· DB.# 0 DB.· DB.# 1))
 
-```
-  -- _ : ∥ ⊢bimul ∥⁺ ≡ DeBruijn.mul
-  -- _ = ?
+  mul : ∀ {Γ} → Γ DB.⊢ DB.`ℕ DB.⇒ DB.`ℕ DB.⇒ DB.`ℕ
+  mul = DB.μ DB.ƛ DB.ƛ DB.case (DB.# 1)
+                   (DB.# 0)
+                   (dbplus DB.· (DB.# 0) DB.· (DB.# 3 DB.· DB.# 0 DB.· DB.# 1))
+    where open DeBruijn
+
+  _ : ∀ {Γ} → ∥ ⊢bimul {Γ = Γ} ∥⁺  ≡ mul {Γ = ∥ Γ ∥Cx }
+  _ = {!!}
 ```
 
 #### Exercise `inference-products` (recommended)
@@ -3257,6 +3262,7 @@ module Untyped where
 
 Show that `Type` is isomorphic to `⊤`, the unit type.
 
+
 #### Exercise (`Context≃ℕ`)
 
 Show that `Context` is isomorphic to `ℕ`.
@@ -3278,6 +3284,13 @@ abstractions).  What would `plusᶜ · twoᶜ · twoᶜ` reduce to in this case?
 
 Use the evaluator to confirm that `plus · two · two` and `four`
 normalise to the same term.
+
+
+#### Exercise `encode-more` (stretch)
+
+Along the lines above, encode all of the constructs of
+Chapter [More][plfa.More],
+save for primitive numbers, in the untyped lambda calculus.
 
 #### Exercise `multiplication-untyped` (recommended)
 
@@ -12087,8 +12100,3 @@ Confirm that two times two is four.
            (Neutral.` _∋_.Z))))))))
   2*2=4 = refl
 
-#### Exercise `encode-more` (stretch)
-
-Along the lines above, encode all of the constructs of
-Chapter [More][plfa.More],
-save for primitive numbers, in the untyped lambda calculus.
