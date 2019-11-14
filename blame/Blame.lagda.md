@@ -213,10 +213,62 @@ data EC : Context → Type → Type → Set where
       -------------
     → EC Γ A B
 
-_[_] : ∀ {Γ A B} → EC Γ A B → Γ ⊢ A → Γ ⊢ B
-■M M [ T ] = T · M
-V■ V [ T ] = V · T
-cast■ A∼B P [ T ] = cast T P A∼B
+_E[_] : ∀ {Γ A B} → EC Γ A B → Γ ⊢ A → Γ ⊢ B
+■M M E[ T ] = T · M
+V■ V E[ T ] = V · T
+cast■ A∼B P E[ T ] = cast T P A∼B
+```
+
+### Substitution
+
+```
+ext : ∀ {Γ Δ}
+  → (∀ {A} →       Γ ∋ A →     Δ ∋ A)
+    ---------------------------------
+  → (∀ {A B} → Γ , B ∋ A → Δ , B ∋ A)
+ext ρ Z      =  Z
+ext ρ (S x)  =  S (ρ x)
+
+rename : ∀ {Γ Δ}
+  → (∀ {A} → Γ ∋ A → Δ ∋ A)
+    -----------------------
+  → (∀ {A} → Γ ⊢ A → Δ ⊢ A)
+rename ρ k              = k
+rename ρ (` x)          =  ` (ρ x)
+rename ρ (ƛ T ∙ N)      =  ƛ T ∙ (rename (ext ρ) N)
+rename ρ (L · M)        =  (rename ρ L) · (rename ρ M)
+rename ρ (blame P)      = blame P
+rename ρ (cast T P C)   = cast (rename ρ T) P C
+
+exts : ∀ {Γ Δ}
+  → (∀ {A} →       Γ ∋ A →     Δ ⊢ A)
+    ---------------------------------
+  → (∀ {A B} → Γ , B ∋ A → Δ , B ⊢ A)
+exts σ Z      =  ` Z
+exts σ (S x)  =  rename S_ (σ x)
+
+subst : ∀ {Γ Δ}
+  → (∀ {A} → Γ ∋ A → Δ ⊢ A)
+    -----------------------
+  → (∀ {A} → Γ ⊢ A → Δ ⊢ A)
+subst σ k              = k
+subst σ (` x)          = σ x
+subst σ (ƛ T ∙ N)      =  ƛ T ∙ (subst (exts σ) N)
+subst σ (L · M)        =  (subst σ L) · (subst σ M)
+subst σ (blame P)      = blame P
+subst σ (cast T P x)   = cast (subst σ T) P x
+
+_[_] : ∀ {Γ A B}
+        → Γ , B ⊢ A
+        → Γ ⊢ B
+          ---------
+        → Γ ⊢ A
+_[_] {Γ} {A} {B} N M =  subst {Γ , B} {Γ} σ {A} N
+  where
+  σ : ∀ {A} → Γ , B ∋ A → Γ ⊢ A
+  σ Z      =  M
+  σ (S x)  =  ` x
+
 ```
 
 ### Reduction
@@ -227,34 +279,39 @@ infix 2 _—→_
 
 data _—→_ : ∀ {Γ A} → (Γ ⊢ A) → (Γ ⊢ A) → Set where
 
-  ιι : ∀ {Γ} {P : Blame} {V : Γ ⊢ ι}
+  β-ƛ : ∀ {Γ A B} {N : Γ , A ⊢ B} {V : Γ ⊢ A}
+    → Value V
+      ------------------------
+    → (ƛ A ∙ N) · V —→ N [ V ]
+   
+  ιι : ∀ {Γ} {P : Blame} {V : Γ ⊢ ι} {_ : Value V}
       -------------------
     → cast V P (C-ι) —→ V
 
-  wrap : ∀ {Γ A B A′ B′ W} {A∼A′ : A ∼ A′} {B∼B′ : B ∼ B′} {V : Γ ⊢ A ⇒ B} {P : Blame}
+  wrap : ∀ {Γ A B A′ B′ W} {A∼A′ : A ∼ A′} {B∼B′ : B ∼ B′} {V : Γ ⊢ A ⇒ B} {P : Blame} {_ : Value V}
       ----------------------------------------------------
     → (cast V P (C-Step A∼A′ B∼B′)) · W —→
            cast (V · (cast W (¬ P) (∼-sym A∼A′))) P (B∼B′)
 
-  ★★ : ∀ {Γ} {P : Blame} {V : Γ ⊢ ★}
+  ★★ : ∀ {Γ} {P : Blame} {V : Γ ⊢ ★} {_ : Value V}
       -------------------
     → cast V P (C-A-★ ★) —→ V
 
-  A* : ∀ {Γ A G} {_ : GType G} {P : Blame} {V : Γ ⊢ A}
+  A* : ∀ {Γ A G} {_ : GType G} {P : Blame} {V : Γ ⊢ A} {_ : Value V}
     → (ug : unique-grounding A G)
       ----------------------------------------------------------
     → cast V P (C-A-★ A) —→ cast (cast V P (A∼G ug)) P (C-A-★ G)
 
-  *A : ∀ {Γ A G} {_ : GType G} {P : Blame} {V : Γ ⊢ ★}
+  *A : ∀ {Γ A G} {_ : GType G} {P : Blame} {V : Γ ⊢ ★} {_ : Value V}
     → (ug : unique-grounding A G)
       ------------------------------------------------------------------
     → cast V P (C-★-B A) —→ cast (cast V P (C-★-B G)) P (∼-sym (A∼G ug))
 
-  G★G : ∀ {Γ G} {_ : GType G} {P Q : Blame} {V : Γ ⊢ G}
+  G★G : ∀ {Γ G} {_ : GType G} {P Q : Blame} {V : Γ ⊢ G} {_ : Value V}
       -----------------------------------------------
     → cast (cast V P (C-A-★ G)) Q (C-★-B G) —→ V
 
-  G★H : ∀ {Γ G H} {_ : GType G} {_ : GType H} {P Q : Blame} {V : Γ ⊢ G}
+  G★H : ∀ {Γ G H} {_ : GType G} {_ : GType H} {P Q : Blame} {V : Γ ⊢ G} {_ : Value V}
     → G ≢ H
       -----------------------------------------------
     → cast (cast V P (C-A-★ G)) Q (C-★-B H) —→ blame Q
@@ -262,11 +319,11 @@ data _—→_ : ∀ {Γ A} → (Γ ⊢ A) → (Γ ⊢ A) → Set where
   E→E : ∀ {Γ A B} {E : EC Γ A B} {M M′ : Γ ⊢ A}
     → M —→ M′
       -------------------
-    → E [ M ] —→ E [ M′ ]
+    → E E[ M ] —→ E E[ M′ ]
 
   E→B : ∀ {Γ A B} {E : EC Γ A B} {P : Blame}
       ------------------------
-    → E [ blame P ] —→ blame P
+    → E E[ blame P ] —→ blame P
 ```
 
 ### Embedding Dynamically-typed LC
