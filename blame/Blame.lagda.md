@@ -4,8 +4,9 @@ module Blame where
 import Relation.Binary.PropositionalEquality as Eq
 
 open import Data.String using (String; _≟_) -- for Blame labels
-open import Data.Product using (_×_; Σ; _,_; ∃; Σ-syntax; ∃-syntax)
-open Eq using (_≡_; _≢_)
+open import Data.Product using (_×_; Σ; ∃; Σ-syntax; ∃-syntax; ∃!) renaming (_,_ to ⟨_,_⟩)
+open import Data.Empty using (⊥; ⊥-elim)
+open Eq using (_≡_; _≢_; refl)
 ```
 
 Types and Ground Types
@@ -15,8 +16,8 @@ infixr 7 _⇒_
 
 data Type : Set where
   ι : Type
-  _⇒_ : Type → Type → Type
   ★ : Type
+  _⇒_ : Type → Type → Type
 
 data GType : Type → Set where
   G-ι :
@@ -65,6 +66,11 @@ record unique-grounding (A G : Type) : Set where
     A∼G : A ∼ G
 open unique-grounding
 
+ground-unique : ∀ A → A ≢ ★ → ∃! _≡_ (λ G → A ∼ G × GType G)
+ground-unique ι ne = ⟨ ι , ⟨ ⟨ C-ι , G-ι ⟩ , (λ { ⟨ C-ι , G-ι ⟩ → refl } ) ⟩ ⟩
+ground-unique ★ ne = ⊥-elim (ne refl)
+ground-unique (t ⇒ t₁) ne = ⟨ ★ ⇒ ★ , ⟨ ⟨ C-Step (C-A-★ t) (C-A-★ t₁) , G-⇒ ⟩ , (λ { ⟨ _ , G-⇒ ⟩ → refl }) ⟩ ⟩
+
 ```
 
 Blame Labels
@@ -112,7 +118,7 @@ Now we can do terms too
 
 ```
 infix  4 _⊢_
-infix  5 ƛ_
+infix  5 ƛ_∙_
 infixl 7 _·_
 infix  9 `_
 data _⊢_ : Context → Type → Set where
@@ -132,7 +138,7 @@ data _⊢_ : Context → Type → Set where
       -----
     → Γ ⊢ A
 
-  ƛ_  : ∀ {Γ A B}
+  ƛ_∙_  : ∀ {Γ  B} (A)
     → Γ , A ⊢ B
       ---------
     → Γ ⊢ A ⇒ B
@@ -171,7 +177,7 @@ data Value : ∀ {Γ A} → Γ ⊢ A → Set where
 
   V-ƛ : ∀ {Γ A B} {N : Γ , A ⊢ B}
       ---------------------------
-    → Value (ƛ N)
+    → Value (ƛ A ∙ N)
 
   V-⇒ : ∀ {Γ A B A′ B′} {P : Blame} {V : Γ ⊢ A ⇒ B} {comp : A ⇒ B ∼ A′ ⇒ B′}
     → Value V
@@ -261,4 +267,45 @@ data _—→_ : ∀ {Γ A} → (Γ ⊢ A) → (Γ ⊢ A) → Set where
   E→B : ∀ {Γ A B} {E : EC Γ A B} {P : Blame}
       ------------------------
     → E [ blame P ] —→ blame P
+```
+
+### Embedding Dynamically-typed LC
+
+```
+infix 5 ƛ_
+infix  4 _D⊢_
+data _D⊢_ : Context → Type → Set where
+
+  k : ∀ {Γ}
+      -----
+    → Γ D⊢ ι
+
+  -- TODO
+  -- op : ∀ {Γ}
+  --   → Vect n ι
+  --     -----
+  --   → Γ ⊢ ι
+
+  `_ : ∀ {Γ}
+    → Γ ∋ ★
+      -----
+    → Γ D⊢ ★
+
+  ƛ_  : ∀ {Γ}
+    → Γ , ★ D⊢ ★
+      ---------
+    → Γ D⊢ ★
+
+  _·_ : ∀ {Γ}
+    → Γ D⊢ ★ ⇒ ★
+    → Γ D⊢ ★
+      ---------
+    → Γ D⊢ ★
+
+⌈_⌉ : ∀ {Γ A} → Γ D⊢ A → Blame → Γ ⊢ ★
+⌈ k ⌉ P = cast k P (C-A-★ ι)
+⌈ ` x ⌉ _ = ` x
+⌈ ƛ t ⌉ P = cast (ƛ ★ ∙  ⌈ t ⌉ P) P (C-A-★ (★ ⇒ ★))
+⌈ L · M ⌉ P = (cast (⌈ L ⌉ P) P (C-★-B (★ ⇒ ★))) · ⌈ M ⌉ P
+
 ```

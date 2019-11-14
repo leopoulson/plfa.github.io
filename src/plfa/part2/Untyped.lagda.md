@@ -866,3 +866,14 @@ This chapter uses the following unicode:
 
 The `\st` command permits navigation among many different stars;
 the one we use is number 7.
+
+-- ```
+-- mul : ∀ {Γ} → Γ ⊢ ★
+-- mul = μ ƛ ƛ (case (# 1)
+--                   (`zero)
+--                   (plus · (# 1) · ((# 3) · ((# 0) · (# 1)))))
+
+
+-- 2*2 : ∀ {Γ} → Γ ⊢ ★
+-- 2*2 = mul · two · two
+-- ```

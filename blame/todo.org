@@ -2,7 +2,6 @@
 
 * Compatibility
 ** TODO Fix Grounding so that it takes a GType
-** TODO Prove Grounding lemma
 * Eval Contexts
 Fix V Square to that it needs a value.
 * Blame
