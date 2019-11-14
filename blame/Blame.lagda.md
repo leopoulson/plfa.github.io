@@ -6,7 +6,10 @@ import Relation.Binary.PropositionalEquality as Eq
 open import Data.String using (String; _≟_) -- for Blame labels
 open import Data.Product using (_×_; Σ; ∃; Σ-syntax; ∃-syntax; ∃!) renaming (_,_ to ⟨_,_⟩)
 open import Data.Empty using (⊥; ⊥-elim)
+open import Relation.Nullary using (¬_; Dec; yes; no)
 open Eq using (_≡_; _≢_; refl)
+
+open import Iff using (_⇔_)
 ```
 
 Types and Ground Types
@@ -71,6 +74,16 @@ ground-unique ι ne = ⟨ ι , ⟨ ⟨ C-ι , G-ι ⟩ , (λ { ⟨ C-ι , G-ι �
 ground-unique ★ ne = ⊥-elim (ne refl)
 ground-unique (t ⇒ t₁) ne = ⟨ ★ ⇒ ★ , ⟨ ⟨ C-Step (C-A-★ t) (C-A-★ t₁) , G-⇒ ⟩ , (λ { ⟨ _ , G-⇒ ⟩ → refl }) ⟩ ⟩
 
+ground-to : ∀ {G H} (GE : GType G) (HE : GType H) → (G ∼ H) → (G ≡ H)
+ground-to G-ι G-ι G∼H = refl
+ground-to G-⇒ G-⇒ G∼H = refl
+
+ground-from : ∀ {G H} (GE : GType G) (HE : GType H) → (G ≡ H) → (G ∼ H)
+ground-from G-ι G-ι refl = C-ι
+ground-from G-⇒ G-⇒ refl = C-Step (C-A-★ ★) (C-A-★ ★)
+
+ground-eq : ∀ {G H} (GE : GType G) (HE : GType H) → (G ∼ H) ⇔ (G ≡ H)
+ground-eq x y = record { to = ground-to x y ; from = ground-from x y }
 ```
 
 Blame Labels
@@ -84,7 +97,7 @@ data Blame : Set where
       ------
     → Blame
 
-  ¬_ :
+  not _ :
       Blame
       -----
     → Blame
@@ -120,6 +133,7 @@ Now we can do terms too
 infix  4 _⊢_
 infix  5 ƛ_∙_
 infixl 7 _·_
+infix  8 blame_
 infix  9 `_
 data _⊢_ : Context → Type → Set where
 
@@ -160,10 +174,6 @@ data _⊢_ : Context → Type → Set where
     → (A ∼ B)
       -------------
     → Γ ⊢ B
-
-  -- E[_] : ∀ {T}
-  --   → (T : Γ ⊢ A)
-  --   → EC
 ```
 
 ### Values
@@ -192,32 +202,6 @@ data Value : ∀ {Γ A} → Γ ⊢ A → Set where
 ```
 
 
-### Eval Contexts
-
-```
-data EC : Context → Type → Type → Set where
-  ■M : ∀ {Γ A B}
-    → Γ ⊢ A
-      --------------
-    → EC Γ (A ⇒ B) B
-
-  V■ : ∀ {Γ A B} -- {V : Γ ⊢ A ⇒ B}
-    -- → Value V
-    → Γ ⊢ A ⇒ B
-      ---------
-    → EC Γ A B
-
-  cast■ : ∀ {Γ A B}
-      (A∼B : A ∼ B)
-    → (P : Blame)
-      -------------
-    → EC Γ A B
-
-_E[_] : ∀ {Γ A B} → EC Γ A B → Γ ⊢ A → Γ ⊢ B
-■M M E[ T ] = T · M
-V■ V E[ T ] = V · T
-cast■ A∼B P E[ T ] = cast T P A∼B
-```
 
 ### Substitution
 
@@ -271,6 +255,34 @@ _[_] {Γ} {A} {B} N M =  subst {Γ , B} {Γ} σ {A} N
 
 ```
 
+
+### Eval Contexts
+
+```
+data EC : Context → Type → Type → Set where
+  ■M : ∀ {Γ A B}
+    → Γ ⊢ A
+      --------------
+    → EC Γ (A ⇒ B) B
+
+  V■ : ∀ {Γ A B} (V : Γ ⊢ A ⇒ B) {_ : Value V}
+    -- → Value V
+    -- → Γ ⊢ A ⇒ B
+      ---------
+    → EC Γ A B
+
+  cast■ : ∀ {Γ A B}
+      (A∼B : A ∼ B)
+    → (P : Blame)
+      -------------
+    → EC Γ A B
+
+_E[_] : ∀ {Γ A B} → EC Γ A B → Γ ⊢ A → Γ ⊢ B
+■M M E[ T ] = T · M
+V■ V E[ T ] = V · T
+cast■ A∼B P E[ T ] = cast T P A∼B
+```
+
 ### Reduction
 
 ```
@@ -291,7 +303,7 @@ data _—→_ : ∀ {Γ A} → (Γ ⊢ A) → (Γ ⊢ A) → Set where
   wrap : ∀ {Γ A B A′ B′ W} {A∼A′ : A ∼ A′} {B∼B′ : B ∼ B′} {V : Γ ⊢ A ⇒ B} {P : Blame} {_ : Value V}
       ----------------------------------------------------
     → (cast V P (C-Step A∼A′ B∼B′)) · W —→
-           cast (V · (cast W (¬ P) (∼-sym A∼A′))) P (B∼B′)
+           cast (V · (cast W (not P) (∼-sym A∼A′))) P (B∼B′)
 
   ★★ : ∀ {Γ} {P : Blame} {V : Γ ⊢ ★} {_ : Value V}
       -------------------
@@ -316,14 +328,79 @@ data _—→_ : ∀ {Γ A} → (Γ ⊢ A) → (Γ ⊢ A) → Set where
       -----------------------------------------------
     → cast (cast V P (C-A-★ G)) Q (C-★-B H) —→ blame Q
 
-  E→E : ∀ {Γ A B} {E : EC Γ A B} {M M′ : Γ ⊢ A}
-    → M —→ M′
-      -------------------
-    → E E[ M ] —→ E E[ M′ ]
+  -- E→E : ∀ {Γ A B} (E : EC Γ A B) {M M′ : Γ ⊢ A}
+  --   → M —→ M′
+  --     -------------------
+  --   → E E[ M ] —→ E E[ M′ ]
 
-  E→B : ∀ {Γ A B} {E : EC Γ A B} {P : Blame}
-      ------------------------
-    → E E[ blame P ] —→ blame P
+  -- E→B : ∀ {Γ A B} (E : EC Γ A B) {P : Blame}
+  --     ------------------------
+  --   → E E[ blame P ] —→ blame P
+
+  ξ-·₁ : ∀ {Γ A B} {L L′ : Γ ⊢ A ⇒ B} {M : Γ ⊢ A}
+    → L —→ L′
+      --------------
+    → L · M —→ L · M
+
+  ξ-·₂ : ∀ {Γ A B} {V : Γ ⊢ A ⇒ B} {M M′ : Γ ⊢ A}
+    → Value V
+    → M —→ M′
+      ---------------
+    → V · M —→ V · M′
+
+  ξ-cast : ∀ {Γ A B P} {A∼B : A ∼ B} {M M′ : Γ ⊢ A}
+    → M —→ M′
+    -------------------------------
+    → cast M P A∼B —→ cast M′ P A∼B
+
+  -- B-·₁ : ∀ {Γ A P B} {M : Γ ⊢ A} (blame P : Γ ⊢ A ⇒ B)
+  --   --------------------------
+  --   → (blame P) · M —→  blame P
+
+  B-·₂ : ∀ {Γ A B P} {V : Γ ⊢ A ⇒ B}
+    → Value V
+    --------------------------
+    → V · (blame P) —→ blame P
+
+  -- B-cast : ∀ {A B P Q} {A∼B : A ∼ B}
+  --   → cast (blame P) Q A∼B —→ blame P
+
+
+-- Reflexive and transitive closure
+
+infix  2 _—↠_
+infix  1 begin_
+infixr 2 _—→⟨_⟩_
+infix  3 _∎
+
+data _—↠_ : ∀ {Γ A} → (Γ ⊢ A) → (Γ ⊢ A) → Set where
+
+  _∎ : ∀ {Γ A} (M : Γ ⊢ A)
+      ------
+    → M —↠ M
+
+  _—→⟨_⟩_ : ∀ {Γ A} (L : Γ ⊢ A) {M N : Γ ⊢ A}
+    → L —→ M
+    → M —↠ N
+      ------
+    → L —↠ N
+
+begin_ : ∀ {Γ A} {M N : Γ ⊢ A}
+  → M —↠ N
+    ------
+  → M —↠ N
+begin M—↠N = M—↠N
+```
+
+FAILURE
+
+```
+-- failure : ∀ {Γ A B G H} {V : Γ ⊢ A} {_ : Value V} (A≢★ : A ≢ ★) (A∼G : A ∼ G) (G≠H : G ≢ H) {P Q R S : Blame}
+--   → cast (cast (cast (cast V P A∼G) Q (C-A-★ G)) R (C-★-B H)) S (∼-sym {!!}) —↠ blame P
+-- failure = {!!}
+
+-- failure-lem : ∀ {Γ M A B P} → (cast M P (A ∼ B)) → (A ∼ B) → M
+-- failure-lem c A∼B = ?
 ```
 
 ### Embedding Dynamically-typed LC
@@ -364,5 +441,39 @@ data _D⊢_ : Context → Type → Set where
 ⌈ ` x ⌉ _ = ` x
 ⌈ ƛ t ⌉ P = cast (ƛ ★ ∙  ⌈ t ⌉ P) P (C-A-★ (★ ⇒ ★))
 ⌈ L · M ⌉ P = (cast (⌈ L ⌉ P) P (C-★-B (★ ⇒ ★))) · ⌈ M ⌉ P
+```
+
+
 
 ```
+-- V¬—→ : ∀ {M N}
+--   → Value M
+--     ----------
+--   → ¬ (M —→ N)
+-- V¬—→ V-ƛ        ()
+-- V¬—→ V-zero     ()
+-- V¬—→ (V-suc VM) (ξ-suc M—→N) = V¬—→ VM M—→N
+-- V¬—→ v x = {!!}
+
+determinism : ∀ {Γ A} {M : Γ ⊢ A} {N L : Γ ⊢ A} → M —→ N → M —→ L → N ≡ L
+determinism (β-ƛ x) (β-ƛ x₁) = refl
+determinism (β-ƛ V) (ξ-·₂ x₁ ML) = {!!}
+determinism ιι ML = {!!}
+determinism wrap ML = {!!}
+determinism ★★ ML = {!!}
+determinism (A* ug) ML = {!!}
+determinism (*A ug) ML = {!!}
+determinism G★G ML = {!!}
+determinism (G★H x) ML = {!!}
+determinism (ξ-·₁ MN) ML = {!!}
+determinism (ξ-·₂ x MN) ML = {!!}
+determinism (ξ-cast MN) ML = {!!}
+determinism (B-·₂ x) ML = {!!}
+-- determinism k () ()
+-- determinism (` x) MN ML = {!!}
+-- determinism (ƛ A ∙ t) MN ML = {!!}
+-- determinism (t · t₁) MN ML = {!!}
+-- determinism (blame P) MN ML = {!!}
+-- determinism (cast t P x) MN ML = {!!}
+```
+
