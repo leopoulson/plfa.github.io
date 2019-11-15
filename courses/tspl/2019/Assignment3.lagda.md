@@ -313,6 +313,7 @@ Any-++-⇔ xs ys =
   from xs ys (inj₂ Pys) = ys-→-xsys xs ys Pys
 ```
 
+
 #### Exercise `All-++-≃` (stretch)
 
 Show that the equivalence `All-++-⇔` can be extended to an isomorphism.
@@ -322,11 +323,11 @@ Show that the equivalence `All-++-⇔` can be extended to an isomorphism.
 ```
 
 
-#### Exercise `¬Any≃All¬` (recommended)
+#### Exercise `¬Any⇔All¬` (recommended)
 
 Show that `Any` and `All` satisfy a version of De Morgan's Law:
 
-    (¬_ ∘ Any P) xs ≃ All (¬_ ∘ P) xs
+    (¬_ ∘ Any P) xs ⇔ All (¬_ ∘ P) xs
 
 ```
 to-lem : ∀ {A : Set} {P : A → Set} (xs : List A)
@@ -367,13 +368,28 @@ to arbitrary levels, as described in the section on
 
 Do we also have the following?
 
-    (¬_ ∘ All P) xs ≃ Any (¬_ ∘ P) xs
+    (¬_ ∘ All P) xs ⇔ Any (¬_ ∘ P) xs
 
 If so, prove; if not, explain why.
 
 This doesn't hold. We know that not everything in xs satisfies the property P;
 however, from this we can not say /which one/ - we just have a proof that it
 doesn't hold for each one. As such we have no way to construct Any (¬_ ∘ P) xs.
+
+
+```
+-- Your code goes here
+```
+
+
+#### Exercise `¬Any≃All¬` (stretch)
+
+Show that the equivalence `¬Any⇔All¬` can be extended to an isomorphism.
+You will need to use extensionality.
+
+```
+-- Your code goes here
+```
 
 
 #### Exercise `All-∀` (practice)

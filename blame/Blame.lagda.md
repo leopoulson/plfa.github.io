@@ -138,6 +138,7 @@ infix  9 `_
 data _⊢_ : Context → Type → Set where
 
   k : ∀ {Γ}
+    → Γ ∋ ι
       -----
     → Γ ⊢ ι
 
@@ -181,9 +182,9 @@ data _⊢_ : Context → Type → Set where
 ```
 data Value : ∀ {Γ A} → Γ ⊢ A → Set where
 
-  V-k : ∀ {Γ}
+  V-k : ∀ {Γ x}
       ---------------
-    → Value {Γ = Γ} k
+    → Value {Γ = Γ} {A = ι} (k x)
 
   V-ƛ : ∀ {Γ A B} {N : Γ , A ⊢ B}
       ---------------------------
@@ -197,7 +198,7 @@ data Value : ∀ {Γ A} → Γ ⊢ A → Set where
 
   V-★ : ∀ {Γ G} {GT : GType G} {P : Blame} {V : Γ ⊢ G}
     → Value V
-
+      --------------------------
     → Value (cast V P (C-A-★ G))
 ```
 
@@ -217,7 +218,7 @@ rename : ∀ {Γ Δ}
   → (∀ {A} → Γ ∋ A → Δ ∋ A)
     -----------------------
   → (∀ {A} → Γ ⊢ A → Δ ⊢ A)
-rename ρ k              = k
+rename ρ (k x)          = k (ρ x)
 rename ρ (` x)          =  ` (ρ x)
 rename ρ (ƛ T ∙ N)      =  ƛ T ∙ (rename (ext ρ) N)
 rename ρ (L · M)        =  (rename ρ L) · (rename ρ M)
@@ -235,7 +236,7 @@ subst : ∀ {Γ Δ}
   → (∀ {A} → Γ ∋ A → Δ ⊢ A)
     -----------------------
   → (∀ {A} → Γ ⊢ A → Δ ⊢ A)
-subst σ k              = k
+subst σ (k x)          = σ x
 subst σ (` x)          = σ x
 subst σ (ƛ T ∙ N)      =  ƛ T ∙ (subst (exts σ) N)
 subst σ (L · M)        =  (subst σ L) · (subst σ M)
@@ -411,6 +412,7 @@ infix  4 _D⊢_
 data _D⊢_ : Context → Type → Set where
 
   k : ∀ {Γ}
+    → Γ ∋ ι
       -----
     → Γ D⊢ ι
 
@@ -437,7 +439,7 @@ data _D⊢_ : Context → Type → Set where
     → Γ D⊢ ★
 
 ⌈_⌉ : ∀ {Γ A} → Γ D⊢ A → Blame → Γ ⊢ ★
-⌈ k ⌉ P = cast k P (C-A-★ ι)
+⌈ k x ⌉ P = cast (k x) P (C-A-★ ι)
 ⌈ ` x ⌉ _ = ` x
 ⌈ ƛ t ⌉ P = cast (ƛ ★ ∙  ⌈ t ⌉ P) P (C-A-★ (★ ⇒ ★))
 ⌈ L · M ⌉ P = (cast (⌈ L ⌉ P) P (C-★-B (★ ⇒ ★))) · ⌈ M ⌉ P
@@ -446,14 +448,15 @@ data _D⊢_ : Context → Type → Set where
 
 
 ```
--- V¬—→ : ∀ {M N}
---   → Value M
---     ----------
---   → ¬ (M —→ N)
--- V¬—→ V-ƛ        ()
--- V¬—→ V-zero     ()
--- V¬—→ (V-suc VM) (ξ-suc M—→N) = V¬—→ VM M—→N
--- V¬—→ v x = {!!}
+V¬—→ : ∀ {Γ A} {M N : Γ ⊢ A}
+  → Value M
+    ----------
+  → ¬ (M —→ N)
+V¬—→ (V-⇒ v) (ξ-cast x) = V¬—→ v x
+-- we can get false here from the fact that A≢G, A here is some ground type,
+-- and A∼G, so G≡H, which is a contradiction
+V¬—→ (V-★ v) (A* {G = G₁} record { A≢★ = A≢★ ; A≢G = A≢G ; A∼G = A∼G }) = A≢G {!!}
+V¬—→ (V-★ v) (ξ-cast x) = V¬—→ v x
 
 determinism : ∀ {Γ A} {M : Γ ⊢ A} {N L : Γ ⊢ A} → M —→ N → M —→ L → N ≡ L
 determinism (β-ƛ x) (β-ƛ x₁) = refl

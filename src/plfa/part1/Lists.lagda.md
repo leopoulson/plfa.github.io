@@ -958,11 +958,11 @@ Show that the equivalence `All-++-⇔` can be extended to an isomorphism.
 -- Your code goes here
 ```
 
-#### Exercise `¬Any≃All¬` (recommended)
+#### Exercise `¬Any⇔All¬` (recommended)
 
 Show that `Any` and `All` satisfy a version of De Morgan's Law:
 
-    (¬_ ∘ Any P) xs ≃ All (¬_ ∘ P) xs
+    (¬_ ∘ Any P) xs ⇔ All (¬_ ∘ P) xs
 
 (Can you see why it is important that here `_∘_` is generalised
 to arbitrary levels, as described in the section on
@@ -970,10 +970,23 @@ to arbitrary levels, as described in the section on
 
 Do we also have the following?
 
-    (¬_ ∘ All P) xs ≃ Any (¬_ ∘ P) xs
+    (¬_ ∘ All P) xs ⇔ Any (¬_ ∘ P) xs
 
 If so, prove; if not, explain why.
 
+
+```
+-- Your code goes here
+```
+
+#### Exercise `¬Any≃All¬` (stretch)
+
+Show that the equivalence `¬Any⇔All¬` can be extended to an isomorphism.
+You will need to use extensionality.
+
+```
+-- Your code goes here
+```
 
 #### Exercise `All-∀` (practice)
 
@@ -1076,12 +1089,13 @@ into two lists that merge to give the original list, where all
 elements of one list satisfy the predicate, and all elements of
 the other do not satisfy the predicate.
 
-Define the following variant of the traditional `filter` function on lists,
-which given a decidable predicate and a list returns all elements of the
-list satisfying the predicate:
+Define the following variant of the traditional `filter` function on
+lists, which given a decidable predicate and a list returns a list of
+elements that satisfy the predicate and a list of elements that don't,
+with their corresponding proofs.
 
-    split : ∀ {A : Set} {P : A → Set} (P? : Decidable P) (xs : List A)
-      → ∃[ ys ] ∃[ zs ] ( merge xs ys zs × All P ys × All (¬_ ∘ P) zs )
+    split : ∀ {A : Set} {P : A → Set} (P? : Decidable P) (zs : List A)
+      → ∃[ xs ] ∃[ ys ] ( merge xs ys zs × All P xs × All (¬_ ∘ P) ys )
 
 ```
 -- Your code goes here
