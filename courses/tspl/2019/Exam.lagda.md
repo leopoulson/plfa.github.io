@@ -9,6 +9,9 @@ permalink : /TSPL/2019/Exam/
 module Exam where
 ```
 
+Leo Poulson
+s1983328
+
 **IMPORTANT** For ease of marking, when modifying the given code please write
 
     -- begin
