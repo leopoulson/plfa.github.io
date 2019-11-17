@@ -36,13 +36,63 @@ open import Relation.Binary using (Decidable)
 module Problem1 where
 
   open import Function using (_∘_)
+
 ```
 
 Remember to indent all code by two spaces.
 
 ### (a)
 
+```
+  data Tree (A : Set) : Set where
+    leaf :
+        A
+        ------
+      → Tree A
+
+    _branch_ :
+        Tree A
+      → Tree A
+        ------
+      → Tree A
+
+  data AllT {A : Set} (P : A → Set) : Tree A → Set where
+    leaf : ∀ {x}
+      → P x
+        ---------------
+      → AllT P (leaf x)
+
+    _branch_ : ∀ {xt yt}
+      → AllT P xt
+      → AllT P yt
+        ----------------------
+      → AllT P  (xt branch yt)
+
+  data AnyT {A : Set} (P : A → Set) : Tree A → Set where
+    leaf : ∀ {x}
+      → P x
+        ---------------
+      → AnyT P (leaf x)
+
+    left : ∀ {xt yt}
+      → AnyT P xt
+        ---------------------
+      → AnyT P (xt branch yt)
+
+    right : ∀ {xt yt}
+      → AnyT P yt
+        ---------------------
+      → AnyT P (xt branch yt)
+```
+
 ### (b)
+
+```
+  ¬All→¬Any : ∀ {A} {P : A → Set} {xt : Tree A} → AllT (¬_ ∘ P) xt → ¬ (AnyT P xt)
+  ¬All→¬Any (leaf ¬Px) (leaf Px) = ¬Px Px
+  ¬All→¬Any (¬Pxt branch ¬Pyt) (left Pxt) = ¬All→¬Any ¬Pxt Pxt
+  ¬All→¬Any (¬Pxt branch ¬Pyt) (right Pyt) = ¬All→¬Any ¬Pyt Pyt
+```
 
 ### (c)
 
@@ -79,6 +129,9 @@ module Problem2 where
   data Type : Set where
     _⇒_   : Type → Type → Type
     `ℕ    : Type
+    --begin
+    Comp  : Type → Type
+    --end
 
   data Context : Set where
     ∅   : Context
@@ -141,6 +194,25 @@ module Problem2 where
       → Γ , A ⊢ A
         ----------
       → Γ ⊢ A
+
+
+    --begin
+    error : ∀ {Γ A}
+      → (msg : String)
+        --------------
+      → Γ ⊢ Comp A
+
+    ok : ∀ {Γ A}
+      → Γ ⊢ A
+        ----------
+      → Γ ⊢ Comp A
+
+    letc : ∀ {Γ A B}
+      → Γ ⊢ Comp A
+      → Γ , A ⊢ Comp B
+        --------------
+      → Γ ⊢ Comp B
+    --end
 ```
 
 ### Abbreviating de Bruijn indices
@@ -182,6 +254,12 @@ module Problem2 where
   rename ρ (`suc M)       =  `suc (rename ρ M)
   rename ρ (case L M N)   =  case (rename ρ L) (rename ρ M) (rename (ext ρ) N)
   rename ρ (μ N)          =  μ (rename (ext ρ) N)
+
+  --begin
+  rename ρ (error msg)    = error msg
+  rename ρ (ok T)         = ok (rename ρ T)
+  rename ρ (letc M N)     = letc (rename ρ M) (rename (ext ρ) N) 
+  --end
 ```
 
 ### Simultaneous Substitution
@@ -204,6 +282,12 @@ module Problem2 where
   subst σ (`suc M)       =  `suc (subst σ M)
   subst σ (case L M N)   =  case (subst σ L) (subst σ M) (subst (exts σ) N)
   subst σ (μ N)          =  μ (subst (exts σ) N)
+
+  --begin
+  subst σ (error msg)    = error msg
+  subst σ (ok T)         = ok (subst σ T)
+  subst σ (letc M N)     = letc (subst σ M) (subst (exts σ) N)
+  --end
 ```
 
 ### Single substitution
@@ -238,6 +322,18 @@ module Problem2 where
       → Value V
         --------------
       → Value (`suc V)
+
+
+    --begin
+    V-error : ∀ {Γ A msg}
+        ----------------
+      → Value (error {Γ = Γ} {A = A} msg)
+
+    V-ok : ∀ {Γ A} {V : Γ ⊢ A}
+      → Value V
+        ------------
+      → Value (ok V)
+   --end
 ```
 
 ### Reduction
@@ -285,6 +381,27 @@ module Problem2 where
     β-μ : ∀ {Γ A} {N : Γ , A ⊢ A}
         ---------------
       → μ N —→ N [ μ N ]
+
+    --begin
+    ξ-ok : ∀ {Γ A} {M M′ : Γ ⊢ A}
+      → M —→ M′
+        -------------
+      → ok M —→ ok M′
+
+    ξ-letc : ∀ {Γ A B} {M M′ : Γ ⊢ Comp A} {N : Γ , A ⊢ Comp B}
+      → M —→ M′
+        ---------------------
+      → letc M N —→ letc M′ N
+
+    β-error : ∀ {Γ A B msg} {T : Γ , A ⊢ Comp B}
+        -------------------------------
+      → letc (error msg) T —→ error msg
+
+    β-ok : ∀ {Γ A B} {V : Γ ⊢ A} {N : Γ , A ⊢ Comp B}
+      → Value V
+        ------------------------
+      → letc (ok V) N —→ N [ V ]
+    --end
 ```
 
 
@@ -348,6 +465,17 @@ module Problem2 where
   ...    | done V-zero                    =  step (β-zero)
   ...    | done (V-suc VL)                =  step (β-suc VL)
   progress (μ N)                          =  step (β-μ)
+
+  --begin
+  progress (error msg)                      = done V-error
+  progress (ok T) with progress T
+  ... | step T—→T′                          = step (ξ-ok T—→T′)
+  ... | done VT                             = done (V-ok VT)
+  progress (letc M N) with progress M
+  ... | step M—→M′                          = step (ξ-letc M—→M′)
+  progress (letc (error msg) N) | done VM   = step β-error
+  progress (letc (ok M) N) | done (V-ok VM) = step (β-ok VM)
+  --end
 ```
 
 ### Evaluation
@@ -424,6 +552,7 @@ module Problem3 where
   data Type : Set where
     _⇒_   : Type → Type → Type
     `ℕ    : Type
+    ⊤     : Type
 ```
 
 ### Identifiers
@@ -448,9 +577,9 @@ module Problem3 where
   data Term⁻ : Set
 
   data Term⁺ where
-    `_                        : Id → Term⁺
-    _·_                       : Term⁺ → Term⁻ → Term⁺
-    _↓_                       : Term⁻ → Type → Term⁺
+    `_                       : Id → Term⁺
+    _·_                      : Term⁺ → Term⁻ → Term⁺
+    _↓_                      : Term⁻ → Type → Term⁺
 
   data Term⁻ where
     ƛ_⇒_                     : Id → Term⁻ → Term⁻
@@ -459,6 +588,11 @@ module Problem3 where
     `case_[zero⇒_|suc_⇒_]    : Term⁺ → Term⁻ → Id → Term⁻ → Term⁻
     μ_⇒_                     : Id → Term⁻ → Term⁻
     _↑                       : Term⁺ → Term⁻
+
+    --begin
+    tt                       : Term⁻
+    case⊤_[tt⇒_]             : Term⁺ → Term⁻ → Term⁻
+    --end
 ```
 
 ### Lookup
@@ -501,6 +635,7 @@ module Problem3 where
         ---------------
       → Γ ⊢ (M ↓ A) ↑ A
 
+
   data _⊢_↓_ where
 
     ⊢ƛ : ∀ {Γ x N A B}
@@ -534,6 +669,18 @@ module Problem3 where
       → A ≡ B
         -------------
       → Γ ⊢ (M ↑) ↓ B
+
+    --begin
+    ⊢tt : ∀ {Γ}
+        ----------
+      → Γ ⊢ tt ↓ ⊤
+
+    ⊢case⊤ : ∀ {Γ L M A}
+      → Γ ⊢ L ↑ ⊤
+      → Γ ⊢ M ↓ A
+        ------------------------
+      → Γ ⊢ case⊤ L [tt⇒ M ] ↓ A
+    --end
 ```
 
 
@@ -549,6 +696,13 @@ module Problem3 where
   ...  | no A≢    | _         =  no λ{refl → A≢ refl}
   ...  | yes _    | no B≢     =  no λ{refl → B≢ refl}
   ...  | yes refl | yes refl  =  yes refl
+  --begin
+  (x ⇒ x₁) ≟Tp ⊤              = no (λ ())
+  `ℕ ≟Tp ⊤                    = no (λ ())
+  ⊤ ≟Tp (y ⇒ y₁)              = no (λ ())
+  ⊤ ≟Tp `ℕ                    = no (λ ())
+  ⊤ ≟Tp ⊤                     = yes refl
+  --end
 ```
 
 ### Prerequisites
@@ -562,6 +716,14 @@ module Problem3 where
 
   ℕ≢⇒ : ∀ {A B} → `ℕ ≢ A ⇒ B
   ℕ≢⇒ ()
+
+  --begin
+  ⊤≢⇒ : ∀ {A B} → ⊤ ≢ A ⇒ B
+  ⊤≢⇒ ()
+
+  ⊤≢ℕ : ⊤ ≢ `ℕ
+  ⊤≢ℕ ()
+  --end
 ```
 
 
@@ -642,6 +804,11 @@ module Problem3 where
   synthesize Γ (L · M) with synthesize Γ L
   ... | no  ¬∃              =  no  (λ{ ⟨ _ , ⊢L  · _  ⟩  →  ¬∃ ⟨ _ , ⊢L ⟩ })
   ... | yes ⟨ `ℕ ,    ⊢L ⟩  =  no  (λ{ ⟨ _ , ⊢L′ · _  ⟩  →  ℕ≢⇒ (uniq-↑ ⊢L ⊢L′) })
+
+  -- begin
+  ... | yes ⟨ ⊤ , ⊢L ⟩      =  no  (λ{ ⟨ _ , ⊢L′ · _ ⟩ → ⊤≢⇒ (uniq-↑ ⊢L ⊢L′) })
+  -- end
+
   ... | yes ⟨ A ⇒ B , ⊢L ⟩ with inherit Γ M A
   ...    | no  ¬⊢M          =  no  (¬arg ⊢L ¬⊢M)
   ...    | yes ⊢M           =  yes ⟨ B , ⊢L · ⊢M ⟩
@@ -662,6 +829,11 @@ module Problem3 where
   inherit Γ (`case L [zero⇒ M |suc x ⇒ N ]) A with synthesize Γ L
   ... | no ¬∃                 =  no  (λ{ (⊢case ⊢L  _ _) → ¬∃ ⟨ `ℕ , ⊢L ⟩})
   ... | yes ⟨ _ ⇒ _ , ⊢L ⟩    =  no  (λ{ (⊢case ⊢L′ _ _) → ℕ≢⇒ (uniq-↑ ⊢L′ ⊢L) })
+
+  --begin
+  ... | yes ⟨ ⊤ , ⊢L ⟩        =  no  (λ{ (⊢case ⊢L′ _ _) → ⊤≢ℕ (uniq-↑ ⊢L ⊢L′) })
+  --end
+
   ... | yes ⟨ `ℕ ,    ⊢L ⟩ with inherit Γ M A
   ...    | no ¬⊢M             =  no  (λ{ (⊢case _ ⊢M _) → ¬⊢M ⊢M })
   ...    | yes ⊢M with inherit (Γ , x ⦂ `ℕ) N A
@@ -675,4 +847,20 @@ module Problem3 where
   ... | yes ⟨ A , ⊢M ⟩ with A ≟Tp B
   ...   | no  A≢B             =  no  (¬switch ⊢M A≢B)
   ...   | yes A≡B             =  yes (⊢↑ ⊢M A≡B)
+
+  --begin
+  inherit Γ (ƛ x ⇒ M) ⊤       = no (λ ())
+  inherit Γ `zero ⊤           = no (λ ())
+  inherit Γ (`suc M) ⊤        = no (λ ())
+  inherit Γ tt (A ⇒ A₁)       = no (λ ())
+  inherit Γ tt `ℕ             = no (λ ())
+  inherit Γ tt ⊤              = yes ⊢tt
+  inherit Γ case⊤ L [tt⇒ M ] A with synthesize Γ L
+  ... | no ¬⊢L                = no  λ{ (⊢case⊤ ⊢L _) → ¬⊢L ⟨ ⊤ , ⊢L ⟩ }
+  ... | yes ⟨ B ⇒ C , ⊢L ⟩    = no λ{ (⊢case⊤ ⊢L′ _) → ⊤≢⇒ (uniq-↑ ⊢L′ ⊢L) }
+  ... | yes ⟨ `ℕ , ⊢L ⟩       = no λ{ (⊢case⊤ ⊢L′ _) → ⊤≢ℕ (uniq-↑ ⊢L′ ⊢L)  }
+  ... | yes ⟨ ⊤ , ⊢L ⟩ with inherit Γ M A
+  ...     | no ¬⊢M            = no λ{ (⊢case⊤ _ ⊢M) → ¬⊢M ⊢M }
+  ...     | yes ⊢M            = yes (⊢case⊤ ⊢L ⊢M)
+  --end
 ```

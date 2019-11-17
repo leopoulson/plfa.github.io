@@ -7,7 +7,7 @@ open import Data.String using (String; _≟_) -- for Blame labels
 open import Data.Product using (_×_; Σ; ∃; Σ-syntax; ∃-syntax; ∃!) renaming (_,_ to ⟨_,_⟩)
 open import Data.Empty using (⊥; ⊥-elim)
 open import Relation.Nullary using (¬_; Dec; yes; no)
-open Eq using (_≡_; _≢_; refl)
+open Eq using (_≡_; _≢_; refl; cong₂)
 
 open import Iff using (_⇔_)
 ```
@@ -64,6 +64,7 @@ data _∼_ : Type → Type → Set where
 
 record unique-grounding (A G : Type) : Set where
   field
+    GT : GType G
     A≢★ : A ≢ ★
     A≢G : A ≢ G
     A∼G : A ∼ G
@@ -297,34 +298,41 @@ data _—→_ : ∀ {Γ A} → (Γ ⊢ A) → (Γ ⊢ A) → Set where
       ------------------------
     → (ƛ A ∙ N) · V —→ N [ V ]
    
-  ιι : ∀ {Γ} {P : Blame} {V : Γ ⊢ ι} {_ : Value V}
+  ιι : ∀ {Γ} {P : Blame} {V : Γ ⊢ ι}
+    → Value V
       -------------------
     → cast V P (C-ι) —→ V
 
-  wrap : ∀ {Γ A B A′ B′ W} {A∼A′ : A ∼ A′} {B∼B′ : B ∼ B′} {V : Γ ⊢ A ⇒ B} {P : Blame} {_ : Value V}
+  wrap : ∀ {Γ A B A′ B′ W} {A∼A′ : A ∼ A′} {B∼B′ : B ∼ B′} {V : Γ ⊢ A ⇒ B} {P : Blame}
+    → Value V
       ----------------------------------------------------
     → (cast V P (C-Step A∼A′ B∼B′)) · W —→
            cast (V · (cast W (not P) (∼-sym A∼A′))) P (B∼B′)
 
-  ★★ : ∀ {Γ} {P : Blame} {V : Γ ⊢ ★} {_ : Value V}
+  ★★ : ∀ {Γ} {P : Blame} {V : Γ ⊢ ★}
+    → Value V
       -------------------
     → cast V P (C-A-★ ★) —→ V
 
-  A* : ∀ {Γ A G} {_ : GType G} {P : Blame} {V : Γ ⊢ A} {_ : Value V}
+  A* : ∀ {Γ A G} {GT : GType G} {P : Blame} {V : Γ ⊢ A}
+    → Value V
     → (ug : unique-grounding A G)
       ----------------------------------------------------------
     → cast V P (C-A-★ A) —→ cast (cast V P (A∼G ug)) P (C-A-★ G)
 
-  *A : ∀ {Γ A G} {_ : GType G} {P : Blame} {V : Γ ⊢ ★} {_ : Value V}
+  *A : ∀ {Γ A G} {_ : GType G} {P : Blame} {V : Γ ⊢ ★}
+    → Value V
     → (ug : unique-grounding A G)
       ------------------------------------------------------------------
     → cast V P (C-★-B A) —→ cast (cast V P (C-★-B G)) P (∼-sym (A∼G ug))
 
-  G★G : ∀ {Γ G} {_ : GType G} {P Q : Blame} {V : Γ ⊢ G} {_ : Value V}
+  G★G : ∀ {Γ G} {_ : GType G} {P Q : Blame} {V : Γ ⊢ G}
+    → Value V
       -----------------------------------------------
     → cast (cast V P (C-A-★ G)) Q (C-★-B G) —→ V
 
-  G★H : ∀ {Γ G H} {_ : GType G} {_ : GType H} {P Q : Blame} {V : Γ ⊢ G} {_ : Value V}
+  G★H : ∀ {Γ G H} {_ : GType G} {_ : GType H} {P Q : Blame} {V : Γ ⊢ G}
+    → Value V
     → G ≢ H
       -----------------------------------------------
     → cast (cast V P (C-A-★ G)) Q (C-★-B H) —→ blame Q
@@ -349,22 +357,22 @@ data _—→_ : ∀ {Γ A} → (Γ ⊢ A) → (Γ ⊢ A) → Set where
       ---------------
     → V · M —→ V · M′
 
-  ξ-cast : ∀ {Γ A B P} {A∼B : A ∼ B} {M M′ : Γ ⊢ A}
+  ξ-cast : ∀ {Γ A B P} (A∼B : A ∼ B) {M M′ : Γ ⊢ A}
     → M —→ M′
     -------------------------------
     → cast M P A∼B —→ cast M′ P A∼B
 
   -- B-·₁ : ∀ {Γ A P B} {M : Γ ⊢ A} (blame P : Γ ⊢ A ⇒ B)
   --   --------------------------
-  --   → (blame P) · M —→  blame P
+  --   → ((blame P) · M) —→ blame P
 
   B-·₂ : ∀ {Γ A B P} {V : Γ ⊢ A ⇒ B}
     → Value V
     --------------------------
     → V · (blame P) —→ blame P
 
-  -- B-cast : ∀ {A B P Q} {A∼B : A ∼ B}
-  --   → cast (blame P) Q A∼B —→ blame P
+  B-cast : ∀ {A B P Q} {A∼B : A ∼ B}
+    → cast (blame P) Q A∼B —→ blame P
 
 
 -- Reflexive and transitive closure
@@ -445,38 +453,86 @@ data _D⊢_ : Context → Type → Set where
 ⌈ L · M ⌉ P = (cast (⌈ L ⌉ P) P (C-★-B (★ ⇒ ★))) · ⌈ M ⌉ P
 ```
 
+Determinism!
 
 
 ```
+-- blame≢ : ∀ {P} (A) → A ≢ blame P
+-- blame≢ x = {!!}
+
+cong₃ : ∀ {A B C D} (f : A → B → C → D) {x y : A} {u v : B} {t s : C} → x ≡ y → u ≡ v → t ≡ s → f x u t ≡ f y v s
+cong₃ f refl refl refl = refl
+
 V¬—→ : ∀ {Γ A} {M N : Γ ⊢ A}
   → Value M
     ----------
   → ¬ (M —→ N)
-V¬—→ (V-⇒ v) (ξ-cast x) = V¬—→ v x
+V¬—→ (V-⇒ v) (ξ-cast _ x) = V¬—→ v x
 -- we can get false here from the fact that A≢G, A here is some ground type,
 -- and A∼G, so G≡H, which is a contradiction
-V¬—→ (V-★ v) (A* {G = G₁} record { A≢★ = A≢★ ; A≢G = A≢G ; A∼G = A∼G }) = A≢G {!!}
-V¬—→ (V-★ v) (ξ-cast x) = V¬—→ v x
+-- V¬—→ (V-★ GT1 V) (A* record { GT = GT ; A≢★ = A≢★ ; A≢G = A≢G ; A∼G = A∼G }) = A≢G (ground-to GT1 GT A∼G)
+V¬—→ (V-★ V) (ξ-cast _ x) = V¬—→ V x
+V¬—→ (V-★ V) (A* V-k record { GT = GT ; A≢★ = A≢★ ; A≢G = A≢G ; A∼G = A∼G }) = A≢G (ground-to G-ι GT A∼G)
+V¬—→ (V-★ x) (A* V-ƛ record { GT = GT ; A≢★ = A≢★ ; A≢G = A≢G ; A∼G = A∼G }) = {!!}
+V¬—→ (V-★ x) (A* (V-⇒ y) record { GT = GT ; A≢★ = A≢★ ; A≢G = A≢G ; A∼G = A∼G }) = {!!}
 
 determinism : ∀ {Γ A} {M : Γ ⊢ A} {N L : Γ ⊢ A} → M —→ N → M —→ L → N ≡ L
 determinism (β-ƛ x) (β-ƛ x₁) = refl
-determinism (β-ƛ V) (ξ-·₂ x₁ ML) = {!!}
-determinism ιι ML = {!!}
-determinism wrap ML = {!!}
-determinism ★★ ML = {!!}
-determinism (A* ug) ML = {!!}
-determinism (*A ug) ML = {!!}
-determinism G★G ML = {!!}
-determinism (G★H x) ML = {!!}
-determinism (ξ-·₁ MN) ML = {!!}
-determinism (ξ-·₂ x MN) ML = {!!}
-determinism (ξ-cast MN) ML = {!!}
-determinism (B-·₂ x) ML = {!!}
--- determinism k () ()
--- determinism (` x) MN ML = {!!}
--- determinism (ƛ A ∙ t) MN ML = {!!}
--- determinism (t · t₁) MN ML = {!!}
--- determinism (blame P) MN ML = {!!}
--- determinism (cast t P x) MN ML = {!!}
-```
+determinism (β-ƛ V) (ξ-·₂ _ M—→M′) = ⊥-elim (V¬—→ V M—→M′)
 
+determinism (ιι _) (ιι _) = refl
+determinism (ιι V-k) (ξ-cast c ML) = ⊥-elim (V¬—→ V-k ML)
+
+determinism (wrap x) (wrap x₁) = refl
+determinism (wrap V) (ξ-·₁ ML) = ⊥-elim (V¬—→ (V-⇒ V) ML )
+determinism (wrap x) (ξ-·₂ x₁ ML) = {!!}
+determinism (wrap x) (B-·₂ x₁) = determinism {!!} ((B-·₂ x₁))
+
+determinism (★★ x) (★★ x₁) = refl
+determinism (★★ x) (A* x₁ record { GT = GT ; A≢★ = A≢★ ; A≢G = A≢G ; A∼G = A∼G }) = ⊥-elim (A≢★ refl)
+determinism (★★ V) (ξ-cast (C-A-★ ★) ML) = ⊥-elim (V¬—→ V ML)
+
+determinism (A* x record { GT = GT ; A≢★ = A≢★ ; A≢G = A≢G ; A∼G = A∼G }) (★★ V) = ⊥-elim (A≢★ refl)
+determinism (A* x record { GT = GT₁ ; A≢★ = A≢★₁ ; A≢G = A≢G₁ ; A∼G = A∼G₁ })
+            (A* x₁ record { GT = GT ; A≢★ = A≢★ ; A≢G = A≢G ; A∼G = A∼G }) = {!!}
+determinism (A* V ug) (ξ-cast (C-A-★ A) ML) = ⊥-elim (V¬—→ V ML)
+
+determinism (*A x ug) (*A x₁ ug₁) = {!!}
+determinism (*A V ug) (G★G x₁) = {!!}
+determinism (*A x ug) (G★H x₁ x₂) = {!!}
+determinism (*A V ug) (ξ-cast _ ML) = ⊥-elim (V¬—→ V ML)
+
+determinism (G★G x) (*A x₁ ug) = {!!}
+determinism (G★G x) (G★G x₁) = refl
+determinism (G★G V) (G★H V′ A≢A) = ⊥-elim (A≢A refl)
+determinism (G★G V) (ξ-cast (C-★-B B) ML) = ⊥-elim (V¬—→ (V-★ V) ML)
+
+determinism (G★H V G≢A) (*A x₂ record { GT = GT ; A≢★ = A≢★ ; A≢G = A≢G ; A∼G = A∼G }) = {!!}
+determinism (G★H _ A≢A) (G★G _) = ⊥-elim (A≢A refl)
+determinism (G★H x x₁) (G★H x₂ x₃) = refl
+determinism (G★H V _) (ξ-cast _ ML) = ⊥-elim (V¬—→ (V-★ V) ML )
+
+determinism (ξ-·₁ MN) (wrap V) = ⊥-elim (V¬—→ (V-⇒ V) MN)
+determinism (ξ-·₁ MN) (ξ-·₁ ML) = refl
+determinism (ξ-·₁ MN) (ξ-·₂ V ML) = ⊥-elim (V¬—→ V MN)
+determinism (ξ-·₁ MN) (B-·₂ V) = ⊥-elim (V¬—→ V MN)
+
+determinism (ξ-·₂ _ MN) (β-ƛ V) = ⊥-elim (V¬—→ V MN)
+determinism (ξ-·₂ V2 MN) (wrap V) = {!!}
+determinism (ξ-·₂ V MN) (ξ-·₁ ML) = ⊥-elim (V¬—→ V ML)
+determinism (ξ-·₂ V MN) (ξ-·₂ x₁ ML) = cong₂ _·_ refl (determinism MN ML)
+
+determinism (ξ-cast _ MN) (ιι V) = ⊥-elim (V¬—→ V MN)
+determinism (ξ-cast _ MN) (★★ V) = ⊥-elim (V¬—→ V MN )
+determinism (ξ-cast _ MN) (A* V ug) = ⊥-elim (V¬—→ V MN)
+determinism (ξ-cast _ MN) (*A V ug) = ⊥-elim (V¬—→ V MN)
+determinism (ξ-cast _ MN) (G★G V) = ⊥-elim (V¬—→ (V-★ V) MN)
+determinism (ξ-cast _ MN) (G★H V x₁) = ⊥-elim (V¬—→ (V-★ V) MN)
+determinism (ξ-cast C MN) (ξ-cast .C ML) = cong₃ cast (determinism MN ML) refl refl
+
+determinism (B-·₂ x) (wrap x₁) = {!!}
+determinism (B-·₂ V) (ξ-·₁ ML) = ⊥-elim (V¬—→ V ML )
+determinism (B-·₂ x) (B-·₂ x₁) = refl
+
+determinism (B-cast) (B-cast) = refl
+```
