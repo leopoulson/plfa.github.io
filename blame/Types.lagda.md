@@ -2,6 +2,11 @@
 module Types where
 
 open import Data.Product using (_×_; proj₁; proj₂) renaming (_,_ to ⟨_,_⟩)
+open import Data.String using (String; _≟_) -- for Blame labels
+
+import Relation.Binary.PropositionalEquality as Eq
+open Eq using (_≡_; _≢_; refl; cong₂)
+
 
 -- open import Function.Equivalence using (_⇔_)
 open import Iff using (_⇔_)
@@ -27,6 +32,24 @@ data GType : Type → Set where
   G-⇒ :
     -------------
     GType (★ ⇒ ★)
+```
+
+
+# Blame Labels
+
+```
+
+data Blame : Set where
+
+  `_ :
+      String
+      ------
+    → Blame
+
+  not _ :
+      Blame
+      -----
+    → Blame
 ```
 
 # Subtypes
@@ -112,6 +135,27 @@ data _<:ₙ_ : Type → Type → Set where
   <ₙ★ : ∀ {A}
       -------
     → A <:ₙ ★
+
+data Cast : Type → Type → Blame → Set where
+  cast : ∀ (A B P) → Cast A B P
+
+data safe : ∀ {A B P} → Cast A B P → Blame → Set where
+  <+ : ∀ {A B} (P)
+    → A <:⁺ B
+      ----------
+    → safe (cast A B P) P
+
+  <- : ∀ {A B P}
+    → A <:⁻ B
+      ----------------
+    → safe (cast A B P) (not P)
+
+  <≢ : ∀ {A B P Q}
+    → P ≢ Q
+    → not P ≢ Q
+      ----------
+    → safe (cast A B P) Q
+
 ```
 
 ## Subtyping Lemma

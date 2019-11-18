@@ -3,36 +3,16 @@ module Blame where
 
 import Relation.Binary.PropositionalEquality as Eq
 
-open import Data.String using (String; _≟_) -- for Blame labels
 open import Data.Product using (_×_; Σ; ∃; Σ-syntax; ∃-syntax; ∃!) renaming (_,_ to ⟨_,_⟩)
 open import Data.Empty using (⊥; ⊥-elim)
 open import Relation.Nullary using (¬_; Dec; yes; no)
 open Eq using (_≡_; _≢_; refl; cong₂)
 
 open import Iff using (_⇔_)
+open import Types using (Type; GType; ι; ★; _⇒_; G-ι; G-⇒; Blame; `_; not; safe; <+; <-; <≢; cast; Cast)
 ```
 
-Types and Ground Types
-
-```
-infixr 7 _⇒_
-
-data Type : Set where
-  ι : Type
-  ★ : Type
-  _⇒_ : Type → Type → Type
-
-data GType : Type → Set where
-  G-ι :
-    -------
-    GType ι
-
-  G-⇒ :
-    -------------
-    GType (★ ⇒ ★)
-```
-
-### Compatibility
+### Type Compatibility
 
 ```
 infixl 6 _∼_
@@ -87,22 +67,6 @@ ground-eq : ∀ {G H} (GE : GType G) (HE : GType H) → (G ∼ H) ⇔ (G ≡ H)
 ground-eq x y = record { to = ground-to x y ; from = ground-from x y }
 ```
 
-Blame Labels
-
-```
-
-data Blame : Set where
-
-  `_ :
-      String
-      ------
-    → Blame
-
-  not _ :
-      Blame
-      -----
-    → Blame
-```
 
 Terms
 
@@ -349,7 +313,7 @@ data _—→_ : ∀ {Γ A} → (Γ ⊢ A) → (Γ ⊢ A) → Set where
   ξ-·₁ : ∀ {Γ A B} {L L′ : Γ ⊢ A ⇒ B} {M : Γ ⊢ A}
     → L —→ L′
       --------------
-    → L · M —→ L · M
+    → L · M —→ L′ · M
 
   ξ-·₂ : ∀ {Γ A B} {V : Γ ⊢ A ⇒ B} {M M′ : Γ ⊢ A}
     → Value V
@@ -456,10 +420,6 @@ data _D⊢_ : Context → Type → Set where
 Determinism!
 
 
-```
--- blame≢ : ∀ {P} (A) → A ≢ blame P
--- blame≢ x = {!!}
-
 cong₃ : ∀ {A B C D} (f : A → B → C → D) {x y : A} {u v : B} {t s : C} → x ≡ y → u ≡ v → t ≡ s → f x u t ≡ f y v s
 cong₃ f refl refl refl = refl
 
@@ -535,4 +495,71 @@ determinism (B-·₂ V) (ξ-·₁ ML) = ⊥-elim (V¬—→ V ML )
 determinism (B-·₂ x) (B-·₂ x₁) = refl
 
 determinism (B-cast) (B-cast) = refl
+
+
+
+
+Blame safety
+
+```
+data safe-term : ∀ {Γ A} → Γ ⊢ A → Blame → Set where
+
+  safe-k : ∀ {Γ x}
+    → (P : Blame)
+      ---------------------
+    → safe-term {Γ} (k x) P
+
+  safe-` : ∀ {Γ A}
+    → (x : Γ ∋ A)
+    → (P : Blame)
+      -------------------------
+    → safe-term {Γ} {A} (` x) P
+
+  safe-ƛ : ∀ {Γ′ B C P} {N : Γ′ , C ⊢ B}
+    → safe-term N P
+      ---------------------
+    → safe-term (ƛ C ∙ N) P
+
+  safe-· : ∀ {Γ A B P} {M : Γ ⊢ A ⇒ B} {N : Γ ⊢ A}
+    → safe-term M P
+    → safe-term N P
+      -------------------
+    → safe-term (M · N) P
+
+  safe-blame : ∀ {Γ A Q}
+    → (P : Blame)
+      -----------------------------
+    → safe-term {Γ} {A} (blame P) Q
+
+  safe-cast : ∀ {Γ A B P P′ Q} {M : Γ ⊢ A} {C : Cast A B P′}
+    → safe-term M P
+    → safe C Q
+    → (A∼B : A ∼ B)
+      ---------------------------
+    → safe-term (cast M P′ A∼B) Q
+
+
+blame-safety : ∀ {Γ A} {Q : Blame} {M N : Γ ⊢ A} → safe-term M Q → M —→ N → safe-term N Q
+blame-safety (safe-· M N) (β-ƛ x) = {!!}
+blame-safety (safe-· (safe-cast {C = C} M Cast (C-Step A∼A′ B∼B′)) N) (wrap x) =
+    safe-cast (safe-· M (safe-cast N {!!} (∼-sym A∼A′))) {!!} B∼B′
+-- blame-safety (safe-· (safe-cast {C = C} M (<+ P x₁) (C-Step A∼A′ B∼B′)) N) (wrap x) =
+--     safe-cast (safe-· M (safe-cast N {!!} (∼-sym A∼A′))) {!!} B∼B′
+-- blame-safety (safe-· (safe-cast M (<- x₁) (C-Step A∼A′ B∼B′)) N) (wrap x) =
+--     safe-cast (safe-· M (safe-cast N {!!} (∼-sym A∼A′))) {!!} B∼B′
+-- blame-safety (safe-· (safe-cast M (<≢ x₁ x₂) (C-Step A∼A′ B∼B′)) N) (wrap x) =
+--     safe-cast (safe-· M (safe-cast N {!!} (∼-sym A∼A′))) {!!} B∼B′
+blame-safety (safe-· M N) (ξ-·₁ red) = safe-· (blame-safety M red) N
+blame-safety (safe-· M N) (ξ-·₂ x red) = safe-· M (blame-safety N red)
+blame-safety (safe-· _ (safe-blame P)) (B-·₂ x) = safe-blame P
+
+blame-safety (safe-cast st x C-ι) (ιι x₁) = {!!}
+blame-safety (safe-cast st x (C-A-★ ★)) (★★ x₁) = {!st!}
+blame-safety (safe-cast st x (C-A-★ A)) (A* x₁ ug) = {!!}
+blame-safety (safe-cast st x (C-★-B B)) (*A x₁ ug) = {!!}
+blame-safety (safe-cast st x (C-★-B B)) (G★G x₁) = {!!}
+blame-safety (safe-cast st x (C-★-B B)) (G★H x₁ x₂) = {!!}
+blame-safety (safe-cast st x A∼B) (ξ-cast .A∼B red) = {!!}
+blame-safety (safe-cast st x A∼B) B-cast = {!!}
+
 ```
