@@ -135,49 +135,60 @@ essentially saying 'this label caused this cast to happen.' This is useful when
 finding the source of erroneous computation; we can say at precisely which point
 the casting went wrong.
 
-We have just two constructors. `_ is just a way to construct a blame label from
-a string. A cast being decorated with ` `p`says that, if the labelled cast
-causes a problem, it was definitely ``p`'s fault. This is called _positive blame_.
 
-`not p` allocates blame to the rest of the context; it communicates that if
-something goes wrong with this cast, it was _not_ `p`'s fault. This is called
-_negative blame_.
+We have here a shallow embedding of our blame labels. Ideally, we wanted to put
+them in their own datatype, like this;
 
-```
-data BType : Set where
+``
+data Blame : Set where
+  `_ : String → Blame
+  not : Blame → Blame
+``
+
+However this does not exactly satisfy the requirements, as it does not contain
+involution. So we tried parametrising it with an extra type which tells us if
+the blame is positive or negative, like so;
+
+``
+data BType where
   + : BType
   - : BType
 
-flipBType : BType → BType
-flipBType + = -
-flipBType - = +
-```
+flip : BType → BType
+flip + = -
+flip - = +
+
+data Blame : BType → Set where
+  `_ : String → BType → Blame
+  not : ∀ {t} → Blame t → Blame (flip t)
+``
+
+However this again was not satisfactory. We could not show Agda that `(flip .
+flip) == id`, so it would not typecheck the type `not-inv : ∀ {B} not (not B) ≡
+B`.
+
+In the end we went for the definition below. We see that this is isomorphic to
+the above, as `String * 2 ≡ String + String`. In this case, inj₁ indicates that
+the blame is positive whilst inj₂ indicates that the blame is negative.
 
 ```
-data Blame (B : BType) : Set where
+Blame : Set
+Blame = String ⊎ String
 
-  `_ :
-      String
-      ------
-    → Blame B
+`b_ : String → Blame
+`b st = inj₁ st
 
-  not : --∀ {t : flipBType B}
-     Blame (flipBType B)
-      -----
-    → Blame (B)
+not : Blame → Blame
+not (inj₁ st) = inj₂ st
+not (inj₂ st) = inj₁ st
 
--- Blame : Set
--- Blame = String ⊎ String
-
--- `b_ : String → Blame
--- `b st = inj₁ st
-
--- not : Blame → Blame
--- not (inj₁ st) = inj₂ st
--- not (inj₂ st) = inj₁ st
+not-inv : ∀ (B) → not (not B) ≡ B
+not-inv (inj₁ x) = refl
+not-inv (inj₂ y) = refl
 ```
 
-
+`b constructs a positive blame label, whilst not flips the polarity of a blame
+label by moving the string to the other side of the or.
 
 ## Subtypes
 
@@ -280,14 +291,16 @@ A <:⁻ B means that a cast from A to B never causes _negative_ blame. Recall th
 a cast causing negative blame (`not `p`) means that it assigns blame to the environment,
 but not ``p`.
 
+A <:ₙ B means that type A is more precise by type B. More precise here means
+that A has less instances of the dynamic type than B. 
+
 
 ```
-
-data Cast : ∀ {t} → Type → Type → Blame t → Set where
+data Cast : Type → Type → Blame → Set where
   cast : ∀ (A B P) → Cast A B P
 
-data safe : ∀ {A B P T} → Cast A B P → Blame T → Set where
-  <+ : ∀ {A B} (P) (Q)
+data safe : ∀ {A B} {P : Blame} → Cast A B P → Blame → Set where
+  <+ : ∀ {A B} (P Q : Blame)
     → A <:⁺ B
       ----------
     → safe (cast A B P) Q
@@ -295,18 +308,28 @@ data safe : ∀ {A B P T} → Cast A B P → Blame T → Set where
   <- : ∀ {A B P}
     → A <:⁻ B
       ----------------
-    → safe (cast A B P) (not P)
+    → safe (cast A B P) (P)
 
-  <≢ : ∀ {A B P Q}
+  <≢ : ∀ {A B} {P Q : Blame}
     → P ≢ Q
     → not P ≢ Q
       ----------
     → safe (cast A B P) Q
 ```
 
+`safe (cast A B P) Q` is a witness to the fact that the cast A ⇒ B decorated by
+P is safe for Q; that is, the evaluation of such a cast will never allocate
+blame to Q.
+
+The three constructors embody that;
+- If A is a positive subtype of B, the cast will never allocate positive blame;
+- If A is a negative subtype of B, the cast will never allocate negative blame;
+- If A is more precise than B, then the cast will never allocate blame to any
+  label that isn't P or not P.
 
 
-## Subtyping Lemma
+
+## Tangram Lemma
 
 ```
 tangram-to : ∀ {A B} → A <: B → (A <:⁺ B × A <:⁻ B)
@@ -323,9 +346,6 @@ tangram-from ⟨ <⁺★ , <⁻G <⁻ι y ⟩ = <G <ι y
 tangram-from ⟨ <⁺★ , <⁻G <⁻★ y ⟩ = <★
 tangram-from {A = A} ⟨ <⁺★ , <⁻G (<⁻⇒ x A-G) G-⇒ ⟩ = <G (<⇒ (tangram-from ⟨ x , <⁻★ ⟩ ) (tangram-from ⟨ <⁺★ , A-G ⟩)) G-⇒
 
-tangram : ∀ {A B} → (A <: B) ⇔ (A <:⁺ B × A <:⁻ B)
-tangram = record { to = tangram-to ; from = tangram-from }
-
 tan-naive-to : ∀ {A B} → (A <:ₙ B) → (A <:⁺ B × B <:⁻ A)
 tan-naive-to <ₙι = ⟨ <⁺ι , <⁻ι ⟩
 tan-naive-to (<ₙ⇒ A<A B<B) = ⟨ (<⁺⇒ (proj₂ (tan-naive-to A<A)) (proj₁ (tan-naive-to B<B))) , (<⁻⇒ (proj₁ (tan-naive-to A<A)) (proj₂ (tan-naive-to B<B))) ⟩
@@ -337,15 +357,23 @@ tan-naive-from ⟨ <⁺⇒ A′-A AB , <⁻⇒ A+A′ BA ⟩ = <ₙ⇒ (tan-naiv
 tan-naive-from ⟨ <⁺★ , <⁻★ ⟩ = <ₙ★
 tan-naive-from ⟨ <⁺★ , <⁻G BA x ⟩ = <ₙ★
 
+tangram : ∀ {A B} → (A <: B) ⇔ (A <:⁺ B × A <:⁻ B)
+tangram = record { to = tangram-to ; from = tangram-from }
+
 tan-naive : ∀ {A B} → (A <:ₙ B) ⇔ (A <:⁺ B × B <:⁻ A)
 tan-naive = record { to = tan-naive-to ; from = tan-naive-from }
 ```
 
+It is easy to see the similarities between the different subtyping relations by
+just observing the roles. The two above lemmas formalise that normal subtyping
+can be reduced to positive and negative subtyping, whilst the second shows us
+that naive subtyping can be assembled from positive subtyping and contravariant
+negative subtyping.
 
 
-Terms
+## Terms
 
-We first need to define contexts and so on.
+We first need to define contexts.
 
 ```
 infix 4 _∋_
@@ -367,7 +395,9 @@ data _∋_ : Context → Type → Set where
     → Γ , B ∋ A
 ```
 
-Now we can do terms too
+These are just the same as the De Bruijn in the textbook.
+
+Now we can finally formalise terms!
 
 ```
 infix  4 _⊢_
@@ -393,7 +423,7 @@ data _⊢_ : Context → Type → Set where
       -----
     → Γ ⊢ A
 
-  ƛ_∙_  : ∀ {Γ  B} (A)
+  ƛ_∙_  : ∀ {Γ B} (A)
     → Γ , A ⊢ B
       ---------
     → Γ ⊢ A ⇒ B
@@ -404,18 +434,32 @@ data _⊢_ : Context → Type → Set where
       ---------
     → Γ ⊢ B
 
-  blame  : ∀ {Γ A t}
-    → (P : Blame t)
+```
+
+Up to here the terms have all been as standard. Note that lambda expressions are
+labelled with the type of the binding variable. 
+
+```
+
+  blame  : ∀ {Γ A}
+    → (P : Blame)
       -------------
     → Γ ⊢ A
 
-  cast : ∀ {Γ A B t}
+  cast : ∀ {Γ A B}
     → Γ ⊢ A
-    → (P : Blame t)
+    → (P : Blame)
     → (A ∼ B)
       -------------
     → Γ ⊢ B
+
 ```
+
+Above we have the two new cases. The first constructor states that the term
+blaming a blame label for something that has gone wrong can have any type. The
+second states that a cast from a term of type A to a term of type B has overall
+type B. Note that the constructor for cast requires as input proof that A is
+compatible with B.
 
 ### Values
 
@@ -430,13 +474,12 @@ data Value : ∀ {Γ A} → Γ ⊢ A → Set where
       ---------------------------
     → Value (ƛ A ∙ N)
 
-  V-⇒ : ∀ {Γ A B A′ B′ t} {P : Blame t} {V : Γ ⊢ A ⇒ B} {comp : A ⇒ B ∼ A′ ⇒ B′}
+  V-⇒ : ∀ {Γ A B A′ B′} {P : Blame} {V : Γ ⊢ A ⇒ B} {comp : A ⇒ B ∼ A′ ⇒ B′}
     → Value V
-    -- → (A ⇒ B ∼ A′ ⇒ B′)
       -----------------------
-    → Value (cast V P (comp))
+    → Value (cast V P comp)
 
-  V-★ : ∀ {Γ G t}  {P : Blame t} {V : Γ ⊢ G}
+  V-★ : ∀ {Γ G}  {P : Blame} {V : Γ ⊢ G}
     → Value V
     → GType G
       --------------------------
@@ -513,9 +556,9 @@ data EC : Context → Type → Type → Set where
       ---------
     → EC Γ A B
 
-  cast■ : ∀ {Γ A B t}
+  cast■ : ∀ {Γ A B}
       (A∼B : A ∼ B)
-    → (P : Blame t)
+    → (P : Blame)
       -------------
     → EC Γ A B
 
@@ -538,59 +581,50 @@ data _—→_ : ∀ {Γ A} → (Γ ⊢ A) → (Γ ⊢ A) → Set where
       ------------------------
     → (ƛ A ∙ N) · V —→ N [ V ]
    
-  ιι : ∀ {Γ t} {P : Blame t} {V : Γ ⊢ ι}
+  ιι : ∀ {Γ} {P : Blame} {V : Γ ⊢ ι}
     → Value V
       -------------------
     → cast V P (C-ι) —→ V
 
-  wrap : ∀ {Γ A B A′ B′ W t} {A∼A′ : A ∼ A′} {B∼B′ : B ∼ B′} {V : Γ ⊢ A ⇒ B} {P : Blame f}
+  wrap : ∀ {Γ A B A′ B′ W} {A∼A′ : A ∼ A′} {B∼B′ : B ∼ B′} {V : Γ ⊢ A ⇒ B} {P : Blame}
     → Value V
     → Value W
       ----------------------------------------------------
     → (cast V P (C-Step A∼A′ B∼B′)) · W —→
            cast (V · (cast W (not P) (∼-sym A∼A′))) P (B∼B′)
 
-  ★★ : ∀ {Γ t} {P : Blame t} {V : Γ ⊢ ★} {C : ★ ∼ ★}
+  ★★ : ∀ {Γ} {P : Blame} {V : Γ ⊢ ★} {C : ★ ∼ ★}
     → Value V
       -------------------
     → cast V P C —→ V
 
-  A* : ∀ {Γ A G t}  {P : Blame t} {V : Γ ⊢ A}
+  A* : ∀ {Γ A G}  {P : Blame} {V : Γ ⊢ A}
     → Value V
     → GType G
     → (ug : unique-grounding A G)
       ----------------------------------------------------------
     → cast V P (C-A-★ A) —→ cast (cast V P (A∼G ug)) P (C-A-★ G)
 
-  *A : ∀ {Γ A G t} {P : Blame t} {V : Γ ⊢ ★}
+  *A : ∀ {Γ A G} {P : Blame} {V : Γ ⊢ ★}
     → Value V
     → GType G
     → (ug : unique-grounding A G)
       ------------------------------------------------------------------
     → cast V P (C-★-B A) —→ cast (cast V P (C-★-B G)) P (∼-sym (A∼G ug))
 
-  G★G : ∀ {Γ G t}  {P Q : Blame t} {V : Γ ⊢ G}
+  G★G : ∀ {Γ G}  {P Q : Blame} {V : Γ ⊢ G}
     → Value V
     → GType G
       -----------------------------------------------
     → cast (cast V P (C-A-★ G)) Q (C-★-B G) —→ V
 
-  G★H : ∀ {Γ G H t} {P Q : Blame t} {V : Γ ⊢ G}
+  G★H : ∀ {Γ G H} {P Q : Blame} {V : Γ ⊢ G}
     → Value V
     → GType G
     → GType H
     → G ≢ H
       -----------------------------------------------
     → cast (cast V P (C-A-★ G)) Q (C-★-B H) —→ blame Q
-
-  -- E→E : ∀ {Γ A B} (E : EC Γ A B) {M M′ : Γ ⊢ A}
-  --   → M —→ M′
-  --     -------------------
-  --   → E E[ M ] —→ E E[ M′ ]
-
-  -- E→B : ∀ {Γ A B} (E : EC Γ A B) {P : Blame}
-  --     ------------------------
-  --   → E E[ blame P ] —→ blame P
 
   ξ-·₁ : ∀ {Γ A B} {L L′ : Γ ⊢ A ⇒ B} {M : Γ ⊢ A}
     → L —→ L′
@@ -603,16 +637,16 @@ data _—→_ : ∀ {Γ A} → (Γ ⊢ A) → (Γ ⊢ A) → Set where
       ---------------
     → V · M —→ V · M′
 
-  ξ-cast : ∀ {Γ A B P} (A∼B : A ∼ B) {M M′ : Γ ⊢ A}
+  ξ-cast : ∀ {Γ A B} {P : Blame} (A∼B : A ∼ B) {M M′ : Γ ⊢ A}
     → M —→ M′
     -------------------------------
     → cast M P A∼B —→ cast M′ P A∼B
 
-  B-·₁ : ∀ {Γ A B P} {M : Γ ⊢ A}
+  B-·₁ : ∀ {Γ A B} {P : Blame} {M : Γ ⊢ A}
     ------------------------------------------------------------------
     → ((blame {Γ = Γ} {A = A ⇒ B} P) · M) —→ (blame {Γ = Γ} {A = B} P)
 
-  B-·₂ : ∀ {Γ A B P} {V : Γ ⊢ A ⇒ B}
+  B-·₂ : ∀ {Γ A B} {P : Blame} {V : Γ ⊢ A ⇒ B}
     → Value V
     --------------------------
     → V · (blame P) —→ blame P
@@ -780,7 +814,7 @@ data _D⊢_ : Context → Type → Set where
 
 Determinism!
 
-```
+
 ∼ι→≡ι★ : ∀ {A} → A ∼ ι → A ≡ ι ⊎ A ≡ ★
 ∼ι→≡ι★ C-ι =  inj₁ refl
 ∼ι→≡ι★ (C-★-B .ι) = inj₂ refl
@@ -884,7 +918,7 @@ determinism (ξ-cast _ MN) (*A V _ ug) = ⊥-elim (V¬—→ V MN)
 determinism (ξ-cast _ MN) (G★G V G) = ⊥-elim (V¬—→ (V-★ V G) MN)
 determinism (ξ-cast _ MN) (G★H V G H _) = ⊥-elim (V¬—→ (V-★ V G) MN)
 determinism (ξ-cast C MN) (ξ-cast .C ML) = cong₃ cast (determinism MN ML) refl refl
-determinism (ξ-cast A∼B x) B-cast = ⊥-elim (blame-doesnt-reduce x)
+-- determinism (ξ-cast A∼B x) B-cast = ⊥-elim (blame-doesnt-reduce x)
 
 determinism B-·₁ B-·₁ = refl
 
@@ -899,7 +933,7 @@ determinism B-cast (ιι x) = refl
 determinism B-cast (★★ x) = refl
 determinism B-cast (A* x x₁ ug) = ⊥-elim (blame-isnt-value x)
 determinism B-cast (*A x x₁ ug) = ⊥-elim (blame-isnt-value x)
-determinism B-cast (ξ-cast A∼B y) = ⊥-elim (blame-doesnt-reduce y)
+-- determinism B-cast (ξ-cast A∼B y) = ⊥-elim (blame-doesnt-reduce y)
 
 -- repeated cases
 determinism (*A x G record { GT = GT ; A≢★ = A≢★ ; A≢G = A≢G ; A∼G = A∼G }) (★★ x₁) = ⊥-elim (A≢★ refl)
@@ -907,12 +941,8 @@ determinism (*A x₂ G-ι record { GT = GT ; A≢★ = A≢★ ; A≢G = A≢G ;
 determinism (*A x₂ G-⇒ record { GT = GT ; A≢★ = A≢★ ; A≢G = A≢G ; A∼G = A∼G }) (G★H V G G-⇒ G≢A) = ⊥-elim (A≢G refl)
 determinism (B-·₂ VB) (wrap x W) = ⊥-elim (blame-isnt-value W) --determinism {!!} ((B-·₂ x₁))
 
-```
-
 
 Progress
-
-```
 data Progress {A} (M : ∅ ⊢ A) : Set where
 
   step : ∀ {N : ∅ ⊢ A}
@@ -961,7 +991,7 @@ progress (cast T Q C-ι) | done VT = step (ιι VT)
 progress (cast (k _) Q (C-A-★ ι)) | done V-k = done (V-★ V-k G-ι)
 progress (cast T Q (C-A-★ ★)) | done VT = step (★★ VT)
 
-progress (cast _ _ (C-A-★ (★ ⇒ ★))) | done V = done (V-★ V G-⇒) -- step (A* V G-⇒ (record { GT = G-⇒ ; A≢★ = λ () ; A≢G = refl ; A∼G = {!!} })) -- step (A* V-ƛ G-ι (record { GT = G-ι ; A≢★ = λ () ; A≢G = λ () ; A∼G = {!!} }))
+progress (cast _ _ (C-A-★ (★ ⇒ ★))) | done V = done (V-★ V G-⇒)
 progress (cast _ _ (C-A-★ (ι ⇒ B))) | done V = step (A* V G-⇒ (record { GT = G-⇒ ; A≢★ = λ () ; A≢G = λ () ; A∼G = A⇒B∼★⇒★ ι B }))
 progress (cast _ _ (C-A-★ (★ ⇒ ι))) | done V = step (A* V G-⇒ (record { GT = G-⇒ ; A≢★ = λ () ; A≢G = λ () ; A∼G = A⇒B∼★⇒★ ★ ι }))
 progress (cast _ _ (C-A-★ (★ ⇒ (A ⇒ B)))) | done V = step (A* V G-⇒ (record { GT = G-⇒ ; A≢★ = λ () ; A≢G = λ () ; A∼G = A⇒B∼★⇒★ ★ (A ⇒ B) }))
@@ -980,12 +1010,9 @@ progress (cast T Q (C-★-B ((B ⇒ B₂) ⇒ B₁))) | done V = step (*A V G-�
 
 progress (cast T Q (C-Step x x₁)) | done VT = done (V-⇒ VT)
 
-```
-
 Blame safety
 
 ```
-
 data safe-term : ∀ {Γ A} → Γ ⊢ A → Blame → Set where
 
   safe-k : ∀ {Γ x}
@@ -1035,8 +1062,11 @@ safe-subst (safe-ƛ (safe-cast P M x A∼B)) N = safe-cast P {!!} x A∼B
 blame-is-unsafe : ∀ {Γ A P Q} → ¬ (safe-term {Γ = Γ} {A = A} (blame Q) P)
 blame-is-unsafe ()
 
+tick-not-val : ∀ {Γ A x} → ¬ (Value {Γ = Γ} {A = A} (` x))
+tick-not-val ()
+
 not-blame : ∀ {Γ A} {Q : Blame} {M : Γ ⊢ A} → safe-term M Q → ¬ ( M —→ blame Q )
-not-blame (safe-· (safe-` x P) st₁) (B-·₂ _) = {!!}
+not-blame (safe-· (safe-` x P) st₁) (B-·₂ V) = tick-not-val V
 not-blame (safe-· (safe-ƛ st) st₁) red = {!!}
 not-blame (safe-· (safe-· st st₂) st₁) (B-·₂ ())
 not-blame (safe-· (safe-cast P STM x₂ A∼B) ()) (B-·₂ _)
@@ -1046,6 +1076,10 @@ not-blame (safe-cast P st (<≢ x x₁) (C-★-B .ι)) (G★H V-ƛ G-⇒ G-ι G�
 not-blame (safe-cast P st (<≢ x x₁) (C-★-B .ι)) (G★H (V-⇒ VV) G-⇒ G-ι G≢B) = x refl
 not-blame (safe-cast P st (<≢ x x₁) (C-★-B .(★ ⇒ ★))) (G★H VV G-ι G-⇒ G≢B) = x refl
 not-blame (safe-cast P st x (C-★-B .(★ ⇒ ★))) (G★H VV G-⇒ G-⇒ G≢B) = G≢B refl
+
+not-blame (safe-cast P x (<- x₁) .(C-★-B (★ ⇒ ★))) (G★H V-k G-ι G-⇒ x₃) = {!!}
+not-blame (safe-cast P x (<- x₁) .(C-★-B ι)) (G★H V-ƛ G-⇒ G-ι x₃) = {!!}
+not-blame (safe-cast P x (<- x₁) .(C-★-B ι)) (G★H (V-⇒ x₂) G-⇒ G-ι x₃) = {!!}
 
 blame-safety : ∀ {Γ A} {P : Blame} {M N : Γ ⊢ A} → safe-term M P → M —→ N → safe-term N P
 blame-safety (safe-· x y) (β-ƛ x₁) = {!!}
